@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/useUser";
+import { useStreak } from "@/hooks/useStreak";
 import {
   AxisLogo,
   IconCommand,
@@ -12,10 +13,12 @@ import {
   IconHabits,
   IconGoals,
   IconPartners,
+  IconReview,
   IconProve,
   IconSettings,
   IconUpgrade,
   IconLogout,
+  IconStreak,
 } from "@/components/icons";
 
 const navItems = [
@@ -25,6 +28,7 @@ const navItems = [
   { href: "/systems", label: "Daily Systems", icon: IconHabits, shortLabel: "Habits" },
   { href: "/goals", label: "Goals", icon: IconGoals, shortLabel: "Goals" },
   { href: "/partners", label: "Partners", icon: IconPartners, shortLabel: "Partners" },
+  { href: "/review", label: "Weekly Review", icon: IconReview, shortLabel: "Review" },
 ];
 
 const bottomItems = [
@@ -35,18 +39,33 @@ const bottomItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useUser();
+  const { streak } = useStreak();
 
   const displayName = user?.name || user?.email?.split("@")[0] || "User";
   const initials = displayName.charAt(0).toUpperCase();
+
+  const streakLabel = streak >= 7 ? `🔥 ${streak}` : streak > 0 ? `${streak}` : null;
 
   return (
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-[260px] h-screen bg-axis-dark border-r border-white/[0.06] fixed left-0 top-0 z-40">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 px-6 h-16 border-b border-white/[0.06]">
-          <AxisLogo size={28} />
-          <span className="text-base font-bold text-white tracking-tight">AXIS</span>
+        {/* Logo + Streak */}
+        <div className="flex items-center justify-between px-6 h-16 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2.5">
+            <AxisLogo size={28} />
+            <span className="text-base font-bold text-white tracking-tight">AXIS</span>
+          </div>
+          {streakLabel && (
+            <Link
+              href="/systems"
+              title={`${streak}-day streak`}
+              className="flex items-center gap-1 bg-orange-500/10 border border-orange-500/20 rounded-lg px-2 py-1 hover:bg-orange-500/20 transition-all"
+            >
+              <IconStreak size={12} className="text-orange-400" />
+              <span className="text-xs font-mono font-bold text-orange-400">{streak}</span>
+            </Link>
+          )}
         </div>
 
         {/* Navigation */}
@@ -148,22 +167,30 @@ export function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Tabs */}
+      {/* Mobile Bottom Tabs — streak badge on Habits tab */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-axis-dark border-t border-white/[0.06] px-2 pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-16">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
+            const showStreakBadge = item.href === "/systems" && streak > 0;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
+                  "relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
                   isActive ? "text-axis-accent" : "text-white/40"
                 )}
               >
-                <Icon size={18} />
+                <div className="relative">
+                  <Icon size={18} />
+                  {showStreakBadge && (
+                    <span className="absolute -top-1 -right-2 text-[9px] font-mono font-bold text-orange-400 leading-none">
+                      {streak >= 7 ? "🔥" : streak}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] font-medium">{item.shortLabel}</span>
               </Link>
             );
