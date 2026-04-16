@@ -248,10 +248,22 @@ function SettingsContent() {
         <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Data</h3>
         <div className="space-y-3">
           <button
+            onClick={async () => {
+              if (user?.plan !== "pro") return;
+              const res = await fetch("/api/data/export");
+              if (!res.ok) { alert("Export failed. Try again."); return; }
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `axis-export-${new Date().toISOString().split("T")[0]}.txt`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
             className="w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all text-sm"
-            style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+            style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: user?.plan === "pro" ? "var(--text-secondary)" : "var(--text-tertiary)" }}
+            onMouseEnter={(e) => { if (user?.plan === "pro") { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = user?.plan === "pro" ? "var(--text-secondary)" : "var(--text-tertiary)"; }}
           >
             Export Data (CSV)
             {user?.plan !== "pro" && (
