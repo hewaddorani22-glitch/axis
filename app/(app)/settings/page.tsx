@@ -259,9 +259,16 @@ function SettingsContent() {
             )}
           </button>
           <button
-            onClick={() => {
-              if (confirm("Are you sure? This will permanently delete your account and all data.")) {
-                signOut();
+            onClick={async () => {
+              const confirmed = confirm(
+                "Are you sure? This will permanently delete your account and ALL your data — missions, habits, revenue, goals, and everything else. This cannot be undone."
+              );
+              if (!confirmed) return;
+              const res = await fetch("/api/account/delete", { method: "DELETE" });
+              if (res.ok) {
+                await signOut();
+              } else {
+                alert("Something went wrong. Please try again or contact support.");
               }
             }}
             className="w-full flex items-center justify-between py-3 px-4 rounded-xl bg-red-500/5 border border-red-500/10 text-sm text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all"

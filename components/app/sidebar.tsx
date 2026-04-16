@@ -12,6 +12,7 @@ import {
   IconHabits,
   IconGoals,
   IconPartners,
+  IconReview,
   IconProve,
   IconSettings,
   IconUpgrade,
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/systems", label: "Daily Systems", icon: IconHabits, shortLabel: "Habits" },
   { href: "/goals", label: "Goals", icon: IconGoals, shortLabel: "Goals" },
   { href: "/partners", label: "Partners", icon: IconPartners, shortLabel: "Partners" },
+  { href: "/review", label: "Weekly Review", icon: IconReview, shortLabel: "Review" },
 ];
 
 const bottomItems = [

@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
+  const inviteId = searchParams.get("invite");
 
   if (code) {
     const supabase = createServerClient(
@@ -45,7 +46,21 @@ export async function GET(request: Request) {
           .single();
 
         if (!profile || !profile.onboarding_done) {
-          return NextResponse.redirect(`${origin}/onboarding`);
+          const onboardingUrl = inviteId
+            ? `${origin}/onboarding?invite=${inviteId}`
+            : `${origin}/onboarding`;
+          return NextResponse.redirect(onboardingUrl);
+        }
+
+        // If coming from invite link and already onboarded, create partnership
+        if (inviteId) {
+          try {
+            await fetch(`${origin}/api/partners/invite`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ inviterId: inviteId }),
+            });
+          } catch { /* non-fatal */ }
         }
       }
 

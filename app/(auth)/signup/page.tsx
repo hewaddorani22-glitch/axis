@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export default function SignupPage() {
+function SignupForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,7 +13,22 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteId = searchParams.get("invite"); // Partner invite
   const supabase = createClient();
+
+  const acceptInvite = async () => {
+    if (!inviteId) return;
+    try {
+      await fetch("/api/partners/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviterId: inviteId }),
+      });
+    } catch {
+      // Non-fatal — user can connect manually
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,12 +53,12 @@ export default function SignupPage() {
       // If email confirmation is disabled, redirect directly
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Create user profile
         await supabase.from("users").upsert({
           id: user.id,
           email: user.email!,
           name: name,
         });
+        await acceptInvite();
         router.push("/onboarding");
         router.refresh();
       }
@@ -51,11 +66,13 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignup = async () => {
+    const redirectTo = inviteId
+      ? `${window.location.origin}/callback?next=/onboarding&invite=${inviteId}`
+      : `${window.location.origin}/callback?next=/onboarding`;
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/callback?next=/onboarding`,
-      },
+      options: { redirectTo },
     });
   };
 
@@ -67,7 +84,8 @@ export default function SignupPage() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight mb-2">Check your email</h1>
         <p className="text-sm text-axis-text2 max-w-xs mx-auto">
-          We sent a confirmation link to <span className="font-medium text-axis-text1">{email}</span>.
+          We sent a confirmation link to{" "}
+          <span className="font-medium text-axis-text1">{email}</span>.
           Click the link to activate your account.
         </p>
       </div>
@@ -78,7 +96,14 @@ export default function SignupPage() {
     <>
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold tracking-tight mb-2">Create your account</h1>
-        <p className="text-sm text-axis-text2">Start building your system in 90 seconds</p>
+        {inviteId ? (
+          <p className="text-sm text-axis-text2">
+            You were invited to AXIS.{" "}
+            <span className="text-axis-accent font-medium">Sign up to connect with your partner.</span>
+          </p>
+        ) : (
+          <p className="text-sm text-axis-text2">Start building your system in 90 seconds</p>
+        )}
       </div>
 
       {error && (
@@ -167,7 +192,6 @@ export default function SignupPage() {
         <a href="#" className="underline hover:text-axis-text1">Privacy Policy</a>.
       </p>
 
-      {/* Login link */}
       <p className="text-center text-sm text-axis-text3 mt-6">
         Already have an account?{" "}
         <Link href="/login" className="text-axis-text1 font-medium hover:underline">
@@ -175,5 +199,13 @@ export default function SignupPage() {
         </Link>
       </p>
     </>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="text-center text-axis-text3 text-sm">Loading...</div>}>
+      <SignupForm />
+    </Suspense>
   );
 }

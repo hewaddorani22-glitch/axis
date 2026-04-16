@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -50,6 +50,16 @@ const suggestedHabits = [
 ];
 
 export default function OnboardingPage() {
+  const router = useRouter();
+  const supabaseCheck = createClient();
+
+  // If onboarding is already done, redirect to dashboard
+  useEffect(() => {
+    supabaseCheck.from("users").select("onboarding_done").single().then(({ data }) => {
+      if (data?.onboarding_done) router.replace("/dashboard");
+    });
+  }, []); // eslint-disable-line
+
   const [step, setStep] = useState(1);
   // Step 1: Profile
   const [name, setName] = useState("");
@@ -77,7 +87,6 @@ export default function OnboardingPage() {
   // Step 7: Review
   const [loading, setLoading] = useState(false);
 
-  const router = useRouter();
   const supabase = createClient();
   const totalSteps = 7;
   const progressPct = (step / totalSteps) * 100;
