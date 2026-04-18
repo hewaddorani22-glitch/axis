@@ -21,7 +21,7 @@ export function Sidebar() {
   const displayName = user?.name || user?.email?.split("@")[0] || "User";
   const initials = displayName.charAt(0).toUpperCase();
 
-  const streakLabel = streak >= 7 ? `🔥 ${streak}` : streak > 0 ? `${streak}` : null;
+  const hasStreak = streak > 0;
 
   return (
     <>
@@ -33,7 +33,7 @@ export function Sidebar() {
             <AxisLogo size={28} />
             <span className="text-base font-bold text-white tracking-tight">AXIS</span>
           </div>
-          {streakLabel && (
+          {hasStreak && (
             <Link
               href="/systems"
               title={`${streak}-day streak`}
@@ -163,8 +163,8 @@ export function Sidebar() {
                 <div className="relative">
                   <Icon size={18} />
                   {showStreakBadge && (
-                    <span className="absolute -top-1 -right-2 text-[9px] font-mono font-bold text-orange-400 leading-none">
-                      {streak >= 7 ? "🔥" : streak}
+                    <span className="absolute -top-1 -right-2 flex items-center justify-center bg-orange-500 text-axis-dark text-[9px] font-mono font-bold leading-none w-4 h-4 rounded-full">
+                      {streak >= 7 ? <IconStreak size={8} /> : streak}
                     </span>
                   )}
                 </div>

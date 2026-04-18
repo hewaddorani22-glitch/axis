@@ -9,7 +9,7 @@ import { useRevenue } from "@/hooks/useRevenue";
 import { useStreak } from "@/hooks/useStreak";
 import {
   IconCommand, IconRevenue, IconTarget, IconStreak, IconFocus,
-  IconBriefing, IconCheck, IconHabits,
+  IconBriefing, IconCheck, IconHabits, IconWarning
 } from "@/components/icons";
 import Link from "next/link";
 import { EmptyState } from "@/components/app/empty-state";
@@ -84,9 +84,9 @@ export default function DashboardPage() {
 
       {/* Streak At Risk Alert (Pro upsell hook) */}
       {!isLoading && streakAtRisk && (
-        <div className="rounded-2xl p-5 border border-red-500/30 bg-red-500/10 flex items-center justify-between">
+        <div className="rounded-2xl p-5 border border-red-500/30 bg-red-500/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
-            <span className="text-3xl">⚠️</span>
+            <div className="mt-0.5"><IconWarning size={28} className="text-red-500" /></div>
             <div>
               <p className="text-red-500 font-bold mb-1">Your {streak}-Day Streak is at Risk!</p>
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>

@@ -213,6 +213,49 @@ export function IconSearch(props: IconProps) {
   );
 }
 
+export function IconFreeze(props: IconProps) {
+  return (
+    <svg {...defaults(props)}>
+      <path d="M12 2v20" />
+      <path d="M4.93 4.93l14.14 14.14" />
+      <path d="M2.5 12h19" />
+      <path d="M4.93 19.07L19.07 4.93" />
+      <path d="M10 4.5l-2-2" />
+      <path d="M14 4.5l2-2" />
+      <path d="M10 19.5l-2 2" />
+      <path d="M14 19.5l2 2" />
+    </svg>
+  );
+}
+
+export function IconEnergy(props: IconProps) {
+  return (
+    <svg {...defaults(props)}>
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+export function IconTimer(props: IconProps) {
+  return (
+    <svg {...defaults(props)}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 15 15" />
+    </svg>
+  );
+}
+
+export function IconSync(props: IconProps) {
+  return (
+    <svg {...defaults(props)}>
+      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+      <path d="M16 16h5v5" />
+    </svg>
+  );
+}
+
 export function IconBell(props: IconProps) {
   return (
     <svg {...defaults(props)}>

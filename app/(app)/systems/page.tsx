@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useHabits, HabitWithStatus } from "@/hooks/useHabits";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
-import { IconHabits, IconCheck, IconStreak } from "@/components/icons";
+import { IconHabits, IconCheck, IconStreak, IconFreeze } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
@@ -267,7 +267,7 @@ export default function SystemsPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-base">🧊</span>
+              <div className="mt-0.5"><IconFreeze size={18} className="text-blue-400" /></div>
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                 Streak Freeze
               </h3>

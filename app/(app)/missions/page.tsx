@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMissions, Mission } from "@/hooks/useMissions";
-import { IconTarget, IconCheck, IconPlus } from "@/components/icons";
+import { IconTarget, IconCheck, IconPlus, IconTimer, IconEnergy } from "@/components/icons";
 import Link from "next/link";
 import {
   DndContext,
@@ -90,12 +90,12 @@ function SortableMissionItem({
       <div className="flex items-center gap-2 flex-shrink-0">
         {mission.estimated_time && (
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
-            ⏳ {mission.estimated_time}m
+            <IconTimer size={10} className="text-axis-accent" /> {mission.estimated_time}m
           </span>
         )}
         {mission.energy_level && (
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
-            ⚡ {mission.energy_level}
+            <IconEnergy size={10} className="text-amber-500" /> {mission.energy_level}
           </span>
         )}
         <span
@@ -181,7 +181,7 @@ export default function MissionsPage() {
           </span>
         </div>
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
-          <span className="text-xs">⏱️</span>
+          <IconTimer size={14} className="text-axis-accent" />
           <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
             Est. Time
           </span>
@@ -280,7 +280,7 @@ export default function MissionsPage() {
                 className="text-xs font-mono rounded-lg px-3 py-2 outline-none"
                 style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
               >
-                <option value="high">High ⚡</option>
+                <option value="high">High</option>
                 <option value="med">Medium</option>
                 <option value="low">Low</option>
               </select>

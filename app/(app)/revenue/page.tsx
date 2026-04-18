@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRevenue } from "@/hooks/useRevenue";
 import { formatCurrency } from "@/lib/utils";
-import { IconRevenue, IconPlus } from "@/components/icons";
+import { IconRevenue, IconPlus, IconSync } from "@/components/icons";
 import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -202,7 +202,7 @@ export default function RevenuePage() {
         <div className="axis-card">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-blue-500 text-lg">↻</span>
+              <span className="text-blue-500"><IconSync size={18} /></span>
               <span className="text-[10px] font-mono font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
                 MRR (Monthly Recurring)
               </span>
