@@ -48,24 +48,148 @@ export default function DashboardPage() {
   const { missions, loading: missionsLoading, toggleMission } = useMissions();
   const { habits, loading: habitsLoading, toggleHabit } = useHabits();
   const { mtdTotal, loading: revenueLoading } = useRevenue();
+  const { objectives, loading: objectivesLoading } = useObjectives();
   const { streak, recoveryAvailable, loading: streakLoading } = useStreak();
   const axisScore = useAxisScore();
 
-  const isLoading = userLoading || missionsLoading || habitsLoading || revenueLoading || streakLoading || axisScore.loading;
+  const isLoading =
+    userLoading ||
+    missionsLoading ||
+    habitsLoading ||
+    revenueLoading ||
+    objectivesLoading ||
+    streakLoading ||
+    axisScore.loading;
 
   const completedCount = missions.filter((mission) => mission.status === "done").length;
-  const missionsTotal = missions.length;
   const habitsCompleted = habits.filter((habit) => habit.todayDone).length;
+  const missionsTotal = missions.length;
+  const openHabits = habits.filter((habit) => !habit.todayDone && !habit.todaySkipped);
+  const topTasks = missions
+    .filter((mission) => mission.status !== "done")
+    .sort((left, right) => priorityWeight(right.priority) - priorityWeight(left.priority))
+    .slice(0, 3);
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const revenueObjectives = objectives.filter(
+    (objective) =>
+      objective.rollup_type === "revenue" &&
+      objective.monthlyTarget > 0 &&
+      objective.start_date <= todayStr &&
+      (!objective.deadline || objective.deadline >= todayStr)
+  );
+  const activeObjectives = objectives.filter(
+    (objective) =>
+      objective.targetValue > 0 &&
+      objective.start_date <= todayStr &&
+      (!objective.deadline || objective.deadline >= todayStr)
+  );
+  const monthlyRevenueTarget = revenueObjectives.reduce((sum, objective) => sum + objective.monthlyTarget, 0);
+  const revenueDelta = mtdTotal - monthlyRevenueTarget;
 
   const currentHour = new Date().getHours();
   const isLate = currentHour >= 20;
   const streakNeedsAttention = streak >= 3 && habitsCompleted === 0 && isLate;
+  const streakAtRisk = streakNeedsAttention && recoveryAvailable === 0;
+
+  const nextBestAction = (() => {
+    if (streakNeedsAttention) {
+      return {
+        title: recoveryAvailable > 0 ? "Use the free recovery window" : "Protect your streak now",
+        detail:
+          recoveryAvailable > 0
+            ? "One miss is forgiven every 7 days. Close a habit tonight so the recovery stays unused."
+            : "You are late in the day with no completed habits. Close one habit before midnight.",
+        href: "/systems",
+        cta: "Open Habits",
+      };
+    }
+
+    if (missionsTotal === 0) {
+      return {
+        title: "Set today's top 3 tasks",
+        detail: "The system has nothing to execute until you define today's work.",
+        href: "/missions?quickAdd=1",
+        cta: "Add Tasks",
+      };
+    }
+
+    if (topTasks.length > 0) {
+      return {
+        title: `Ship: ${topTasks[0].title}`,
+        detail: "Move the highest-value open task before you widen the day.",
+        href: "/missions",
+        cta: "Open Tasks",
+      };
+    }
+
+    if (openHabits.length > 0) {
+      return {
+        title: "Close the remaining habits",
+        detail: `${openHabits.length} habit${openHabits.length !== 1 ? "s" : ""} still open today.`,
+        href: "/systems",
+        cta: "Finish Habits",
+      };
+    }
+
+    if (monthlyRevenueTarget > 0 && revenueDelta < 0) {
+      return {
+        title: "Revenue is behind pace",
+        detail: `${formatCurrency(Math.abs(revenueDelta))} behind this month's target pace.`,
+        href: "/revenue?quickAdd=entry",
+        cta: "Log Revenue",
+      };
+    }
+
+    if (activeObjectives.length === 0) {
+      return {
+        title: "Create your first theme",
+        detail: "Objectives are still disconnected. Add one theme to tie work to outcomes.",
+        href: "/goals?quickAdd=1",
+        cta: "Create Theme",
+      };
+    }
+
+    return {
+      title: "Close the loop",
+      detail: "Execution is clean. Capture revenue, review outcomes, and prepare tomorrow.",
+      href: "/review",
+      cta: "Open Review",
+    };
+  })();
 
   const stats = [
-    { label: "Revenue MTD", value: formatCurrency(mtdTotal), change: "This month", changeColor: "text-emerald-500", icon: <IconRevenue size={18} className="text-emerald-500" /> },
-    { label: "Tasks Done", value: `${completedCount}/${missionsTotal}`, change: missionsTotal > 0 ? `${Math.round((completedCount/missionsTotal)*100)}%` : "Start today", changeColor: "text-axis-accent", icon: <IconTarget size={18} className="text-axis-accent" /> },
-    { label: "Current Streak", value: `${streak} day${streak !== 1 ? "s" : ""}`, change: streak > 0 ? "Active" : "Start now", changeColor: "text-orange-500", icon: <IconStreak size={18} className="text-orange-500" /> },
-    { label: "Focus Score", value: axisScore.score.toString(), change: `Grade: ${axisScore.grade}`, changeColor: "text-violet-500", icon: <IconFocus size={18} className="text-violet-500" /> },
+    {
+      label: "Revenue Pace",
+      value: monthlyRevenueTarget > 0 ? `${formatCurrency(mtdTotal)} / ${formatCurrency(monthlyRevenueTarget)}` : formatCurrency(mtdTotal),
+      change:
+        monthlyRevenueTarget > 0
+          ? `${revenueDelta >= 0 ? "+" : "-"}${formatCurrency(Math.abs(revenueDelta))} vs pace`
+          : "Add a revenue theme",
+      changeColor: revenueDelta >= 0 ? "text-emerald-500" : "text-red-400",
+      icon: <IconRevenue size={18} className="text-emerald-500" />,
+    },
+    {
+      label: "Tasks Done",
+      value: `${completedCount}/${missionsTotal}`,
+      change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}% complete` : "No tasks set",
+      changeColor: "text-axis-accent",
+      icon: <IconTarget size={18} className="text-axis-accent" />,
+    },
+    {
+      label: "Themes Active",
+      value: `${activeObjectives.length}`,
+      change: activeObjectives.length > 0 ? `${objectives.filter((objective) => objective.outcomePct >= 100).length} on pace` : "Create your first theme",
+      changeColor: "text-blue-400",
+      icon: <IconBriefing size={18} className="text-blue-400" />,
+    },
+    {
+      label: "Focus Score",
+      value: axisScore.score.toString(),
+      change: `Grade | ${axisScore.grade}`,
+      changeColor: "text-violet-500",
+      icon: <IconFocus size={18} className="text-violet-500" />,
+    },
   ];
 
   const Skeleton = ({ className = "" }: { className?: string }) => (
@@ -97,22 +221,182 @@ export default function DashboardPage() {
       </div>
 
       {/* Extreme Focus Alert */}
-      {!isLoading && streakNeedsAttention && (
+      {!isLoading && (streakAtRisk || streakNeedsAttention) && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="axis-card border-red-500/30 bg-red-500/5 p-5 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-start gap-4">
             <IconWarning size={24} className="text-red-500 mt-1" />
             <div>
               <p className="text-red-500 font-bold mb-1">STREAK AT RISK</p>
-              <p className="text-sm text-white/50">Your {streak}-day streak is exposed. Complete one habit before midnight.</p>
+              <p className="text-sm text-white/50">
+                {recoveryAvailable > 0 
+                  ? `Your ${streak}-day streak is exposed. Close a habit tonight so the recovery buffer stays unused.`
+                  : `Your ${streak}-day streak is exposed. No recovery buffer left. Close one habit before midnight.`
+                }
+              </p>
             </div>
           </div>
-          <Link href="/systems" className="w-full md:w-auto text-xs font-bold bg-axis-accent text-axis-dark px-6 py-2.5 rounded-xl hover:scale-105 transition-all">
+          <Link href="/systems" className="w-full md:w-auto text-xs font-bold bg-axis-accent text-axis-dark px-6 py-2.5 rounded-xl hover:scale-105 transition-all text-center">
             ACT NOW
           </Link>
         </motion.div>
       )}
 
-      {/* Global Stats Grid */}
+      {/* Main Operating Surface */}
+      <div className="axis-card">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+              Today
+            </p>
+            <h3 className="mt-1 text-2xl font-semibold">One operating surface for the day</h3>
+            <p className="mt-2 max-w-2xl text-sm" style={{ color: "var(--text-secondary)" }}>
+              Top tasks, open habits, revenue pace, and the next action are all visible in one place.
+            </p>
+          </div>
+          <div className="hidden rounded-2xl px-4 py-3 lg:block" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+            <p className="text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+              Recovery Buffer
+            </p>
+            <p className="mt-2 text-lg font-semibold">{recoveryAvailable}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+          <div className="space-y-5">
+            <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <div className="mb-4 flex items-center justify-between">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <IconTarget size={16} className="text-axis-accent" />
+                  Top 3 Tasks
+                </h4>
+                <Link href="/missions" className="text-xs font-mono text-axis-accent hover:underline">
+                  View all
+                </Link>
+              </div>
+              {isLoading ? (
+                <div className="space-y-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-12 w-full" />)}</div>
+              ) : topTasks.length === 0 ? (
+                <EmptyState
+                  icon={<IconTarget size={18} className="text-axis-accent" />}
+                  title="No open tasks"
+                  description="Set today's top priorities before the day gets fragmented."
+                  actions={[{ label: "Add Task", href: "/missions?quickAdd=1" }]}
+                  compact
+                />
+              ) : (
+                <div className="space-y-2">
+                  {topTasks.map((mission) => (
+                    <div key={mission.id} className="group flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-white/[0.04]" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                      <button
+                        onClick={() => toggleMission(mission.id)}
+                        className={`relative flex h-6 w-6 items-center justify-center rounded-lg border-2 ${
+                          mission.status === "done" ? "border-axis-accent bg-axis-accent" : "border-white/10 hover:border-axis-accent/50"
+                        }`}
+                      >
+                        <AnimatePresence>
+                          {mission.status === "done" ? (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -45 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                              className="absolute inset-0 flex items-center justify-center"
+                            >
+                              <IconCheck size={12} className="text-axis-dark" />
+                            </motion.div>
+                          ) : null}
+                        </AnimatePresence>
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-sm font-medium ${mission.status === "done" ? "line-through opacity-30" : ""}`}>{mission.title}</p>
+                        <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-white/20">
+                          {mission.priority} priority
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <div className="mb-4 flex items-center justify-between">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <IconHabits size={16} className="text-axis-accent" />
+                  Open Habits
+                </h4>
+                <Link href="/systems" className="text-xs font-mono text-axis-accent hover:underline">
+                  View all
+                </Link>
+              </div>
+              {isLoading ? (
+                <div className="space-y-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-12 w-full" />)}</div>
+              ) : openHabits.length === 0 ? (
+                <EmptyState
+                  icon={<IconHabits size={18} className="text-axis-accent" />}
+                  title="No open habits"
+                  description="Today's tracked habits are already closed."
+                  compact
+                />
+              ) : (
+                <div className="space-y-2">
+                  {openHabits.slice(0, 4).map((habit) => (
+                    <div key={habit.id} className="flex items-center gap-3 rounded-2xl px-3 py-3" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-axis-accent/10">
+                        <IconHabits size={16} className="text-axis-accent" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{habit.name}</p>
+                        <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-white/20">
+                          {habit.streak} day streak
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => toggleHabit(habit.id, "done")}
+                        className="rounded-lg bg-axis-accent px-3 py-2 text-xs font-semibold text-axis-dark hover:scale-105 transition-all"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <AxisScoreWidget {...axisScore} loading={isLoading} />
+
+            <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <div className="mb-3 flex items-center gap-2">
+                <IconRevenue size={16} className="text-emerald-500" />
+                <p className="text-sm font-semibold">Revenue Pace</p>
+              </div>
+              <p className="text-3xl font-semibold tracking-tight">{formatCurrency(mtdTotal)}</p>
+              <p className="mt-2 text-sm text-white/40">
+                {monthlyRevenueTarget > 0
+                  ? `${revenueDelta >= 0 ? "Ahead of" : "Behind"} pace: ${formatCurrency(Math.abs(revenueDelta))} vs target of ${formatCurrency(monthlyRevenueTarget)} this month.`
+                  : "No revenue theme is setting a monthly pace yet."}
+              </p>
+            </div>
+
+            <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em] text-white/20">
+                Next Best Action
+              </p>
+              <p className="text-lg font-semibold tracking-tight">{nextBestAction.title}</p>
+              <p className="mt-2 text-sm text-white/40">
+                {nextBestAction.detail}
+              </p>
+              <Link href={nextBestAction.href} className="mt-4 inline-flex rounded-xl bg-axis-accent px-4 py-2 text-sm font-semibold text-axis-dark hover:scale-105 transition-all">
+                {nextBestAction.cta}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid Stats */}
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <motion.div variants={itemVariants} key={stat.label} className="axis-stat-card-dark">
@@ -126,82 +410,55 @@ export default function DashboardPage() {
         ))}
       </motion.div>
 
-      {/* Two columns layout (The Reverted "Today" Section) */}
+      {/* Briefing Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Missions */}
         <div className="axis-card">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-semibold flex items-center gap-3">
-              <IconTarget size={18} className="text-axis-accent" /> Today&apos;s Missions
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <IconBriefing size={16} className="text-axis-accent" />
+              Briefing
             </h3>
-            <Link href="/missions" className="text-xs font-mono text-axis-accent hover:underline">View all</Link>
           </div>
           {isLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-          ) : missions.length === 0 ? (
-            <EmptyState
-              icon={<IconTarget size={20} className="text-axis-accent" />}
-              title="No missions set"
-              description="Define today's top priorities."
-              actions={[{ label: "Add Mission", href: "/missions?quickAdd=1" }]}
-              compact
-            />
-          ) : (
-            <div className="space-y-2">
-              {missions.slice(0, 5).map((m) => (
-                <div key={m.id} className="flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors hover:bg-white/[0.04]">
-                  <button onClick={() => toggleMission(m.id)} className={`relative w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${m.status === "done" ? "bg-axis-accent border-axis-accent" : "border-white/10 hover:border-axis-accent/50"}`}>
-                    <AnimatePresence>
-                      {m.status === "done" && (
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute inset-0 flex items-center justify-center">
-                          <IconCheck size={12} className="text-axis-dark" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </button>
-                  <span className={`flex-1 text-sm ${m.status === "done" ? "line-through opacity-30 text-white/50" : "text-white/80"}`}>{m.title}</span>
-                  <span className={`text-[9px] font-mono px-2 py-0.5 rounded-md ${m.priority === "high" ? "bg-red-500/10 text-red-500" : m.priority === "med" ? "bg-amber-500/10 text-amber-500" : "text-white/20"}`}>{m.priority.toUpperCase()}</span>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-4/5" />
             </div>
+          ) : (
+            <p className="text-sm leading-relaxed text-white/40">
+              {streak > 0 ? (
+                <>
+                  The streak is at <span className="font-semibold text-axis-accent">{streak} days</span>.
+                  {recoveryAvailable > 0 ? ` ${recoveryAvailable} free recovery window${recoveryAvailable !== 1 ? "s are" : " is"} still unused.` : " No recovery buffer is left."}
+                </>
+              ) : (
+                <>Start the system today by closing one task and one habit.</>
+              )}{" "}
+              {activeObjectives.length > 0
+                ? `${activeObjectives.filter((objective) => objective.outcomePct >= 100).length} theme${activeObjectives.filter((objective) => objective.outcomePct >= 100).length !== 1 ? "s are" : " is"} on pace.`
+                : "You have no active themes yet."}
+            </p>
           )}
         </div>
 
-        {/* Habits */}
         <div className="axis-card">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-semibold flex items-center gap-3">
-              <IconHabits size={18} className="text-axis-accent" /> Daily Systems
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <IconRevenue size={16} className="text-emerald-500" />
+              Revenue Delta
             </h3>
-            <Link href="/systems" className="text-xs font-mono text-axis-accent hover:underline">View all</Link>
           </div>
           {isLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-          ) : habits.length === 0 ? (
-            <EmptyState
-              icon={<IconHabits size={20} className="text-axis-accent" />}
-              title="No systems active"
-              description="Track recurring daily habits."
-              actions={[{ label: "Add Habit", href: "/systems?quickAdd=1" }]}
-              compact
-            />
-          ) : (
             <div className="space-y-3">
-              {habits.map((h) => (
-                <div key={h.id} className="flex items-center gap-4 py-3 px-3 rounded-2xl transition-colors hover:bg-white/[0.04]">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${h.todayDone ? 'bg-axis-accent/10 text-axis-accent' : 'bg-white/5 text-white/20'}`}>
-                    <IconHabits size={18} />
-                  </div>
-                  <div className="flex-1">
-                    <p className={`text-sm font-medium truncate ${h.todayDone ? 'text-white/30' : 'text-white/90'}`}>{h.name}</p>
-                    <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest">{h.streak} day streak</p>
-                  </div>
-                  <button onClick={() => toggleHabit(h.id, h.todayDone ? "undo" : "done")} className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${h.todayDone ? 'bg-axis-accent text-axis-dark shadow-[0_0_15px_rgba(205,255,79,0.2)]' : 'bg-white/5 text-white/20 hover:bg-white/10'}`}>
-                    {h.todayDone ? <IconCheck size={14} /> : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
-                  </button>
-                </div>
-              ))}
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
             </div>
+          ) : (
+            <p className="text-sm leading-relaxed text-white/40">
+              {monthlyRevenueTarget > 0
+                ? `This month is ${revenueDelta >= 0 ? "ahead of" : "behind"} pace by ${formatCurrency(Math.abs(revenueDelta))} against a target track of ${formatCurrency(monthlyRevenueTarget)}.`
+                : "No revenue pace exists until at least one revenue theme is created and linked to a stream."}
+            </p>
           )}
         </div>
       </div>

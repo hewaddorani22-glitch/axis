@@ -300,7 +300,7 @@ export default function OnboardingPage() {
                   i === 0 ? "Most important task today..." :
                   i === 1 ? "Second priority..." :
                   i === 2 ? "Third task..." :
-                  `Task ${i + 1} (optional)...`
+                  `Task ${ i + 1 } (optional)...`
                 }
                 value={mission.title}
                 onChange={(e) => {

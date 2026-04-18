@@ -68,11 +68,15 @@ function SortableHabitItem({
           }`}
           style={{ backgroundColor: habit.todayDone ? "var(--bg-accent-soft)" : habit.todaySkipped ? "rgba(245, 158, 11, 0.1)" : "var(--bg-tertiary)" }}
         >
-          <IconHabits
-            size={20}
-            className={habit.todayDone ? "text-axis-accent" : habit.todaySkipped ? "text-amber-500" : ""}
-            style={!(habit.todayDone || habit.todaySkipped) ? { color: "var(--text-tertiary)" } : undefined}
-          />
+          {habit.icon && habit.icon !== "IconHabits" ? (
+            <span className="text-xl">{habit.icon}</span>
+          ) : (
+            <IconHabits
+              size={20}
+              className={habit.todayDone ? "text-axis-accent" : habit.todaySkipped ? "text-amber-500" : ""}
+              style={!(habit.todayDone || habit.todaySkipped) ? { color: "var(--text-tertiary)" } : undefined}
+            />
+          )}
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2">
@@ -137,7 +141,7 @@ function SortableHabitItem({
           {habit.todayDone ? (
             <IconCheck size={18} />
           ) : habit.todaySkipped ? (
-            <span className="text-sm font-bold">-</span>
+            <span className="text-sm font-bold text-axis-dark">/</span>
           ) : (
             <div className="w-3 h-3 rounded-full" style={{ borderWidth: 2, borderColor: "var(--border-secondary)" }} />
           )}
@@ -229,7 +233,7 @@ export default function SystemsPage() {
     const targetVal = showQuantified && newTarget ? parseFloat(newTarget) : null;
     const unitVal = showQuantified && newUnit ? newUnit.trim() : null;
     
-    await addHabit(newHabit.trim(), newIcon || "", targetVal, unitVal, newObjectiveId || null);
+    await addHabit(newHabit.trim(), newIcon || "IconHabits", targetVal, unitVal, newObjectiveId || null);
     setNewHabit("");
     setNewIcon("");
     setNewTarget("");
@@ -357,9 +361,15 @@ export default function SystemsPage() {
       {/* Add habit */}
       <div className="axis-card space-y-4 !border-dashed focus-within:border-axis-accent/50 focus-within:shadow-md transition-all">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 text-axis-accent">
-            <IconHabits size={20} />
-          </div>
+          <input
+            type="text"
+            placeholder="Icon"
+            value={newIcon}
+            onChange={(e) => setNewIcon(e.target.value)}
+            className="w-12 h-12 rounded-xl text-center text-xl outline-none"
+            style={{ backgroundColor: "var(--bg-tertiary)" }}
+            maxLength={2}
+          />
           <input
             ref={habitInputRef}
             type="text"
