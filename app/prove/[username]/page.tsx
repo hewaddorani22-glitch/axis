@@ -90,7 +90,7 @@ async function getProveItData(username: string) {
   const totalDaysWithActivity = heatmap.filter((v) => v > 0).length;
   const completionRate = Math.round((totalDaysWithActivity / 28) * 100);
 
-  const revenueToday = revenueTodayRes.data?.length > 0;
+  const revenueToday = (revenueTodayRes.data?.length ?? 0) > 0;
 
   // Daily score
   const score = calculateFocusScore({

@@ -5,9 +5,10 @@ import { useRevenue } from "@/hooks/useRevenue";
 import { formatCurrency } from "@/lib/utils";
 import { IconRevenue, IconPlus } from "@/components/icons";
 import Link from "next/link";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function RevenuePage() {
-  const { streams, entries, loading, addStream, addEntry, mtdTotal, streamTotals } = useRevenue();
+  const { streams, entries, loading, addStream, addEntry, mtdTotal, streamTotals, monthlyTotals } = useRevenue();
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [showAddStream, setShowAddStream] = useState(false);
   const [entryStreamId, setEntryStreamId] = useState("");
@@ -43,6 +44,44 @@ export default function RevenuePage() {
         </div>
         {loading ? <Skeleton className="h-10 w-40 mt-2" /> : <span className="text-4xl font-bold">{formatCurrency(mtdTotal)}</span>}
       </div>
+
+      {/* Monthly Chart */}
+      {!loading && entries.length > 0 && (
+        <div className="axis-card">
+          <h3 className="text-sm font-semibold mb-4">Last 6 Months</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyTotals} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fontFamily: "monospace", fill: "var(--text-tertiary)" }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fontFamily: "monospace", fill: "var(--text-tertiary)" }}
+                  tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
+                />
+                <Tooltip
+                  cursor={{ fill: "var(--bg-hover)", radius: 8 }}
+                  contentStyle={{
+                    backgroundColor: "var(--bg-secondary)",
+                    border: "1px solid var(--border-primary)",
+                    borderRadius: 12,
+                    fontSize: 13,
+                    color: "var(--text-primary)",
+                  }}
+                  formatter={(value: number) => [formatCurrency(value), "Revenue"]}
+                  labelStyle={{ color: "var(--text-tertiary)", fontSize: 11, fontFamily: "monospace" }}
+                />
+                <Bar dataKey="total" fill="#CDFF4F" radius={[6, 6, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Streams */}
       <div className="axis-card">

@@ -1,16 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useHabits } from "@/hooks/useHabits";
+import { useUser } from "@/hooks/useUser";
+import { useStreak } from "@/hooks/useStreak";
 import { IconHabits, IconCheck, IconStreak } from "@/components/icons";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function SystemsPage() {
   const { habits, loading, addHabit, toggleHabit, completedToday, total } = useHabits();
+  const { user } = useUser();
+  const { streak } = useStreak();
   const [newHabit, setNewHabit] = useState("");
   const [newIcon, setNewIcon] = useState("◆");
+  const [freezeUsed, setFreezeUsed] = useState<string | null>(null);
+  const [freezeLoading, setFreezeLoading] = useState(true);
+  const [freezing, setFreezing] = useState(false);
+
+  const supabase = createClient();
+
+  const checkFreeze = useCallback(async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setFreezeLoading(false); return; }
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const { data } = await supabase
+      .from("streak_freezes")
+      .select("used_on")
+      .eq("user_id", authUser.id)
+      .eq("month", month)
+      .single();
+    setFreezeUsed(data?.used_on || null);
+    setFreezeLoading(false);
+  }, [supabase]);
+
+  useEffect(() => { checkFreeze(); }, [checkFreeze]);
+
+  const handleFreeze = async () => {
+    if (freezing) return;
+    setFreezing(true);
+    const res = await fetch("/api/streak/freeze", { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      setFreezeUsed(data.used_on);
+    }
+    setFreezing(false);
+  };
 
   const handleAdd = async () => {
     if (!newHabit.trim()) return;
@@ -38,6 +76,46 @@ export default function SystemsPage() {
           <IconStreak size={14} className="text-orange-500" />
           <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>Best Streak</span>
           <span className="text-sm font-bold text-orange-500">{bestStreak > 0 ? `${bestStreak} days` : "—"}</span>
+        </div>
+      </div>
+
+      {/* Streak Freeze — Pro only */}
+      <div className="axis-card">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-base">🧊</span>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Streak Freeze</h3>
+              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-axis-accent text-axis-dark">PRO</span>
+            </div>
+            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+              {freezeUsed
+                ? `Used on ${freezeUsed} this month. Resets next month.`
+                : "Protect your streak on an off day. 1 free pass per month."}
+            </p>
+          </div>
+          {!freezeLoading && (
+            user?.plan === "pro" ? (
+              freezeUsed ? (
+                <span className="text-xs font-mono px-3 py-2 rounded-xl" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }}>
+                  Used
+                </span>
+              ) : (
+                <button
+                  onClick={handleFreeze}
+                  disabled={freezing || streak === 0}
+                  className="text-xs font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-50"
+                  style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
+                >
+                  {freezing ? "Freezing..." : "Use Freeze"}
+                </button>
+              )
+            ) : (
+              <Link href="/settings" className="text-xs text-axis-accent hover:underline">
+                Upgrade
+              </Link>
+            )
+          )}
         </div>
       </div>
 
