@@ -26,13 +26,17 @@ export function useRevenue() {
   const fetchData = useCallback(async () => {
     setLoading(true);
 
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const sixMonthsAgoStr = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, "0")}-01`;
+
     const [streamsRes, entriesRes] = await Promise.all([
       supabase.from("revenue_streams").select("*").order("created_at"),
       supabase
         .from("revenue_entries")
         .select("*")
-        .order("date", { ascending: false })
-        .limit(50),
+        .gte("date", sixMonthsAgoStr)
+        .order("date", { ascending: false }),
     ]);
 
     setStreams((streamsRes.data as RevenueStream[]) || []);
@@ -97,6 +101,22 @@ export function useRevenue() {
       .reduce((sum, e) => sum + Number(e.amount), 0),
   }));
 
+  // Monthly totals for last 6 months (for chart)
+  const monthlyTotals = (() => {
+    const months: { month: string; label: string; total: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleString("en", { month: "short" });
+      const total = entries
+        .filter((e) => e.date.startsWith(key))
+        .reduce((sum, e) => sum + Number(e.amount), 0);
+      months.push({ month: key, label, total });
+    }
+    return months;
+  })();
+
   return {
     streams,
     entries,
@@ -105,6 +125,7 @@ export function useRevenue() {
     addEntry,
     mtdTotal,
     streamTotals,
+    monthlyTotals,
     refetch: fetchData,
   };
 }

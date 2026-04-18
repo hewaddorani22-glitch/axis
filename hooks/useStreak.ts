@@ -3,6 +3,17 @@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 
+function getDateInTimezone(tz: string, offsetDays = 0): string {
+  const d = new Date();
+  if (offsetDays) d.setDate(d.getDate() - offsetDays);
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+    return parts;
+  } catch {
+    return d.toISOString().split("T")[0];
+  }
+}
+
 export function useStreak() {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -12,14 +23,17 @@ export function useStreak() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    // Get all dates where user completed at least 1 mission AND 1 habit
-    // Going back 365 days max
-    const today = new Date();
-    const yearAgo = new Date();
-    yearAgo.setDate(today.getDate() - 365);
-    const yearAgoStr = yearAgo.toISOString().split("T")[0];
+    const { data: profile } = await supabase
+      .from("users")
+      .select("timezone")
+      .eq("id", user.id)
+      .single();
 
-    const [missionsRes, habitsRes] = await Promise.all([
+    const tz = profile?.timezone || "UTC";
+
+    const yearAgoStr = getDateInTimezone(tz, 365);
+
+    const [missionsRes, habitsRes, freezesRes] = await Promise.all([
       supabase
         .from("missions")
         .select("date")
@@ -32,19 +46,23 @@ export function useStreak() {
         .eq("user_id", user.id)
         .eq("completed", true)
         .gte("date", yearAgoStr),
+      supabase
+        .from("streak_freezes")
+        .select("used_on")
+        .eq("user_id", user.id),
     ]);
 
     const missionDates = new Set(missionsRes.data?.map((m) => m.date) || []);
     const habitDates = new Set(habitsRes.data?.map((h) => h.date) || []);
+    const frozenDates = new Set(freezesRes.data?.map((f) => f.used_on) || []);
 
-    // Count consecutive days from today backward where both conditions are met
     let currentStreak = 0;
     for (let i = 0; i < 365; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
+      const dateStr = getDateInTimezone(tz, i);
 
       if (missionDates.has(dateStr) && habitDates.has(dateStr)) {
+        currentStreak++;
+      } else if (frozenDates.has(dateStr)) {
         currentStreak++;
       } else {
         break;
