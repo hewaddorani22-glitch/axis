@@ -37,7 +37,7 @@ export async function POST() {
     const headersList = await headers();
     const origin = headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://useaxis.com";
 
-    const lineItems = process.env.STRIPE_PRO_PRICE_ID
+    const lineItems: any[] = process.env.STRIPE_PRO_PRICE_ID
       ? [{ price: process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }]
       : [{
           price_data: {
