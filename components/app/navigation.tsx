@@ -2,6 +2,7 @@ import {
   IconCommand,
   IconGoals,
   IconHabits,
+  IconNetwork,
   IconPartners,
   IconProve,
   IconRevenue,
@@ -17,6 +18,7 @@ export const pageTitles: Record<string, string> = {
   "/systems": "Daily Systems",
   "/goals": "Goals",
   "/partners": "Partners",
+  "/network": "The Grid",
   "/review": "Weekly Review",
   "/prove": "Prove It",
   "/settings": "Settings",
@@ -30,6 +32,7 @@ export const primaryNavItems = [
   { href: "/systems", label: "Daily Systems", icon: IconHabits, shortLabel: "Habits", shortcutKey: "s" },
   { href: "/goals", label: "Goals", icon: IconGoals, shortLabel: "Goals", shortcutKey: "o" },
   { href: "/partners", label: "Partners", icon: IconPartners, shortLabel: "Partners", shortcutKey: "p" },
+  { href: "/network", label: "The Grid", icon: IconNetwork, shortLabel: "Grid", shortcutKey: "x" },
   { href: "/review", label: "Weekly Review", icon: IconReview, shortLabel: "Review", shortcutKey: "w" },
 ];
 

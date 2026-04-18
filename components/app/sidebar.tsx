@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
 import { primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
+import { AxisScoreWidget } from "@/components/app/axis-score-widget";
 import {
   AxisLogo,
   IconUpgrade,
@@ -70,6 +71,16 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Axis Score */}
+        <div className="px-4 pb-3">
+          <div
+            className="rounded-2xl px-4 py-3"
+            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+          >
+            <AxisScoreWidget compact />
+          </div>
+        </div>
 
         {/* Bottom section */}
         <div className="px-3 pb-4 space-y-1">
