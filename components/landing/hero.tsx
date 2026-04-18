@@ -21,26 +21,24 @@ export function Hero() {
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6 animate-slide-up text-balance">
-          Stop juggling apps.{" "}
-          <br className="hidden sm:block" />
-          Start running your{" "}
-          <span className="axis-highlight">life like a system</span>.
+          Track revenue, missions, and habits in{" "}
+          <span className="axis-highlight">one system</span>.
         </h1>
 
         {/* Subtext */}
         <p className="text-lg md:text-xl text-axis-text2 max-w-2xl mx-auto mb-10 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          AXIS replaces your task manager, habit tracker, revenue spreadsheet, and goal planner with one clean,{" "}
-          <span className="text-axis-text1 font-medium">opinionated system</span>{" "}
-          that tells you exactly what to focus on.
+          Built for freelancers, founders, and creators who want to see exactly{" "}
+          <span className="text-axis-text1 font-medium">what they earned, what they shipped, and what's next</span>
+          {" "}— every single day.
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
           <Link
             href="/signup"
             className="inline-flex items-center text-base font-semibold bg-axis-text1 text-white px-8 py-4 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] shadow-lg shadow-axis-text1/10"
           >
-            Get Started — It&apos;s Free
+            Get Started — Free
             <svg className="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
@@ -55,6 +53,11 @@ export function Hero() {
             </svg>
           </a>
         </div>
+
+        {/* Trust line */}
+        <p className="text-sm font-mono text-axis-text3 mb-16 animate-slide-up" style={{ animationDelay: "0.25s" }}>
+          No credit card · Setup in 90 seconds · Free forever plan
+        </p>
 
         {/* App preview mockup */}
         <div className="relative max-w-4xl mx-auto animate-slide-up" style={{ animationDelay: "0.3s" }}>

@@ -19,8 +19,9 @@ export function Navbar() {
         {/* Nav Links */}
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">Features</a>
-          <a href="#pricing" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">Pricing</a>
           <a href="#how-it-works" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">How it works</a>
+          <a href="#pricing" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">Pricing</a>
+          <a href="#faq" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">FAQ</a>
         </div>
 
         {/* CTA */}

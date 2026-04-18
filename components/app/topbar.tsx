@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
-import { IconSearch, IconBell } from "@/components/icons";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Command Center",
@@ -59,30 +58,6 @@ export function Topbar() {
           )}
         </button>
 
-        {/* Search */}
-        <button
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-          style={{
-            backgroundColor: theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-            border: `1px solid var(--border-primary)`,
-            color: "var(--text-tertiary)",
-          }}
-        >
-          <IconSearch size={16} />
-        </button>
-
-        {/* Notifications */}
-        <button
-          className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-          style={{
-            backgroundColor: theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-            border: `1px solid var(--border-primary)`,
-            color: "var(--text-tertiary)",
-          }}
-        >
-          <IconBell size={16} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-axis-accent rounded-full" />
-        </button>
       </div>
     </header>
   );
