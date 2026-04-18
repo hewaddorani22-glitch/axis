@@ -20,15 +20,31 @@ function SettingsContent() {
   };
 
   const handleUpgrade = async () => {
-    const res = await fetch("/api/stripe/checkout", { method: "POST" });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || "Failed to start checkout. Check Stripe configuration.");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    }
   };
 
   const handleManagePlan = async () => {
-    const res = await fetch("/api/stripe/portal", { method: "POST" });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || "Failed to open portal.");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    }
   };
 
   if (loading) {

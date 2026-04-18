@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 
 export async function POST() {
   try {
@@ -11,7 +12,6 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get or create Stripe customer
     const { data: profile } = await supabase
       .from("users")
       .select("stripe_customer_id, email, name")
@@ -34,12 +34,12 @@ export async function POST() {
         .eq("id", user.id);
     }
 
-    // Create checkout session
-    const session = await getStripe().checkout.sessions.create({
-      customer: customerId,
-      mode: "subscription",
-      line_items: [
-        {
+    const headersList = await headers();
+    const origin = headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://useaxis.com";
+
+    const lineItems = process.env.STRIPE_PRO_PRICE_ID
+      ? [{ price: process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }]
+      : [{
           price_data: {
             currency: "usd",
             product_data: {
@@ -47,14 +47,19 @@ export async function POST() {
               description: "Unlimited everything. Your complete Business OS.",
             },
             recurring: { interval: "month" },
-            unit_amount: 900, // $9.00
+            unit_amount: 900,
           },
           quantity: 1,
-        },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgrade=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgrade=cancelled`,
+        }];
+
+    const session = await getStripe().checkout.sessions.create({
+      customer: customerId,
+      mode: "subscription",
+      line_items: lineItems,
+      success_url: `${origin}/settings?upgrade=success`,
+      cancel_url: `${origin}/settings?upgrade=cancelled`,
       metadata: { supabase_user_id: user.id },
+      allow_promotion_codes: true,
     });
 
     return NextResponse.json({ url: session.url });

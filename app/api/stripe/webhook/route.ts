@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
-import { createClient } from "@supabase/supabase-js";
-
-// Use service role for webhook (no user session available)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -16,6 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
+  const supabaseAdmin = createAdminClient();
   let event;
 
   try {
@@ -43,7 +38,7 @@ export async function POST(request: Request) {
           })
           .eq("id", userId);
 
-        console.log(`✅ User ${userId} upgraded to Pro`);
+        console.log(`User ${userId} upgraded to Pro`);
       }
       break;
     }
@@ -52,7 +47,6 @@ export async function POST(request: Request) {
       const subscription = event.data.object;
       const customerId = subscription.customer as string;
 
-      // Find user by Stripe customer ID and downgrade
       const { data: users } = await supabaseAdmin
         .from("users")
         .select("id")
@@ -64,14 +58,34 @@ export async function POST(request: Request) {
           .update({ plan: "free" })
           .eq("id", users[0].id);
 
-        console.log(`⬇️ User ${users[0].id} downgraded to Free`);
+        console.log(`User ${users[0].id} downgraded to Free`);
+      }
+      break;
+    }
+
+    case "customer.subscription.updated": {
+      const subscription = event.data.object;
+      const customerId = subscription.customer as string;
+      const status = subscription.status;
+
+      const { data: users } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .eq("stripe_customer_id", customerId);
+
+      if (users && users.length > 0) {
+        const plan = status === "active" || status === "trialing" ? "pro" : "free";
+        await supabaseAdmin
+          .from("users")
+          .update({ plan })
+          .eq("id", users[0].id);
       }
       break;
     }
 
     case "invoice.payment_failed": {
       const invoice = event.data.object;
-      console.warn(`⚠️ Payment failed for customer ${invoice.customer}`);
+      console.warn(`Payment failed for customer ${invoice.customer}`);
       break;
     }
   }
