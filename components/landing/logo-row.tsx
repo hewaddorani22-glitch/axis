@@ -14,7 +14,7 @@ export function LogoRow() {
     <section className="py-12 border-t border-axis-border">
       <div className="max-w-5xl mx-auto px-6">
         <p className="text-center text-sm font-mono text-axis-text3 mb-8 uppercase tracking-wider">
-          Replaces these apps
+          One system instead of
         </p>
         <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
           {apps.map((app) => (

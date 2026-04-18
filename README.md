@@ -13,13 +13,22 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Environment Variables
 
-Copy `.env.local.example` to `.env.local` and fill in:
+```bash
+cp .env.local.example .env.local
+```
 
-- `NEXT_PUBLIC_SUPABASE_URL` — Your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Your Supabase anon/publishable key
-- `STRIPE_SECRET_KEY` — Stripe secret key (for Pro subscriptions)
-- `STRIPE_WEBHOOK_SECRET` — Stripe webhook signing secret
-- `RESEND_API_KEY` — Resend API key (for emails)
+| Variable | Where to find it | Required |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API | ✅ |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API | ✅ |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → service_role | ✅ |
+| `SUPABASE_DB_PASSWORD` | Supabase → Settings → Database | migrations only |
+| `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys | Pro billing |
+| `STRIPE_WEBHOOK_SECRET` | Stripe → Webhooks → your endpoint | Pro billing |
+| `RESEND_API_KEY` | resend.com → API Keys | emails |
+| `NEXT_PUBLIC_APP_URL` | your deployment URL | share links |
+
+> **Never commit `.env.local`.** It is in `.gitignore`.
 
 ## Database
 
