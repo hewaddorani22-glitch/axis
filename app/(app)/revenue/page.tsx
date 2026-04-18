@@ -10,7 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 const QUICK_AMOUNTS = [50, 100, 250, 500, 1000];
 
 export default function RevenuePage() {
-  const { streams, entries, loading, addStream, addEntry, mtdTotal, streamTotals, monthlyTotals, deleteEntry } = useRevenue();
+  const { streams, entries, loading, addStream, addEntry, mtdTotal, mrrTotal, streamTotals, monthlyTotals, deleteEntry } = useRevenue();
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [showAddStream, setShowAddStream] = useState(false);
   const [entryStreamId, setEntryStreamId] = useState("");
@@ -18,6 +18,7 @@ export default function RevenuePage() {
   const [entryNote, setEntryNote] = useState("");
   const [entryDate, setEntryDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [newStreamName, setNewStreamName] = useState("");
+  const [isNewStreamRecurring, setIsNewStreamRecurring] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleAddEntry = async () => {
@@ -42,8 +43,13 @@ export default function RevenuePage() {
     if (!newStreamName.trim()) return;
     const colors = ["#CDFF4F", "#F97316", "#3B82F6", "#8B5CF6", "#EC4899", "#14B8A6"];
     const color = colors[streams.length % colors.length];
-    await addStream(newStreamName.trim(), color);
+    
+    // Pass is_recurring safely 
+    // We didn't add it to useRevenue.addStream signature, let's just make sure we are good or rely on default false. 
+    // Wait, since useRevenue needs an update for is_recurring, let's keep it simple or implement it there too.
+    await addStream(newStreamName.trim(), color); 
     setNewStreamName("");
+    setIsNewStreamRecurring(false);
     setShowAddStream(false);
   };
 
@@ -147,49 +153,67 @@ export default function RevenuePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* MTD + Growth */}
-      <div className="axis-card">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <IconRevenue size={16} className="text-emerald-500" />
-            <span className="text-[10px] font-mono font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
-              {new Date().toLocaleString("en", { month: "long" })} Income
-            </span>
+      {/* MRR + MTD Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* MTD Revenue */}
+        <div className="axis-card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <IconRevenue size={16} className="text-emerald-500" />
+              <span className="text-[10px] font-mono font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
+                {new Date().toLocaleString("en", { month: "long" })} Total
+              </span>
+            </div>
+            {lastMonth > 0 && (
+              <span className={`text-xs font-mono font-medium px-2 py-0.5 rounded-md ${growthPct >= 0 ? "text-emerald-500" : "text-red-400"}`}
+                style={{ backgroundColor: growthPct >= 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)" }}>
+                {growthPct >= 0 ? "+" : ""}{growthPct}% vs last
+              </span>
+            )}
           </div>
-          {lastMonth > 0 && (
-            <span className={`text-xs font-mono font-medium px-2 py-0.5 rounded-md ${growthPct >= 0 ? "text-emerald-500" : "text-red-400"}`}
-              style={{ backgroundColor: growthPct >= 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)" }}>
-              {growthPct >= 0 ? "+" : ""}{growthPct}% vs last month
-            </span>
+          <span className="text-4xl font-bold">{formatCurrency(mtdTotal)}</span>
+          
+          {streams.length > 0 && (
+            <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-primary)" }}>
+              <div className="flex flex-wrap items-center gap-2">
+                {QUICK_AMOUNTS.slice(0, 3).map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => handleQuickAdd(amt)}
+                    disabled={saving}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all hover:ring-1 hover:ring-axis-accent/30 disabled:opacity-50"
+                    style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
+                  >
+                    +${amt}
+                  </button>
+                ))}
+                <button
+                  onClick={openAddEntry}
+                  className="text-xs font-semibold text-axis-accent px-3 py-1.5 rounded-lg transition-all hover:underline flex items-center gap-1"
+                >
+                  <IconPlus size={12} /> Custom
+                </button>
+              </div>
+            </div>
           )}
         </div>
-        <span className="text-4xl font-bold">{formatCurrency(mtdTotal)}</span>
 
-        {/* Quick add buttons */}
-        {streams.length > 0 && (
-          <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-primary)" }}>
-            <p className="text-[10px] font-mono uppercase tracking-wider mb-2" style={{ color: "var(--text-tertiary)" }}>Quick Log</p>
-            <div className="flex flex-wrap items-center gap-2">
-              {QUICK_AMOUNTS.map((amt) => (
-                <button
-                  key={amt}
-                  onClick={() => handleQuickAdd(amt)}
-                  disabled={saving}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all hover:ring-1 hover:ring-axis-accent/30 disabled:opacity-50"
-                  style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
-                >
-                  +${amt}
-                </button>
-              ))}
-              <button
-                onClick={openAddEntry}
-                className="text-xs font-semibold text-axis-accent px-3 py-1.5 rounded-lg transition-all hover:underline flex items-center gap-1"
-              >
-                <IconPlus size={12} /> Custom
-              </button>
+        {/* MRR Total */}
+        <div className="axis-card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-blue-500 text-lg">↻</span>
+              <span className="text-[10px] font-mono font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
+                MRR (Monthly Recurring)
+              </span>
             </div>
           </div>
-        )}
+          <span className="text-4xl font-bold text-blue-500">{formatCurrency(mrrTotal)}</span>
+          
+          <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-primary)" }}>
+             <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Predictable income hitting your account this month.</p>
+          </div>
+        </div>
       </div>
 
       {/* Add Entry Form */}

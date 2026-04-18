@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
+import { toast } from "sonner";
 
 export interface Habit {
   id: string;
@@ -9,12 +10,16 @@ export interface Habit {
   icon: string;
   archived: boolean;
   sort_order: number;
+  target_value?: number | null;
+  unit?: string | null;
 }
 
 export interface HabitWithStatus extends Habit {
   todayDone: boolean;
+  todaySkipped: boolean;
+  todayValue: number | null;
   streak: number;
-  weekLog: boolean[];
+  weekLog: ("done" | "skipped" | "missed")[];
 }
 
 export function useHabits() {
@@ -61,15 +66,22 @@ export function useHabits() {
 
     const habitsWithStatus: HabitWithStatus[] = habitsData.map((habit) => {
       const habitLogs = logs?.filter((l) => l.habit_id === habit.id) || [];
-      const todayDone = habitLogs.some((l) => l.date === todayStr);
+      const todayLog = habitLogs.find((l) => l.date === todayStr);
+      const todayDone = todayLog?.completed || false;
+      const todaySkipped = todayLog?.skipped || false;
+      const todayValue = todayLog?.value || null;
 
       // Week log (last 7 days)
-      const weekLog: boolean[] = [];
+      const weekLog: ("done" | "skipped" | "missed")[] = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split("T")[0];
-        weekLog.push(habitLogs.some((l) => l.date === dateStr));
+        
+        const logForDay = habitLogs.find((l) => l.date === dateStr);
+        if (logForDay?.completed) weekLog.push("done");
+        else if (logForDay?.skipped) weekLog.push("skipped");
+        else weekLog.push("missed");
       }
 
       // Streak
@@ -98,31 +110,38 @@ export function useHabits() {
     fetchHabits();
   }, [fetchHabits]);
 
-  const addHabit = async (name: string, icon: string = "◆") => {
+  const addHabit = async (name: string, icon: string = "◆", target_value?: number | null, unit?: string | null) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
     if (profile?.plan === "free" && habits.length >= 3) {
-      alert("Free plan limit reached: 3 habits maximum. Upgrade to Pro in Settings to unlock unlimited habits.");
+      toast.error("Free plan limit reached", { description: "3 habits maximum. Upgrade to Pro in Settings to unlock unlimited habits." });
       return;
     }
 
     const { data } = await supabase
       .from("habits")
-      .insert({ user_id: user.id, name, icon, sort_order: habits.length })
+      .insert({ 
+        user_id: user.id, 
+        name, 
+        icon, 
+        sort_order: habits.length,
+        target_value: target_value || null,
+        unit: unit || null
+      })
       .select()
       .single();
 
     if (data) {
       setHabits((prev) => [
         ...prev,
-        { ...(data as Habit), todayDone: false, streak: 0, weekLog: Array(7).fill(false) },
+        { ...(data as Habit), todayDone: false, todaySkipped: false, todayValue: null, streak: 0, weekLog: Array(7).fill("missed") },
       ]);
     }
   };
 
-  const toggleHabit = async (habitId: string) => {
+  const toggleHabit = async (habitId: string, action: "done" | "skip" | "undo" = "done", newValue?: number) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -130,28 +149,84 @@ export function useHabits() {
     if (!habit) return;
 
     const todayStr = new Date().toISOString().split("T")[0];
+    const wasDone = habit.todayDone;
+    const wasSkipped = habit.todaySkipped;
 
-    if (habit.todayDone) {
-      // Un-complete
-      await supabase
-        .from("habit_logs")
-        .delete()
-        .eq("habit_id", habitId)
-        .eq("date", todayStr);
-    } else {
-      // Complete
-      await supabase
-        .from("habit_logs")
-        .upsert({ habit_id: habitId, user_id: user.id, date: todayStr, completed: true });
-    }
+    // Determine new state
+    const isNowDone = action === "done";
+    const isNowSkipped = action === "skip";
+    
+    // Streaks calculation: skips are neutral.
+    let newStreak = habit.streak;
+    if (wasDone && !isNowDone && !isNowSkipped) newStreak = Math.max(0, habit.streak - 1);
+    else if (!wasDone && !wasSkipped && isNowDone) newStreak += 1;
 
+    // Optimistic update for zero-latency UI
     setHabits((prev) =>
       prev.map((h) =>
         h.id === habitId
-          ? { ...h, todayDone: !h.todayDone, streak: h.todayDone ? h.streak - 1 : h.streak + 1 }
+          ? { 
+              ...h, 
+              todayDone: isNowDone, 
+              todaySkipped: isNowSkipped,
+              todayValue: newValue !== undefined ? newValue : h.todayValue,
+              streak: newStreak
+            }
           : h
       )
     );
+
+    let error = null;
+    if (action === "undo") {
+      const result = await supabase.from("habit_logs").delete().eq("habit_id", habitId).eq("date", todayStr);
+      error = result.error;
+    } else {
+      const payload: any = { 
+        habit_id: habitId, 
+        user_id: user.id, 
+        date: todayStr, 
+        completed: isNowDone,
+        skipped: isNowSkipped 
+      };
+      if (newValue !== undefined) payload.value = newValue;
+      
+      const result = await supabase.from("habit_logs").upsert(payload);
+      error = result.error;
+    }
+
+    if (error) {
+      // Rollback on failure
+      setHabits((prev) =>
+        prev.map((h) =>
+          h.id === habitId ? { ...h, todayDone: wasDone, todaySkipped: wasSkipped, streak: habit.streak } : h
+        )
+      );
+    }
+  };
+
+  const reorderHabits = async (activeId: string, overId: string) => {
+    setHabits((prev) => {
+      const oldIndex = prev.findIndex((h) => h.id === activeId);
+      const newIndex = prev.findIndex((h) => h.id === overId);
+      
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      
+      const newHabits = [...prev];
+      const [movedItem] = newHabits.splice(oldIndex, 1);
+      newHabits.splice(newIndex, 0, movedItem);
+      
+      const updatedHabits = newHabits.map((h, i) => ({ ...h, sort_order: i }));
+      
+      const updates = updatedHabits.map((h) => ({ id: h.id, sort_order: h.sort_order }));
+      supabase.from("habits").upsert(updates).then(({ error }) => {
+        if (error) {
+          toast.error("Failed to reorder habits");
+          refetch();
+        }
+      });
+      
+      return updatedHabits;
+    });
   };
 
   const completedToday = habits.filter((h) => h.todayDone).length;
@@ -161,6 +236,7 @@ export function useHabits() {
     loading,
     addHabit,
     toggleHabit,
+    reorderHabits,
     completedToday,
     total: habits.length,
     refetch: fetchHabits,

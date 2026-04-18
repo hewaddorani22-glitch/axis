@@ -145,7 +145,7 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile Bottom Tabs — streak badge on Habits tab */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-axis-dark border-t border-white/[0.06] px-2 pb-[env(safe-area-inset-bottom)]">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 axis-glass border-t-0 border-b-0 border-x-0 border-white/[0.06] rounded-none px-2 pb-[env(safe-area-inset-bottom)]" style={{ background: "rgba(11, 11, 15, 0.8)", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
         <div className="flex items-center justify-around h-16">
           {primaryNavItems.map((item) => {
             const isActive = pathname === item.href;

@@ -10,9 +10,37 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
+  const data = await getProveItData(username);
+  
+  if (!data) {
+    return {
+      title: `${username} — AXIS Prove It`,
+      description: `Check out ${username}'s accountability profile on AXIS.`,
+    };
+  }
+
+  const { streak, grade } = data;
+  const ogUrl = new URL(`https://useaxis.com/api/og`);
+  ogUrl.searchParams.set("username", username);
+  if (streak > 0) ogUrl.searchParams.set("streak", streak.toString());
+  if (grade) ogUrl.searchParams.set("score", grade);
+
   return {
     title: `${username} — AXIS Prove It`,
-    description: `Check out ${username}'s accountability profile on AXIS.`,
+    description: `Check out ${username}'s accountability profile on AXIS. Streak: ${streak}. Grade: ${grade}.`,
+    openGraph: {
+      images: [
+        {
+          url: ogUrl.toString(),
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      images: [ogUrl.toString()],
+    },
   };
 }
 

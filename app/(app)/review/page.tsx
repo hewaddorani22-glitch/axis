@@ -113,20 +113,45 @@ export default function ReviewPage() {
 
   if (!userLoading && !isPro) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="axis-card text-center py-12">
-          <p className="text-3xl mb-4">📊</p>
-          <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-            Weekly Review is a Pro feature
+      <div className="max-w-2xl mx-auto relative group">
+        {/* Fake blurred content */}
+        <div className="pointer-events-none opacity-40 blur-sm scale-[0.98] transition-all duration-500 group-hover:blur-md select-none space-y-6">
+          <div className="axis-card">
+            <h2 className="text-base font-semibold mb-1" style={{ color: "var(--text-primary)" }}>This Week&apos;s Review</h2>
+            <div className="grid grid-cols-3 gap-3 my-5">
+              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-axis-accent">S</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>WEEKLY GRADE</p></div>
+              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-axis-text1">$1,4k</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>MTD REVENUE</p></div>
+              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-orange-500">14</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>DAY STREAK</p></div>
+            </div>
+            <div className="space-y-4">
+              <div className="w-full h-24 rounded-xl" style={{ backgroundColor: "var(--bg-tertiary)" }}></div>
+              <div className="w-full h-24 rounded-xl" style={{ backgroundColor: "var(--bg-tertiary)" }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Premium Lock Overlay */}
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-axis-dark flex items-center justify-center mb-6 shadow-2xl border border-axis-border/10">
+            <span className="text-3xl relative">
+              🔒
+              <span className="absolute -top-1 -right-2 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded pl-1 bg-axis-accent text-axis-dark">PRO</span>
+            </span>
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight mb-3" style={{ color: "var(--text-primary)" }}>
+            Unlock Focus Reviews
           </h2>
-          <p className="text-sm mb-6 max-w-xs mx-auto" style={{ color: "var(--text-secondary)" }}>
-            Every Sunday, reflect on your wins, struggles, and next week&apos;s focus. Track your progress over time.
+          <p className="text-sm max-w-sm mx-auto mb-8" style={{ color: "var(--text-secondary)" }}>
+            Tracking your tasks is basic. Reflecting on them is how you win. Deep weekly insights, win tracking, and focus scores are available for Pro users.
           </p>
           <Link
             href="/settings"
-            className="inline-flex items-center text-sm font-semibold bg-axis-accent text-axis-dark px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all"
+            className="flex items-center gap-2 text-sm font-semibold bg-axis-accent text-axis-dark px-8 py-3.5 rounded-xl hover:bg-axis-accent/90 transition-all hover:scale-105 hover:shadow-xl active:scale-95"
           >
-            Upgrade to Pro — $9/mo
+            Upgrade to Pro
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+               <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
           </Link>
         </div>
       </div>

@@ -2,11 +2,13 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
+import { toast } from "sonner";
 
 export interface RevenueStream {
   id: string;
   name: string;
   color: string;
+  is_recurring?: boolean;
 }
 
 export interface RevenueEntry {
@@ -54,7 +56,7 @@ export function useRevenue() {
 
     const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
     if (profile?.plan === "free" && streams.length >= 1) {
-      alert("Free plan limit reached: 1 revenue stream maximum. Upgrade to Pro in Settings to unlock unlimited streams.");
+      toast.error("Free plan limit reached", { description: "1 revenue stream maximum. Upgrade to Pro in Settings to unlock unlimited streams." });
       return;
     }
 
@@ -71,24 +73,60 @@ export function useRevenue() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
+    const entryDate = date || new Date().toISOString().split("T")[0];
+    const tempId = `temp-${Date.now()}`;
+    const tempEntry: RevenueEntry = {
+      id: tempId,
+      stream_id: streamId,
+      amount,
+      date: entryDate,
+      note: note || null,
+    };
+
+    // Optimistic UI
+    setEntries((prev) => [tempEntry, ...prev]);
+
+    const { data, error } = await supabase
       .from("revenue_entries")
       .insert({
         user_id: user.id,
         stream_id: streamId,
         amount,
         note: note || null,
-        date: date || new Date().toISOString().split("T")[0],
+        date: entryDate,
       })
       .select()
       .single();
 
-    if (data) setEntries((prev) => [data as RevenueEntry, ...prev]);
+    if (error) {
+      // Rollback
+      toast.error("Failed to add entry");
+      setEntries((prev) => prev.filter((e) => e.id !== tempId));
+    } else if (data) {
+      // Replace temp ID with real ID
+      setEntries((prev) => prev.map((e) => (e.id === tempId ? (data as RevenueEntry) : e)));
+    }
   };
 
   const deleteEntry = async (entryId: string) => {
-    await supabase.from("revenue_entries").delete().eq("id", entryId);
+    // Find the deleted entry in case of rollback
+    const deletedEntry = entries.find((e) => e.id === entryId);
+    if (!deletedEntry) return;
+
+    // Optimistic UI
     setEntries((prev) => prev.filter((e) => e.id !== entryId));
+
+    const { error } = await supabase.from("revenue_entries").delete().eq("id", entryId);
+    
+    if (error) {
+      toast.error("Failed to delete entry");
+      // Rollback
+      setEntries((prev) => {
+        const reset = [...prev, deletedEntry];
+        reset.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        return reset;
+      });
+    }
   };
 
   // Calculate MTD
@@ -105,6 +143,11 @@ export function useRevenue() {
       .filter((e) => e.stream_id === s.id && e.date >= mtdStart)
       .reduce((sum, e) => sum + Number(e.amount), 0),
   }));
+
+  // MRR: Sum of monthly totals for recurring streams
+  const mrrTotal = streamTotals
+    .filter((s) => s.is_recurring)
+    .reduce((sum, s) => sum + s.total, 0);
 
   // Monthly totals for last 6 months (for chart)
   const monthlyTotals = (() => {
@@ -130,6 +173,7 @@ export function useRevenue() {
     addEntry,
     deleteEntry,
     mtdTotal,
+    mrrTotal,
     streamTotals,
     monthlyTotals,
     refetch: fetchData,
