@@ -23,9 +23,9 @@ export function AxisScoreWidget({
   className,
 }: AxisScoreWidgetProps) {
   const gradientId = useId();
-  const radius = compact ? 34 : 54;
-  const stroke = compact ? 7 : 9;
-  const size = compact ? 92 : 140;
+  const radius = compact ? 30 : 54;
+  const stroke = compact ? 6 : 9;
+  const size = compact ? 82 : 140;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - score / 100);
 
@@ -42,10 +42,10 @@ export function AxisScoreWidget({
 
   return (
     <div
-      className={cn("rounded-[28px] p-5", className)}
+      className={cn(compact ? "rounded-[24px] p-4" : "rounded-[28px] p-5", className)}
       style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
     >
-      <div className={cn("flex gap-5", compact ? "items-center" : "flex-col lg:flex-row lg:items-center")}>
+      <div className={cn("flex", compact ? "items-center gap-4" : "flex-col gap-5 lg:flex-row lg:items-center")}>
         <div className="relative flex items-center justify-center">
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
             <circle
@@ -79,20 +79,20 @@ export function AxisScoreWidget({
 
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div
-              className={cn("mb-2 flex items-center justify-center rounded-2xl", compact ? "h-8 w-8" : "h-10 w-10")}
+              className={cn("mb-2 flex items-center justify-center rounded-2xl", compact ? "h-7 w-7" : "h-10 w-10")}
               style={{ backgroundColor: "var(--bg-accent-soft)" }}
             >
-              <IconFocus size={compact ? 14 : 16} className="text-axis-accent" />
+              <IconFocus size={compact ? 12 : 16} className="text-axis-accent" />
             </div>
-            <p className={cn("font-semibold tracking-tight", compact ? "text-2xl" : "text-4xl")}>{score}</p>
-            <p className="text-[10px] font-mono uppercase tracking-[0.26em]" style={{ color: "var(--text-tertiary)" }}>
+            <p className={cn("font-semibold tracking-tight", compact ? "text-xl" : "text-4xl")}>{score}</p>
+            <p className={cn("font-mono uppercase", compact ? "text-[9px] tracking-[0.22em]" : "text-[10px] tracking-[0.26em]")} style={{ color: "var(--text-tertiary)" }}>
               Axis Score
             </p>
           </div>
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="mb-3 flex items-center gap-2">
+          <div className={cn("flex items-center gap-2", compact ? "mb-2 flex-wrap" : "mb-3")}>
             <span
               className="rounded-full px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em]"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
@@ -107,8 +107,17 @@ export function AxisScoreWidget({
             </span>
           </div>
 
-          <p className={cn("font-semibold", compact ? "text-base" : "text-xl")}>{label}</p>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
+          <p className={cn("font-semibold", compact ? "text-[15px] leading-5" : "text-xl")}>{label}</p>
+          <p
+            className={cn("mt-1", compact ? "text-[13px] leading-5" : "text-sm")}
+            style={{
+              color: "var(--text-secondary)",
+              display: compact ? "-webkit-box" : undefined,
+              WebkitLineClamp: compact ? 2 : undefined,
+              WebkitBoxOrient: compact ? "vertical" : undefined,
+              overflow: compact ? "hidden" : undefined,
+            }}
+          >
             {detail}
           </p>
 
