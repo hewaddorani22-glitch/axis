@@ -12,6 +12,7 @@ import {
   IconBriefing, IconCheck, IconHabits,
 } from "@/components/icons";
 import Link from "next/link";
+import { EmptyState } from "@/components/app/empty-state";
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
@@ -108,10 +109,13 @@ export default function DashboardPage() {
           {missionsLoading ? (
             <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           ) : missions.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>No missions for today</p>
-              <Link href="/missions" className="text-xs font-semibold text-axis-accent hover:underline mt-2 inline-block">Add missions →</Link>
-            </div>
+            <EmptyState
+              icon={<IconTarget size={20} className="text-axis-accent" />}
+              title="No missions set"
+              description="Start your day by defining today's top priorities."
+              actions={[{ label: "Add Mission", href: "/missions?quickAdd=1" }]}
+              compact
+            />
           ) : (
             <div className="space-y-2">
               {missions.slice(0, 5).map((m) => (
@@ -138,10 +142,13 @@ export default function DashboardPage() {
           {habitsLoading ? (
             <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
           ) : habits.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>No habits set up</p>
-              <Link href="/systems" className="text-xs font-semibold text-axis-accent hover:underline mt-2 inline-block">Add habits →</Link>
-            </div>
+            <EmptyState
+              icon={<IconHabits size={20} className="text-axis-accent" />}
+              title="No systems active"
+              description="Build consistency by tracking your daily habits."
+              actions={[{ label: "Add Habit", href: "/systems?quickAdd=1" }]}
+              compact
+            />
           ) : (
             <div className="space-y-3">
               {habits.map((h) => (

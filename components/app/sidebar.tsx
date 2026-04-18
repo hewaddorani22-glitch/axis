@@ -5,36 +5,13 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
+import { primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
 import {
   AxisLogo,
-  IconCommand,
-  IconTarget,
-  IconRevenue,
-  IconHabits,
-  IconGoals,
-  IconPartners,
-  IconReview,
-  IconProve,
-  IconSettings,
   IconUpgrade,
   IconLogout,
   IconStreak,
 } from "@/components/icons";
-
-const navItems = [
-  { href: "/dashboard", label: "Command Center", icon: IconCommand, shortLabel: "Home" },
-  { href: "/missions", label: "Mission Control", icon: IconTarget, shortLabel: "Missions" },
-  { href: "/revenue", label: "Revenue Tracker", icon: IconRevenue, shortLabel: "Revenue" },
-  { href: "/systems", label: "Daily Systems", icon: IconHabits, shortLabel: "Habits" },
-  { href: "/goals", label: "Goals", icon: IconGoals, shortLabel: "Goals" },
-  { href: "/partners", label: "Partners", icon: IconPartners, shortLabel: "Partners" },
-  { href: "/review", label: "Weekly Review", icon: IconReview, shortLabel: "Review" },
-];
-
-const bottomItems = [
-  { href: "/prove", label: "Prove It", icon: IconProve },
-  { href: "/settings", label: "Settings", icon: IconSettings },
-];
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -70,7 +47,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 axis-scrollbar overflow-y-auto">
-          {navItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -98,7 +75,7 @@ export function Sidebar() {
         <div className="px-3 pb-4 space-y-1">
           <div className="border-t border-white/[0.06] my-2" />
 
-          {bottomItems.map((item) => {
+          {secondaryNavItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -170,7 +147,7 @@ export function Sidebar() {
       {/* Mobile Bottom Tabs — streak badge on Habits tab */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-axis-dark border-t border-white/[0.06] px-2 pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-16">
-          {navItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             const showStreakBadge = item.href === "/systems" && streak > 0;

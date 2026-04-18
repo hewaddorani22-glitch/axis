@@ -3,22 +3,14 @@
 import { usePathname } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
-
-const pageTitles: Record<string, string> = {
-  "/dashboard": "Command Center",
-  "/missions": "Mission Control",
-  "/revenue": "Revenue Tracker",
-  "/systems": "Daily Systems",
-  "/goals": "Goals",
-  "/partners": "Partners",
-  "/prove": "Prove It",
-  "/settings": "Settings",
-  "/onboarding": "Setup",
-};
+import { useCommandPalette } from "@/components/app/command-palette";
+import { pageTitles } from "@/components/app/navigation";
+import { IconCommand } from "@/components/icons";
 
 export function Topbar() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { openPalette } = useCommandPalette();
   const title = pageTitles[pathname] || "AXIS";
 
   return (
@@ -35,6 +27,26 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-3">
+        <button
+          onClick={openPalette}
+          className="flex items-center gap-2 rounded-xl px-3 py-2 transition-all"
+          style={{
+            backgroundColor: theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
+            border: `1px solid var(--border-primary)`,
+            color: "var(--text-tertiary)",
+          }}
+          title="Open command palette"
+        >
+          <IconCommand size={15} />
+          <span className="hidden text-sm font-medium sm:inline">Quick Actions</span>
+          <span
+            className="rounded-lg px-2 py-1 text-[10px] font-mono uppercase"
+            style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-tertiary)" }}
+          >
+            Mod K
+          </span>
+        </button>
+
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
@@ -57,7 +69,6 @@ export function Topbar() {
             </svg>
           )}
         </button>
-
       </div>
     </header>
   );

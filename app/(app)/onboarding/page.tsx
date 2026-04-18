@@ -6,10 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   AxisLogo,
   IconUser,
-  IconRevenue,
   IconTarget,
   IconHabits,
-  IconGoals,
   IconProve,
   IconCheck,
   IconChevronRight,
@@ -53,7 +51,6 @@ export default function OnboardingPage() {
   const router = useRouter();
   const supabaseCheck = createClient();
 
-  // If onboarding is already done, redirect to dashboard
   useEffect(() => {
     supabaseCheck.from("users").select("onboarding_done").single().then(({ data }) => {
       if (data?.onboarding_done) router.replace("/dashboard");
@@ -61,13 +58,10 @@ export default function OnboardingPage() {
   }, []); // eslint-disable-line
 
   const [step, setStep] = useState(1);
-  // Step 1: Profile
   const [name, setName] = useState("");
   const [userType, setUserType] = useState<UserType | null>(null);
   const [timezone, setTimezone] = useState("Europe/Berlin");
-  // Step 2: Revenue streams
-  const [streams, setStreams] = useState([{ name: "", color: "#CDFF4F" }]);
-  // Step 3: Missions
+  
   const [missions, setMissions] = useState([
     { title: "", priority: "high" as const },
     { title: "", priority: "med" as const },
@@ -75,28 +69,37 @@ export default function OnboardingPage() {
     { title: "", priority: "low" as const },
     { title: "", priority: "low" as const },
   ]);
-  // Step 4: Habits
+
+  useEffect(() => {
+    if (!userType) return;
+    const examples: Record<UserType, string[]> = {
+      entrepreneur: ["Review metrics", "Customer support calls", "Plan Q3 roadmap", "Write marketing copy", "Sync with team"],
+      student: ["Study for finals", "Complete assignment", "Read chapters 4-5", "Review notes", "Organize desk"],
+      creator: ["Draft new script", "Edit latest video", "Post on socials", "Reply to comments", "Brainstorm ideas"],
+      professional: ["Finish TPS report", "Prepare presentation", "Inbox zero", "Weekly sync", "Follow up leads"],
+    };
+    const titles = examples[userType] || [];
+    setMissions(titles.map((t, i) => ({
+      title: t,
+      priority: i === 0 ? "high" : i < 3 ? "med" : "low"
+    })));
+  }, [userType]);
+
   const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
   const [customHabits, setCustomHabits] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
-  // Step 5: Goals
-  const [goals, setGoals] = useState([{ title: "", target: "", unit: "$", deadline: "" }]);
-  // Step 6: Prove It
   const [proveUsername, setProveUsername] = useState("");
   const [proveBio, setProveBio] = useState("");
-  // Step 7: Review
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
-  const totalSteps = 7;
+  const totalSteps = 5;
   const progressPct = (step / totalSteps) * 100;
 
   const stepTitles = [
     { title: "Your Profile", subtitle: "Tell us about yourself so we can personalize your experience.", icon: <IconUser size={20} className="text-axis-accent" /> },
-    { title: "Income Streams", subtitle: "What are your sources of revenue? We'll track each one separately.", icon: <IconRevenue size={20} className="text-axis-accent" /> },
     { title: "Today's Missions", subtitle: "What do you need to accomplish today? Set up to 5 priorities.", icon: <IconTarget size={20} className="text-axis-accent" /> },
     { title: "Daily Habits", subtitle: "Choose the habits you want to build. Consistency is everything.", icon: <IconHabits size={20} className="text-axis-accent" /> },
-    { title: "Your Goals", subtitle: "Set measurable goals with deadlines. We'll track your progress.", icon: <IconGoals size={20} className="text-axis-accent" /> },
     { title: "Public Profile", subtitle: "Set up your Prove It page. Show the world your accountability.", icon: <IconProve size={20} className="text-axis-accent" /> },
     { title: "All Set!", subtitle: "Review your setup. Everything looks ready — let's go.", icon: <IconCheck size={20} className="text-axis-accent" /> },
   ];
@@ -104,12 +107,10 @@ export default function OnboardingPage() {
   const canProceed = () => {
     switch (step) {
       case 1: return name.trim().length > 0 && userType !== null;
-      case 2: return streams.some((s) => s.name.trim().length > 0);
-      case 3: return missions.some((m) => m.title.trim().length > 0);
-      case 4: return selectedHabits.length + customHabits.length >= 2;
-      case 5: return goals.some((g) => g.title.trim().length > 0 && g.target.length > 0);
-      case 6: return proveUsername.trim().length >= 3;
-      case 7: return true;
+      case 2: return missions.some((m) => m.title.trim().length > 0);
+      case 3: return selectedHabits.length + customHabits.length >= 2;
+      case 4: return proveUsername.trim().length >= 3;
+      case 5: return true;
       default: return true;
     }
   };
@@ -119,7 +120,6 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 1. Update profile
     await supabase.from("users").update({
       name: name.trim(),
       user_type: userType,
@@ -129,19 +129,6 @@ export default function OnboardingPage() {
       prove_it_bio: proveBio.trim() || null,
     }).eq("id", user.id);
 
-    // 2. Create revenue streams
-    const validStreams = streams.filter((s) => s.name.trim());
-    if (validStreams.length > 0) {
-      await supabase.from("revenue_streams").insert(
-        validStreams.map((s) => ({
-          user_id: user.id,
-          name: s.name.trim(),
-          color: s.color,
-        }))
-      );
-    }
-
-    // 3. Create missions
     const today = new Date().toISOString().split("T")[0];
     const validMissions = missions.filter((m) => m.title.trim());
     if (validMissions.length > 0) {
@@ -156,7 +143,6 @@ export default function OnboardingPage() {
       );
     }
 
-    // 4. Create habits
     const allHabits = [
       ...selectedHabits.map((name) => ({ name, icon: "◆" })),
       ...customHabits.map((name) => ({ name, icon: "◆" })),
@@ -172,21 +158,6 @@ export default function OnboardingPage() {
       );
     }
 
-    // 5. Create goals
-    const validGoals = goals.filter((g) => g.title.trim() && g.target);
-    if (validGoals.length > 0) {
-      await supabase.from("goals").insert(
-        validGoals.map((g) => ({
-          user_id: user.id,
-          title: g.title.trim(),
-          target_value: parseFloat(g.target) || 100,
-          unit: g.unit || "%",
-          deadline: g.deadline || null,
-        }))
-      );
-    }
-
-    // 6. Send welcome email
     try {
       await fetch("/api/email/welcome", {
         method: "POST",
@@ -203,13 +174,11 @@ export default function OnboardingPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <AxisLogo size={24} />
         <span className="text-sm font-bold text-white">AXIS Setup</span>
       </div>
 
-      {/* Progress */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-mono text-white/40">Step {step} of {totalSteps}</span>
@@ -227,7 +196,6 @@ export default function OnboardingPage() {
         <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
           <div className="h-full bg-axis-accent rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
         </div>
-        {/* Step indicators */}
         <div className="flex items-center justify-between mt-3">
           {stepTitles.map((_, i) => (
             <div
@@ -244,7 +212,6 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* Step Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-axis-accent/10 border border-axis-accent/20 flex items-center justify-center">
           {currentStep.icon}
@@ -255,7 +222,6 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* ── Step 1: Profile ── */}
       {step === 1 && (
         <div className="space-y-6 animate-fade-in">
           <div>
@@ -307,64 +273,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* ── Step 2: Revenue Streams ── */}
       {step === 2 && (
-        <div className="space-y-4 animate-fade-in">
-          <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Add all your income sources — freelancing, SaaS, courses, products, salary, etc.
-            Each stream gets tracked separately so you can see exactly where your money comes from.
-          </p>
-          {streams.map((stream, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <input
-                type="color"
-                value={stream.color}
-                onChange={(e) => {
-                  const updated = [...streams];
-                  updated[i].color = e.target.value;
-                  setStreams(updated);
-                }}
-                className="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent"
-              />
-              <input
-                type="text"
-                placeholder={
-                  i === 0 ? "e.g. Freelance Design" :
-                  i === 1 ? "e.g. SaaS Revenue" :
-                  "Another income source..."
-                }
-                value={stream.name}
-                onChange={(e) => {
-                  const updated = [...streams];
-                  updated[i].name = e.target.value;
-                  setStreams(updated);
-                }}
-                className="flex-1 bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20 focus:border-axis-accent/50 transition-all"
-                autoFocus={i === 0}
-              />
-              {streams.length > 1 && (
-                <button
-                  onClick={() => setStreams(streams.filter((_, j) => j !== i))}
-                  className="text-white/20 hover:text-white/50 transition-colors text-xs"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
-          {streams.length < 5 && (
-            <button
-              onClick={() => setStreams([...streams, { name: "", color: ["#CDFF4F","#4FC1FF","#FF4F8E","#FFB74F","#A64FFF"][streams.length] || "#CDFF4F" }])}
-              className="w-full text-center text-xs font-medium text-white/30 border border-dashed border-white/[0.08] rounded-xl py-3 hover:border-white/[0.15] hover:text-white/50 transition-all"
-            >
-              + Add another stream
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ── Step 3: Missions ── */}
-      {step === 3 && (
         <div className="space-y-3 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
             Missions are your daily priorities — the things that move the needle.
@@ -414,8 +323,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* ── Step 4: Habits ── */}
-      {step === 4 && (
+      {step === 3 && (
         <div className="space-y-4 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
             Pick 2–3 daily habits you want to track. These build your streak and feed into your Focus Score.
@@ -451,7 +359,6 @@ export default function OnboardingPage() {
             })}
           </div>
 
-          {/* Custom habits */}
           {customHabits.map((h, i) => (
             <div key={i} className="flex items-center gap-2 bg-axis-accent/5 border border-axis-accent/15 rounded-xl px-4 py-3">
               <IconCheck size={14} className="text-axis-accent" />
@@ -490,89 +397,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* ── Step 5: Goals ── */}
-      {step === 5 && (
-        <div className="space-y-4 animate-fade-in">
-          <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Goals are your bigger targets — revenue milestones, project completions, growth metrics.
-            Set a target number and a deadline. We&apos;ll show your progress on the dashboard.
-          </p>
-          {goals.map((goal, i) => (
-            <div key={i} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4 space-y-3">
-              <input
-                type="text"
-                placeholder={i === 0 ? "e.g. Hit $10K Monthly Revenue" : `Goal ${i + 1} (optional)`}
-                value={goal.title}
-                onChange={(e) => {
-                  const updated = [...goals];
-                  updated[i].title = e.target.value;
-                  setGoals(updated);
-                }}
-                className="w-full bg-white/[0.06] border border-white/[0.08] text-sm text-white rounded-xl px-4 py-3 outline-none placeholder:text-white/20"
-                autoFocus={i === 0}
-              />
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[10px] font-mono text-white/25 block mb-1">Target</label>
-                  <input
-                    type="number"
-                    placeholder="10000"
-                    value={goal.target}
-                    onChange={(e) => {
-                      const updated = [...goals];
-                      updated[i].target = e.target.value;
-                      setGoals(updated);
-                    }}
-                    className="w-full bg-white/[0.06] border border-white/[0.08] text-xs text-white rounded-lg px-3 py-2 outline-none placeholder:text-white/20"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-mono text-white/25 block mb-1">Unit</label>
-                  <select
-                    value={goal.unit}
-                    onChange={(e) => {
-                      const updated = [...goals];
-                      updated[i].unit = e.target.value;
-                      setGoals(updated);
-                    }}
-                    className="w-full bg-white/[0.06] border border-white/[0.08] text-xs text-white/50 rounded-lg px-3 py-2 outline-none"
-                  >
-                    <option value="$">$ (Revenue)</option>
-                    <option value="%">% (Percentage)</option>
-                    <option value="units">Units</option>
-                    <option value="subscribers">Subscribers</option>
-                    <option value="clients">Clients</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-mono text-white/25 block mb-1">Deadline</label>
-                  <input
-                    type="date"
-                    value={goal.deadline}
-                    onChange={(e) => {
-                      const updated = [...goals];
-                      updated[i].deadline = e.target.value;
-                      setGoals(updated);
-                    }}
-                    className="w-full bg-white/[0.06] border border-white/[0.08] text-xs text-white/50 rounded-lg px-3 py-2 outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-          {goals.length < 3 && (
-            <button
-              onClick={() => setGoals([...goals, { title: "", target: "", unit: "$", deadline: "" }])}
-              className="w-full text-center text-xs font-medium text-white/30 border border-dashed border-white/[0.08] rounded-xl py-3 hover:border-white/[0.15] hover:text-white/50 transition-all"
-            >
-              + Add another goal
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ── Step 6: Prove It ── */}
-      {step === 6 && (
+      {step === 4 && (
         <div className="space-y-5 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
             Your Prove It profile is your public accountability page. Share it with partners,
@@ -607,7 +432,6 @@ export default function OnboardingPage() {
             />
           </div>
 
-          {/* Preview */}
           <div className="bg-axis-dark border border-white/[0.06] rounded-xl p-5 text-center">
             <p className="text-[10px] font-mono text-white/20 mb-3">PREVIEW</p>
             <div className="w-14 h-14 rounded-2xl bg-axis-accent/20 flex items-center justify-center mx-auto mb-3">
@@ -622,8 +446,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* ── Step 7: Review ── */}
-      {step === 7 && (
+      {step === 5 && (
         <div className="space-y-4 animate-fade-in">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
@@ -634,14 +457,7 @@ export default function OnboardingPage() {
               <p className="text-sm font-semibold text-white">{name}</p>
               <p className="text-xs text-white/30">{userType} · {timezone.split("/")[1]}</p>
             </div>
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <IconRevenue size={14} className="text-axis-accent" />
-                <span className="text-[10px] font-mono text-white/40">STREAMS</span>
-              </div>
-              <p className="text-sm font-semibold text-white">{streams.filter((s) => s.name.trim()).length} stream{streams.filter((s) => s.name.trim()).length !== 1 ? "s" : ""}</p>
-              <p className="text-xs text-white/30 truncate">{streams.filter((s) => s.name.trim()).map((s) => s.name).join(", ")}</p>
-            </div>
+            
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <IconTarget size={14} className="text-axis-accent" />
@@ -658,14 +474,7 @@ export default function OnboardingPage() {
               <p className="text-sm font-semibold text-white">{selectedHabits.length + customHabits.length} daily</p>
               <p className="text-xs text-white/30 truncate">{[...selectedHabits, ...customHabits].join(", ")}</p>
             </div>
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <IconGoals size={14} className="text-axis-accent" />
-                <span className="text-[10px] font-mono text-white/40">GOALS</span>
-              </div>
-              <p className="text-sm font-semibold text-white">{goals.filter((g) => g.title.trim()).length} set</p>
-              <p className="text-xs text-white/30 truncate">{goals.filter((g) => g.title.trim())[0]?.title || "—"}</p>
-            </div>
+            
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <IconProve size={14} className="text-axis-accent" />
@@ -678,13 +487,12 @@ export default function OnboardingPage() {
 
           <div className="bg-axis-accent/10 border border-axis-accent/20 rounded-xl p-4 text-center">
             <p className="text-sm text-axis-accent font-medium">
-              Everything&apos;s connected. Your dashboard, missions, habits, revenue, and goals are ready to go.
+              Everything's connected. Your dashboard, missions, and habits are ready to go.
             </p>
           </div>
         </div>
       )}
 
-      {/* Navigation */}
       <div className="flex items-center justify-between mt-10 pb-8">
         {step > 1 ? (
           <button
