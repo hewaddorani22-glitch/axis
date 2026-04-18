@@ -86,6 +86,11 @@ export function useRevenue() {
     if (data) setEntries((prev) => [data as RevenueEntry, ...prev]);
   };
 
+  const deleteEntry = async (entryId: string) => {
+    await supabase.from("revenue_entries").delete().eq("id", entryId);
+    setEntries((prev) => prev.filter((e) => e.id !== entryId));
+  };
+
   // Calculate MTD
   const now = new Date();
   const mtdStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -123,6 +128,7 @@ export function useRevenue() {
     loading,
     addStream,
     addEntry,
+    deleteEntry,
     mtdTotal,
     streamTotals,
     monthlyTotals,
