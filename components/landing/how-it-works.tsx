@@ -4,8 +4,8 @@ export function HowItWorks() {
   const steps = [
     {
       step: "01",
-      title: "Set up in 90 seconds",
-      description: "Tell AXIS who you are, add your income stream, set 3 missions, pick 2 habits, and one goal. You're live.",
+      title: "Set up in minutes",
+      description: "Tell AXIS who you are, set your daily missions, pick your habits, and connect your public profile. You're live.",
       visual: <IconCommand size={32} className="text-axis-text2" />,
     },
     {
@@ -29,7 +29,7 @@ export function HowItWorks() {
         <div className="text-center mb-16">
           <span className="inline-block text-xs font-mono font-semibold text-axis-text3 uppercase tracking-wider mb-3">How it works</span>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-            From zero to <span className="axis-highlight">full system</span> in under 2 minutes
+            From zero to <span className="axis-highlight">full system</span> in one session
           </h2>
         </div>
 

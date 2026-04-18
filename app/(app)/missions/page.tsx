@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useMissions, Mission } from "@/hooks/useMissions";
-import { IconTarget, IconCheck, IconPlus, IconTimer, IconEnergy } from "@/components/icons";
+import { IconTarget, IconCheck, IconPlus, IconTimer, IconEnergy, IconFocus } from "@/components/icons";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -29,9 +30,11 @@ type Priority = "high" | "med" | "low";
 function SortableMissionItem({
   mission,
   toggleMission,
+  onFocus,
 }: {
   mission: Mission;
   toggleMission: (id: string) => void;
+  onFocus: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: mission.id });
 
@@ -109,12 +112,23 @@ function SortableMissionItem({
         >
           {mission.priority}
         </span>
+        {mission.estimated_time && mission.status !== "done" && (
+          <button
+            onClick={() => onFocus(mission.id)}
+            title="Enter Focus Mode"
+            className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:bg-axis-accent/20"
+            style={{ color: "var(--text-tertiary)" }}
+          >
+            <IconFocus size={13} className="text-axis-accent" />
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
 export default function MissionsPage() {
+  const router = useRouter();
   const [selectedDay, setSelectedDay] = useState(0);
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("med");
@@ -307,7 +321,7 @@ export default function MissionsPage() {
           <SortableContext items={missions.map((m) => m.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
               {missions.map((m) => (
-                <SortableMissionItem key={m.id} mission={m} toggleMission={toggleMission} />
+                <SortableMissionItem key={m.id} mission={m} toggleMission={toggleMission} onFocus={(id) => router.push(`/missions/focus/${id}`)} />
               ))}
             </div>
           </SortableContext>
