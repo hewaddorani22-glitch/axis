@@ -5,13 +5,13 @@ export function Features() {
     {
       icon: <IconCommand size={24} />,
       title: "Command Center",
-      description: "Your morning briefing. See what matters today — revenue, missions, streaks, and focus score in one glance.",
+      description: "Your morning briefing. See what matters today: revenue, missions, streaks, and focus score in one glance.",
       badge: "Dashboard",
     },
     {
       icon: <IconTarget size={24} />,
       title: "Mission Control",
-      description: "Daily missions with priorities and categories. Not a to-do list — a system that tells you what to focus on.",
+      description: "Daily missions with priorities and categories. Not a to-do list: a system that tells you what to focus on.",
       badge: "Tasks",
     },
     {
@@ -50,7 +50,7 @@ export function Features() {
             Six modules. <span className="axis-highlight">Zero clutter.</span>
           </h2>
           <p className="text-lg text-axis-text2 max-w-xl mx-auto">
-            Everything you need to run your life — nothing you don&apos;t.
+            Everything you need to run your life. Nothing you don't.
           </p>
         </div>
 

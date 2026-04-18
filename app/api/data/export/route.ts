@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 
 /**
  * GET /api/data/export
- * Pro only — exports all user data as a CSV zip-equivalent (multiple CSV sections in one file).
+ * Pro only: exports all user data as a CSV zip-equivalent (multiple CSV sections in one file).
  * Returns a plain text response with sections separated by blank lines.
  */
 export async function GET() {
@@ -23,7 +23,7 @@ export async function GET() {
   }
 
   // Fetch all user data in parallel
-  const [missionsRes, habitsRes, habitLogsRes, streamsRes, entriesRes, goalsRes, reviewsRes] =
+  const [missionsRes, habitsRes, habitLogsRes, streamsRes, entriesRes, goalsRes, objectivesRes, reviewsRes] =
     await Promise.all([
       supabase.from("missions").select("*").order("date", { ascending: false }),
       supabase.from("habits").select("*").eq("archived", false),
@@ -31,6 +31,7 @@ export async function GET() {
       supabase.from("revenue_streams").select("*"),
       supabase.from("revenue_entries").select("*, revenue_streams(name)").order("date", { ascending: false }),
       supabase.from("goals").select("*"),
+      supabase.from("objectives").select("*"),
       supabase.from("weekly_reviews").select("*").order("week_start", { ascending: false }),
     ]);
 
@@ -40,6 +41,7 @@ export async function GET() {
   const streams = streamsRes.data || [];
   const entries = entriesRes.data || [];
   const goals = goalsRes.data || [];
+  const objectives = objectivesRes.data || [];
   const reviews = reviewsRes.data || [];
 
   const lines: string[] = [];
@@ -57,7 +59,7 @@ export async function GET() {
   };
 
   // ── Export date ──────────────────────────────────────────────────────────
-  lines.push(`AXIS Data Export — ${profile.name || profile.email}`);
+  lines.push(`AXIS Data Export | ${profile.name || profile.email}`);
   lines.push(`Exported: ${new Date().toISOString()}`);
   lines.push("");
 
@@ -73,7 +75,7 @@ export async function GET() {
 
   // ── Habits ───────────────────────────────────────────────────────────────
   lines.push("=== HABITS ===");
-  lines.push(csv(["Name", "Icon"], habits.map((h) => [h.name, h.icon || "◆"])));
+  lines.push(csv(["Name", "Icon"], habits.map((h) => [h.name, h.icon || ""])));
   lines.push("");
 
   // ── Habit Logs ───────────────────────────────────────────────────────────
@@ -118,6 +120,23 @@ export async function GET() {
         String(g.current_value || 0),
         g.unit || "",
         g.deadline || "",
+      ])
+    )
+  );
+  lines.push("");
+
+  // ── Objectives / Themes ──────────────────────────────────────────────────
+  lines.push("=== THEMES ===");
+  lines.push(
+    csv(
+      ["Title", "Type", "Target", "Unit", "Start", "Deadline"],
+      objectives.map((objective) => [
+        objective.title,
+        objective.rollup_type,
+        String(objective.target_value || ""),
+        objective.unit || "",
+        objective.start_date || "",
+        objective.deadline || "",
       ])
     )
   );

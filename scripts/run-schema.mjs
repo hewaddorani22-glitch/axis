@@ -51,7 +51,7 @@ async function runSchema() {
   } catch (err) {
     console.error("❌ Error:", err.message);
     if (err.message.includes("already exists")) {
-      console.log("\n💡 Some tables already exist. That's OK — the schema is idempotent-safe.");
+      console.log("\n💡 Some tables already exist. That's OK: the schema is idempotent-safe.");
     }
   } finally {
     await client.end();

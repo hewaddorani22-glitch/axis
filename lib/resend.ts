@@ -15,30 +15,30 @@ export async function sendWelcomeEmail(to: string, name: string) {
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: "Welcome to AXIS — Your system is ready 🎯",
+    subject: "Welcome to AXIS | Your system is ready",
     html: `
       <div style="font-family: 'Outfit', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
         <div style="text-align: center; margin-bottom: 32px;">
           <strong style="font-size: 18px;">AXIS</strong>
         </div>
-        <h1 style="font-size: 24px; margin-bottom: 16px;">Welcome, ${name}! 👋</h1>
+        <h1 style="font-size: 24px; margin-bottom: 16px;">Welcome, ${name}.</h1>
         <p style="color: #52525B; line-height: 1.6; margin-bottom: 24px;">
           Your AXIS system is ready. Start every morning knowing exactly what to do.
         </p>
         <div style="background: #FAFAFA; border: 1px solid #E4E4E7; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
           <p style="font-size: 14px; color: #52525B; margin: 0;">
             <strong>Quick start:</strong><br>
-            ✅ Set your daily missions<br>
-            🔄 Track your habits<br>
-            💰 Log your revenue<br>
-            🤝 Invite a partner
+            - Set your daily missions<br>
+            - Track your habits<br>
+            - Log your revenue<br>
+            - Invite a partner
           </p>
         </div>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; background: #0B0B0F; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px;">
-          Open Dashboard →
+          Open Dashboard
         </a>
         <p style="margin-top: 32px; font-size: 12px; color: #A1A1AA;">
-          — The AXIS Team
+          The AXIS Team
         </p>
       </div>
     `,
@@ -54,18 +54,18 @@ export async function sendStreakWarning(to: string, name: string, streakDays: nu
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `⚠️ Your ${streakDays}-day streak is at risk!`,
+    subject: `Your ${streakDays}-day streak is at risk`,
     html: `
       <div style="font-family: 'Outfit', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
         <div style="text-align: center; margin-bottom: 32px;">
           <strong style="font-size: 18px;">AXIS</strong>
         </div>
-        <h1 style="font-size: 24px; margin-bottom: 16px;">Don't break the chain, ${name}! 🔥</h1>
+        <h1 style="font-size: 24px; margin-bottom: 16px;">Don't break the chain, ${name}.</h1>
         <p style="color: #52525B; line-height: 1.6; margin-bottom: 24px;">
           Your <strong>${streakDays}-day streak</strong> is at risk. Complete at least one mission and one habit today to keep it alive.
         </p>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; background: #0B0B0F; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px;">
-          Complete Now →
+          Complete Now
         </a>
       </div>
     `,
@@ -93,7 +93,7 @@ export async function sendWeeklyDigest(
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `📊 Your AXIS Weekly Digest — Grade: ${stats.grade}`,
+    subject: `Your AXIS Weekly Digest | Grade: ${stats.grade}`,
     html: `
       <div style="font-family: 'Outfit', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
         <div style="text-align: center; margin-bottom: 32px;">
@@ -117,14 +117,14 @@ export async function sendWeeklyDigest(
               <p style="font-size: 10px; color: rgba(255,255,255,0.4);">REVENUE</p>
             </div>
             <div>
-              <p style="font-size: 20px; font-weight: 700; color: #F97316;">🔥${stats.streakDays}</p>
+              <p style="font-size: 20px; font-weight: 700; color: #F97316;">${stats.streakDays}</p>
               <p style="font-size: 10px; color: rgba(255,255,255,0.4);">STREAK</p>
             </div>
           </div>
         </div>
         
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; background: #0B0B0F; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px;">
-          View Full Dashboard →
+          View Full Dashboard
         </a>
       </div>
     `,
@@ -140,18 +140,18 @@ export async function sendNudgeEmail(to: string, fromName: string) {
   await resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `👊 ${fromName} sent you a nudge!`,
+    subject: `${fromName} sent you a nudge`,
     html: `
       <div style="font-family: 'Outfit', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
         <div style="text-align: center; margin-bottom: 32px;">
           <strong style="font-size: 18px;">AXIS</strong>
         </div>
-        <h1 style="font-size: 24px; margin-bottom: 16px;">Nudge from ${fromName} 👊</h1>
+        <h1 style="font-size: 24px; margin-bottom: 16px;">Nudge from ${fromName}</h1>
         <p style="color: #52525B; line-height: 1.6; margin-bottom: 24px;">
           ${fromName} noticed you've been quiet. Time to get back on track and complete your missions!
         </p>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; background: #0B0B0F; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px;">
-          Complete Your Missions →
+          Complete Your Missions
         </a>
       </div>
     `,

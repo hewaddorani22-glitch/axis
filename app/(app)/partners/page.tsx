@@ -195,7 +195,7 @@ export default function PartnersPage() {
                       </span>
                     </div>
                     <p className="text-xs font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>
-                      Last active {statsLoading ? "—" : getLastActiveLabel(stats?.lastActive ?? null)}
+                      Last active {statsLoading ? "..." : getLastActiveLabel(stats?.lastActive ?? null)}
                     </p>
                   </div>
 
@@ -211,7 +211,7 @@ export default function PartnersPage() {
                       <>
                         <div className="text-center">
                           <p className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-                            {stats?.grade ?? "—"}
+                            {stats?.grade ?? ""}
                           </p>
                           <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>GRADE</p>
                         </div>

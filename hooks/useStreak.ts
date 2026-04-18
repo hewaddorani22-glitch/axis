@@ -16,6 +16,8 @@ function getDateInTimezone(tz: string, offsetDays = 0): string {
 
 export function useStreak() {
   const [streak, setStreak] = useState(0);
+  const [recoveredMisses, setRecoveredMisses] = useState(0);
+  const [recoveryBudget, setRecoveryBudget] = useState(0);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -57,6 +59,7 @@ export function useStreak() {
     const frozenDates = new Set(freezesRes.data?.map((f) => f.used_on) || []);
 
     let currentStreak = 0;
+    let recovered = 0;
     for (let i = 0; i < 365; i++) {
       const dateStr = getDateInTimezone(tz, i);
 
@@ -65,11 +68,19 @@ export function useStreak() {
       } else if (frozenDates.has(dateStr)) {
         currentStreak++;
       } else {
-        break;
+        const allowedRecoveries = Math.floor(currentStreak / 7);
+        if (recovered < allowedRecoveries) {
+          recovered++;
+          currentStreak++;
+        } else {
+          break;
+        }
       }
     }
 
     setStreak(currentStreak);
+    setRecoveredMisses(recovered);
+    setRecoveryBudget(Math.floor(currentStreak / 7));
     setLoading(false);
   }, [supabase]);
 
@@ -77,5 +88,12 @@ export function useStreak() {
     fetchStreak();
   }, [fetchStreak]);
 
-  return { streak, loading, refetch: fetchStreak };
+  return {
+    streak,
+    loading,
+    recoveredMisses,
+    recoveryBudget,
+    recoveryAvailable: Math.max(0, recoveryBudget - recoveredMisses),
+    refetch: fetchStreak,
+  };
 }

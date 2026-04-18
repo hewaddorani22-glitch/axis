@@ -3,13 +3,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * GET /api/cron/check-achievements
- * Daily cron — checks all users for newly earned achievements and awards them.
+ * Daily cron: checks all users for newly earned achievements and awards them.
  *
  * Achievement types:
- *   30_day_streak   — 30 consecutive days with mission + habit
- *   perfect_week    — all 7 days of any week with mission + habit
- *   100_missions    — 100 total missions completed (all time)
- *   first_10k       — any single calendar month with >= $10,000 revenue
+ *   30_day_streak: 30 consecutive days with mission + habit
+ *   perfect_week: all 7 days of any week with mission + habit
+ *   100_missions: 100 total missions completed (all time)
+ *   first_10k: any single calendar month with >= $10,000 revenue
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");

@@ -10,7 +10,7 @@ export default function ProvePage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Profile preview */}
       <div className="axis-card">
-        <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Your Prove It Profile</h3>
+        <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Your Public Profile</h3>
         <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
           Your public profile shows your stats and accountability to the world.
         </p>
@@ -21,7 +21,7 @@ export default function ProvePage() {
           </div>
           <div>
             <h4 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>King</h4>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Entrepreneur · Building AXIS</p>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Entrepreneur / Building AXIS</p>
           </div>
         </div>
 

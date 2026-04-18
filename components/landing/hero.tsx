@@ -29,7 +29,7 @@ export function Hero() {
         <p className="text-lg md:text-xl text-axis-text2 max-w-2xl mx-auto mb-10 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
           Built for freelancers, founders, and creators who want to see exactly{" "}
           <span className="text-axis-text1 font-medium">what they earned, what they shipped, and what's next</span>
-          {" "}— every single day.
+          {" "}every single day.
         </p>
 
         {/* CTAs */}
@@ -38,7 +38,7 @@ export function Hero() {
             href="/signup"
             className="inline-flex items-center text-base font-semibold bg-axis-text1 text-white px-8 py-4 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] shadow-lg shadow-axis-text1/10"
           >
-            Get Started — Free
+            Get Started Free
             <svg className="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
@@ -56,7 +56,7 @@ export function Hero() {
 
         {/* Trust line */}
         <p className="text-sm font-mono text-axis-text3 mb-16 animate-slide-up" style={{ animationDelay: "0.25s" }}>
-          No credit card · Setup in 90 seconds · Free forever plan
+          No credit card | 90-second setup | Free forever plan
         </p>
 
         {/* App preview mockup */}
