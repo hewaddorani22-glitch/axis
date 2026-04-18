@@ -221,7 +221,7 @@ export function useHabits() {
       supabase.from("habits").upsert(updates).then(({ error }) => {
         if (error) {
           toast.error("Failed to reorder habits");
-          refetch();
+          fetchHabits();
         }
       });
       

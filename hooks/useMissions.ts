@@ -113,7 +113,7 @@ export function useMissions(date?: string) {
       supabase.from("missions").upsert(updates).then(({ error }) => {
         if (error) {
           toast.error("Failed to reorder missions");
-          refetch(); // Rollback if mass upsert fails
+          fetchMissions(); // Rollback if mass upsert fails
         }
       });
       
