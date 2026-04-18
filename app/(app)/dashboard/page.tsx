@@ -1,53 +1,199 @@
 "use client";
 
-import { getGreeting, formatCurrency, formatDate } from "@/lib/utils";
-import { useUser } from "@/hooks/useUser";
-import { useMissions } from "@/hooks/useMissions";
-import { useHabits } from "@/hooks/useHabits";
-import { useRevenue } from "@/hooks/useRevenue";
-import { useStreak } from "@/hooks/useStreak";
-import {
-  IconCommand, IconRevenue, IconTarget, IconStreak,
-  IconBriefing, IconCheck, IconHabits, IconWarning
-} from "@/components/icons";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { EmptyState } from "@/components/app/empty-state";
 import { AxisScoreWidget } from "@/components/app/axis-score-widget";
-import { motion, AnimatePresence } from "framer-motion";
+import { useAxisScore } from "@/hooks/useAxisScore";
+import { useHabits } from "@/hooks/useHabits";
+import { useMissions } from "@/hooks/useMissions";
+import { useObjectives } from "@/hooks/useObjectives";
+import { useRevenue } from "@/hooks/useRevenue";
+import { useStreak } from "@/hooks/useStreak";
+import { useUser } from "@/hooks/useUser";
+import { formatCurrency, formatDate, getGreeting } from "@/lib/utils";
+import {
+  IconBriefing,
+  IconCheck,
+  IconCommand,
+  IconHabits,
+  IconRevenue,
+  IconStreak,
+  IconTarget,
+  IconWarning,
+} from "@/components/icons";
 
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.08 }
-  }
+    transition: { staggerChildren: 0.08 },
+  },
 };
 
 const itemVariants = {
   hidden: { opacity: 0, scale: 0.95, y: 10 },
-  show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 25 } }
+  show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 25 } },
 };
+
+function priorityWeight(priority: "high" | "med" | "low") {
+  if (priority === "high") return 3;
+  if (priority === "med") return 2;
+  return 1;
+}
 
 export default function DashboardPage() {
   const { user, loading: userLoading } = useUser();
-  const { missions, completedCount, total: missionsTotal, toggleMission, loading: missionsLoading } = useMissions();
-  const { habits, toggleHabit, completedToday: habitsCompleted, total: habitsTotal, loading: habitsLoading } = useHabits();
+  const { missions, loading: missionsLoading, toggleMission } = useMissions();
+  const { habits, loading: habitsLoading, toggleHabit } = useHabits();
   const { mtdTotal, loading: revenueLoading } = useRevenue();
-  const { streak, loading: streakLoading } = useStreak();
+  const { objectives, loading: objectivesLoading } = useObjectives();
+  const { streak, recoveryAvailable, loading: streakLoading } = useStreak();
+  const axisScore = useAxisScore();
 
-  // Streak at risk logic
+  const isLoading =
+    userLoading ||
+    missionsLoading ||
+    habitsLoading ||
+    revenueLoading ||
+    objectivesLoading ||
+    streakLoading ||
+    axisScore.loading;
+
+  const completedCount = missions.filter((mission) => mission.status === "done").length;
+  const habitsCompleted = habits.filter((habit) => habit.todayDone).length;
+  const missionsTotal = missions.length;
+  const openHabits = habits.filter((habit) => !habit.todayDone && !habit.todaySkipped);
+  const topTasks = missions
+    .filter((mission) => mission.status !== "done")
+    .sort((left, right) => priorityWeight(right.priority) - priorityWeight(left.priority))
+    .slice(0, 3);
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const revenueObjectives = objectives.filter(
+    (objective) =>
+      objective.rollup_type === "revenue" &&
+      objective.monthlyTarget > 0 &&
+      objective.start_date <= todayStr &&
+      (!objective.deadline || objective.deadline >= todayStr)
+  );
+  const activeObjectives = objectives.filter(
+    (objective) =>
+      objective.targetValue > 0 &&
+      objective.start_date <= todayStr &&
+      (!objective.deadline || objective.deadline >= todayStr)
+  );
+  const monthlyRevenueTarget = revenueObjectives.reduce((sum, objective) => sum + objective.monthlyTarget, 0);
+  const revenueDelta = mtdTotal - monthlyRevenueTarget;
+
   const currentHour = new Date().getHours();
-  const isLate = currentHour >= 20; // 8 PM
-  const streakAtRisk = streak >= 3 && habitsCompleted === 0 && isLate;
+  const isLate = currentHour >= 20;
+  const streakNeedsAttention = streak >= 3 && habitsCompleted === 0 && isLate;
+  const streakAtRisk = streakNeedsAttention && recoveryAvailable === 0;
 
-  const greeting = getGreeting();
-  const displayName = user?.name || "there";
-  const isLoading = userLoading || missionsLoading || habitsLoading || revenueLoading || streakLoading;
+  const nextBestAction = (() => {
+    if (streakNeedsAttention) {
+      return {
+        title: recoveryAvailable > 0 ? "Use the free recovery window" : "Protect your streak now",
+        detail:
+          recoveryAvailable > 0
+            ? "One miss is forgiven every 7 days. Close a habit tonight so the recovery stays unused."
+            : "You are late in the day with no completed habits. Close one habit before midnight.",
+        href: "/systems",
+        cta: "Open Habits",
+      };
+    }
+
+    if (missionsTotal === 0) {
+      return {
+        title: "Set today’s top 3 tasks",
+        detail: "The system has nothing to execute until you define today’s work.",
+        href: "/missions?quickAdd=1",
+        cta: "Add Tasks",
+      };
+    }
+
+    if (topTasks.length > 0) {
+      return {
+        title: `Ship: ${topTasks[0].title}`,
+        detail: "Move the highest-value open task before you widen the day.",
+        href: "/missions",
+        cta: "Open Tasks",
+      };
+    }
+
+    if (openHabits.length > 0) {
+      return {
+        title: "Close the remaining habits",
+        detail: `${openHabits.length} habit${openHabits.length !== 1 ? "s" : ""} still open today.`,
+        href: "/systems",
+        cta: "Finish Habits",
+      };
+    }
+
+    if (monthlyRevenueTarget > 0 && revenueDelta < 0) {
+      return {
+        title: "Revenue is behind pace",
+        detail: `${formatCurrency(Math.abs(revenueDelta))} behind this month’s target pace.`,
+        href: "/revenue?quickAdd=entry",
+        cta: "Log Revenue",
+      };
+    }
+
+    if (activeObjectives.length === 0) {
+      return {
+        title: "Create your first theme",
+        detail: "Objectives are still disconnected. Add one theme to tie work to outcomes.",
+        href: "/goals?quickAdd=1",
+        cta: "Create Theme",
+      };
+    }
+
+    return {
+      title: "Close the loop",
+      detail: "Execution is clean. Capture revenue, review outcomes, and prepare tomorrow.",
+      href: "/review",
+      cta: "Open Review",
+    };
+  })();
 
   const stats = [
-    { label: "MTD Revenue", value: formatCurrency(mtdTotal), change: mtdTotal > 0 ? "This month" : "No entries yet", changeColor: "text-emerald-500", icon: <IconRevenue size={18} className="text-emerald-500" /> },
-    { label: "Missions Done", value: `${completedCount}/${missionsTotal}`, change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add missions", changeColor: "text-emerald-500", icon: <IconTarget size={18} className="text-axis-accent" /> },
-    { label: "Streak", value: `${streak} day${streak !== 1 ? "s" : ""}`, change: streak >= 7 ? "On fire!" : streak > 0 ? "Keep going!" : "Start today", changeColor: "text-orange-500", icon: <IconStreak size={18} className="text-orange-500" /> },
+    {
+      label: "Revenue Pace",
+      value: monthlyRevenueTarget > 0 ? `${formatCurrency(mtdTotal)} / ${formatCurrency(monthlyRevenueTarget)}` : formatCurrency(mtdTotal),
+      change:
+        monthlyRevenueTarget > 0
+          ? `${revenueDelta >= 0 ? "+" : "-"}${formatCurrency(Math.abs(revenueDelta))} vs pace`
+          : "Add a revenue theme",
+      changeColor: revenueDelta >= 0 ? "text-emerald-500" : "text-red-400",
+      icon: <IconRevenue size={18} className="text-emerald-500" />,
+    },
+    {
+      label: "Tasks Done",
+      value: `${completedCount}/${missionsTotal}`,
+      change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}% complete` : "No tasks set",
+      changeColor: "text-axis-accent",
+      icon: <IconTarget size={18} className="text-axis-accent" />,
+    },
+    {
+      label: "Themes Active",
+      value: `${activeObjectives.length}`,
+      change: activeObjectives.length > 0 ? `${objectives.filter((objective) => objective.outcomePct >= 100).length} on pace` : "Create your first theme",
+      changeColor: "text-blue-400",
+      icon: <IconBriefing size={18} className="text-blue-400" />,
+    },
+    {
+      label: "Streak",
+      value: `${streak} day${streak !== 1 ? "s" : ""}`,
+      change:
+        recoveryAvailable > 0
+          ? `${recoveryAvailable} recovery ${recoveryAvailable === 1 ? "day" : "days"} available`
+          : streak > 0
+          ? "No recovery buffer left"
+          : "Start today",
+      changeColor: "text-orange-500",
+      icon: <IconStreak size={18} className="text-orange-500" />,
+    },
   ];
 
   const Skeleton = ({ className = "" }: { className?: string }) => (
@@ -56,187 +202,264 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Greeting */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
           <IconCommand size={22} className="text-axis-accent" />
         </div>
         <div>
           {isLoading ? (
-            <><Skeleton className="h-6 w-48 mb-1" /><Skeleton className="h-4 w-32" /></>
+            <>
+              <Skeleton className="mb-1 h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </>
           ) : (
             <>
-              <h2 className="text-xl font-semibold">{greeting}, {displayName}</h2>
-              <p className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>{formatDate(new Date())}</p>
+              <h2 className="text-xl font-semibold">{getGreeting()}, {user?.name || "there"}</h2>
+              <p className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>
+                {formatDate(new Date())}
+              </p>
             </>
           )}
         </div>
       </div>
 
-      {/* Streak At Risk Alert (Pro upsell hook) */}
-      {!isLoading && streakAtRisk && (
-        <div className="rounded-2xl p-5 border border-red-500/30 bg-red-500/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {!isLoading && streakAtRisk ? (
+        <div className="flex flex-col justify-between gap-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-5 md:flex-row md:items-center">
           <div className="flex items-start gap-4">
-            <div className="mt-0.5"><IconWarning size={28} className="text-red-500" /></div>
+            <div className="mt-0.5">
+              <IconWarning size={28} className="text-red-500" />
+            </div>
             <div>
-              <p className="text-red-500 font-bold mb-1">Your {streak}-Day Streak is at Risk!</p>
+              <p className="mb-1 font-bold text-red-500">The streak is exposed tonight</p>
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                You haven't completed any daily systems today. Finish a habit before midnight, or use a Streak Freeze.
+                No habits are done, it is late, and the free recovery buffer is gone. Close one habit now.
               </p>
             </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <Link href="/systems" className="text-xs font-semibold px-4 py-2 bg-axis-text1 text-axis-bg rounded-lg text-center hover:opacity-90">
-              Complete Habit
-            </Link>
-            {user?.plan !== "pro" && (
-              <Link href="/settings" className="text-xs font-semibold px-4 py-2 bg-axis-accent text-axis-dark rounded-lg text-center hover:scale-105 transition-all shadow-[0_0_15px_rgba(205,255,79,0.3)]">
-                Unlock Freeze (Pro)
-              </Link>
-            )}
-            {user?.plan === "pro" && (
-              <Link href="/systems" className="text-xs font-semibold px-4 py-2 border border-axis-border text-axis-text2 hover:text-axis-text1 rounded-lg text-center hover:bg-axis-hover transition-all">
-                Use Freeze
-              </Link>
-            )}
+          <Link href="/systems" className="rounded-lg bg-axis-accent px-4 py-2 text-center text-xs font-semibold text-axis-dark">
+            Open Habits
+          </Link>
+        </div>
+      ) : null}
+
+      <div className="axis-card">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+              Today
+            </p>
+            <h3 className="mt-1 text-2xl font-semibold">One operating surface for the day</h3>
+            <p className="mt-2 max-w-2xl text-sm" style={{ color: "var(--text-secondary)" }}>
+              Top tasks, open habits, revenue pace, and the next action are all visible in one place.
+            </p>
+          </div>
+          <div className="hidden rounded-2xl px-4 py-3 lg:block" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+            <p className="text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+              Recovery Buffer
+            </p>
+            <p className="mt-2 text-lg font-semibold">{recoveryAvailable}</p>
           </div>
         </div>
-      )}
 
-      {/* Briefing */}
-      <div className="rounded-2xl p-5" style={{ backgroundColor: "var(--bg-accent-soft)", border: "1px solid rgba(205,255,79,0.2)" }}>
-        <div className="flex items-start gap-3">
-          <IconBriefing size={18} className="text-axis-accent mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-axis-accent mb-1">Morning Briefing</p>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              {streak > 0 ? (
-                <>You&apos;re on a <span className="text-axis-accent font-semibold">{streak}-day streak</span>{streak < 30 ? ` — ${30 - streak} more to 30!` : " — incredible!"} </>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_360px]">
+          <div className="space-y-5">
+            <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <div className="mb-4 flex items-center justify-between">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <IconTarget size={16} className="text-axis-accent" />
+                  Top 3 Tasks
+                </h4>
+                <Link href="/missions" className="text-xs font-mono text-axis-accent hover:underline">
+                  View all
+                </Link>
+              </div>
+              {isLoading ? (
+                <div className="space-y-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-12 w-full" />)}</div>
+              ) : topTasks.length === 0 ? (
+                <EmptyState
+                  icon={<IconTarget size={18} className="text-axis-accent" />}
+                  title="No open tasks"
+                  description="Set today’s top priorities before the day gets fragmented."
+                  actions={[{ label: "Add Task", href: "/missions?quickAdd=1" }]}
+                  compact
+                />
               ) : (
-                <>Start your streak today by completing a mission and a habit. </>
+                <div className="space-y-2">
+                  {topTasks.map((mission) => (
+                    <div key={mission.id} className="flex items-center gap-3 rounded-2xl px-3 py-3" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                      <button
+                        onClick={() => toggleMission(mission.id)}
+                        className={`relative flex h-6 w-6 items-center justify-center rounded-lg border-2 ${
+                          mission.status === "done" ? "border-axis-accent bg-axis-accent" : "hover:border-axis-accent/50"
+                        }`}
+                        style={mission.status !== "done" ? { borderColor: "var(--border-secondary)" } : undefined}
+                      >
+                        <AnimatePresence>
+                          {mission.status === "done" ? (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -45 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                              className="absolute inset-0 flex items-center justify-center"
+                            >
+                              <IconCheck size={12} className="text-axis-dark" />
+                            </motion.div>
+                          ) : null}
+                        </AnimatePresence>
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{mission.title}</p>
+                        <p className="text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+                          {mission.priority} priority
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-              {missionsTotal - completedCount > 0 && <>{missionsTotal - completedCount} mission{missionsTotal - completedCount !== 1 ? "s" : ""} remaining.</>}
-              {missionsTotal === 0 && <>Set your first missions to get started!</>}
-            </p>
+            </div>
+
+            <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <div className="mb-4 flex items-center justify-between">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <IconHabits size={16} className="text-axis-accent" />
+                  Open Habits
+                </h4>
+                <Link href="/systems" className="text-xs font-mono text-axis-accent hover:underline">
+                  View all
+                </Link>
+              </div>
+              {isLoading ? (
+                <div className="space-y-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-12 w-full" />)}</div>
+              ) : openHabits.length === 0 ? (
+                <EmptyState
+                  icon={<IconHabits size={18} className="text-axis-accent" />}
+                  title="No open habits"
+                  description="Today’s tracked habits are already closed."
+                  compact
+                />
+              ) : (
+                <div className="space-y-2">
+                  {openHabits.slice(0, 4).map((habit) => (
+                    <div key={habit.id} className="flex items-center gap-3 rounded-2xl px-3 py-3" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
+                        <IconHabits size={16} className="text-axis-accent" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{habit.name}</p>
+                        <p className="text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+                          {habit.streak} day streak
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => toggleHabit(habit.id, "done")}
+                        className="rounded-lg bg-axis-accent px-3 py-2 text-xs font-semibold text-axis-dark"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <AxisScoreWidget {...axisScore} loading={isLoading} />
+
+            <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <div className="mb-3 flex items-center gap-2">
+                <IconRevenue size={16} className="text-emerald-500" />
+                <p className="text-sm font-semibold">Revenue Pace</p>
+              </div>
+              <p className="text-3xl font-semibold">{formatCurrency(mtdTotal)}</p>
+              <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+                {monthlyRevenueTarget > 0
+                  ? `${revenueDelta >= 0 ? "Ahead by" : "Behind by"} ${formatCurrency(Math.abs(revenueDelta))} against ${formatCurrency(monthlyRevenueTarget)} this month.`
+                  : "No revenue theme is setting a monthly pace yet."}
+              </p>
+            </div>
+
+            <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+                Next Best Action
+              </p>
+              <p className="text-lg font-semibold">{nextBestAction.title}</p>
+              <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+                {nextBestAction.detail}
+              </p>
+              <Link href={nextBestAction.href} className="mt-4 inline-flex rounded-xl bg-axis-accent px-4 py-2 text-sm font-semibold text-axis-dark">
+                {nextBestAction.cta}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Stat cards */}
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
           <motion.div variants={itemVariants} key={stat.label} className="axis-stat-card-dark">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-mono font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>{stat.label}</span>
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-mono font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
+                {stat.label}
+              </span>
               {stat.icon}
             </div>
-            {isLoading ? <Skeleton className="h-8 w-20 mb-2" /> : <p className="text-2xl font-bold mb-1">{stat.value}</p>}
+            {isLoading ? <Skeleton className="mb-2 h-8 w-20" /> : <p className="mb-1 text-2xl font-bold">{stat.value}</p>}
             <p className={`text-xs font-mono ${stat.changeColor}`}>{stat.change}</p>
           </motion.div>
         ))}
-        <motion.div variants={itemVariants}>
-          <AxisScoreWidget />
-        </motion.div>
       </motion.div>
 
-      {/* Two columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Missions */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="axis-card">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <IconTarget size={16} className="text-axis-accent" /> Today&apos;s Missions
+              <IconBriefing size={16} className="text-axis-accent" />
+              Briefing
             </h3>
-            <Link href="/missions" className="text-xs font-mono text-axis-accent hover:underline">View all →</Link>
           </div>
-          {missionsLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
-          ) : missions.length === 0 ? (
-            <EmptyState
-              icon={<IconTarget size={20} className="text-axis-accent" />}
-              title="No missions set"
-              description="Start your day by defining today's top priorities."
-              actions={[{ label: "Add Mission", href: "/missions?quickAdd=1" }]}
-              compact
-            />
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-4/5" />
+            </div>
           ) : (
-            <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-2">
-              {missions.slice(0, 5).map((m) => (
-                <motion.div variants={itemVariants} key={m.id} className="flex items-center gap-3 py-2 px-3 rounded-xl transition-colors" style={{ ["--tw-bg-opacity" as string]: 1 }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-hover)")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
-                  <button onClick={() => toggleMission(m.id)} className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all relative ${m.status === "done" ? "bg-axis-accent border-axis-accent" : "border-gray-300 dark:border-white/20 hover:border-axis-accent/50"}`}>
-                    <AnimatePresence>
-                      {m.status === "done" && (
-                        <motion.div
-                          initial={{ scale: 0, rotate: -45 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          className="absolute inset-0 flex items-center justify-center"
-                        >
-                          <IconCheck size={12} className="text-axis-dark" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </button>
-                  <span className={`flex-1 text-sm ${m.status === "done" ? "line-through" : ""}`} style={{ color: m.status === "done" ? "var(--text-tertiary)" : "var(--text-primary)" }}>{m.title}</span>
-                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${m.priority === "high" ? "bg-red-500/10 text-red-500" : m.priority === "med" ? "bg-amber-500/10 text-amber-500" : "text-gray-400"}`}>{m.priority}</span>
-                </motion.div>
-              ))}
-            </motion.div>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              {streak > 0 ? (
+                <>
+                  The streak is at <span className="font-semibold text-axis-accent">{streak} days</span>.
+                  {recoveryAvailable > 0 ? ` ${recoveryAvailable} free recovery window${recoveryAvailable !== 1 ? "s are" : " is"} still unused.` : " No recovery buffer is left."}
+                </>
+              ) : (
+                <>Start the system today by closing one task and one habit.</>
+              )}{" "}
+              {activeObjectives.length > 0
+                ? `${activeObjectives.filter((objective) => objective.outcomePct >= 100).length} theme${activeObjectives.filter((objective) => objective.outcomePct >= 100).length !== 1 ? "s are" : " is"} on pace.`
+                : "You have no active themes yet."}
+            </p>
           )}
         </div>
 
-        {/* Habits */}
         <div className="axis-card">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <IconHabits size={16} className="text-axis-accent" /> Daily Systems
+              <IconRevenue size={16} className="text-emerald-500" />
+              Revenue Delta
             </h3>
-            <Link href="/systems" className="text-xs font-mono text-axis-accent hover:underline">View all →</Link>
           </div>
-          {habitsLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
-          ) : habits.length === 0 ? (
-            <EmptyState
-              icon={<IconHabits size={20} className="text-axis-accent" />}
-              title="No systems active"
-              description="Build consistency by tracking your daily habits."
-              actions={[{ label: "Add Habit", href: "/systems?quickAdd=1" }]}
-              compact
-            />
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
           ) : (
-            <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-3">
-              {habits.map((h) => (
-                <motion.div variants={itemVariants} key={h.id} className="flex items-center gap-4 py-3 px-3 rounded-xl transition-colors" onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-hover)")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all" style={{ backgroundColor: h.todayDone ? "var(--bg-accent-soft)" : h.todaySkipped ? "rgba(245, 158, 11, 0.1)" : "var(--bg-tertiary)" }}>
-                    <IconHabits size={16} className={h.todayDone ? "text-axis-accent" : h.todaySkipped ? "text-amber-500" : ""} style={{ color: h.todayDone || h.todaySkipped ? undefined : "var(--text-tertiary)" }} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium" style={{ color: h.todayDone || h.todaySkipped ? "var(--text-tertiary)" : "var(--text-primary)", textDecoration: h.todaySkipped ? "line-through" : "none" }}>{h.name}</p>
-                    <p className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>{h.streak} day streak</p>
-                  </div>
-                  <button onClick={() => toggleHabit(h.id, h.todayDone || h.todaySkipped ? "undo" : "done")} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all relative ${h.todayDone ? "bg-axis-accent text-axis-dark" : h.todaySkipped ? "bg-amber-500 text-axis-dark" : ""}`} style={!(h.todayDone || h.todaySkipped) ? { backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" } : undefined}>
-                    <AnimatePresence>
-                      {h.todayDone ? (
-                        <motion.div
-                          initial={{ scale: 0, rotate: -45 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          className="absolute inset-0 flex items-center justify-center"
-                        >
-                          <IconCheck size={14} />
-                        </motion.div>
-                      ) : h.todaySkipped ? (
-                         <span className="text-sm font-bold">−</span>
-                      ) : (
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--border-secondary)" }} />
-                      )}
-                    </AnimatePresence>
-                  </button>
-                </motion.div>
-              ))}
-            </motion.div>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              {monthlyRevenueTarget > 0
+                ? `This month is ${revenueDelta >= 0 ? "ahead" : "behind"} pace by ${formatCurrency(Math.abs(revenueDelta))} against a target track of ${formatCurrency(monthlyRevenueTarget)}.`
+                : "No revenue pace exists until at least one revenue theme is created and linked to a stream."}
+            </p>
           )}
         </div>
       </div>

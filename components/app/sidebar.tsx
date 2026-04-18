@@ -1,12 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
-import { primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
+import { useAxisScore } from "@/hooks/useAxisScore";
 import { AxisScoreWidget } from "@/components/app/axis-score-widget";
+import { primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
 import {
   AxisLogo,
   IconUpgrade,
@@ -18,9 +20,11 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useUser();
   const { streak } = useStreak();
+  const axisScore = useAxisScore();
 
   const displayName = user?.name || user?.email?.split("@")[0] || "User";
   const initials = displayName.charAt(0).toUpperCase();
+  const [startingCheckout, setStartingCheckout] = useState(false);
 
   const hasStreak = streak > 0;
 
@@ -44,6 +48,10 @@ export function Sidebar() {
               <span className="text-xs font-mono font-bold text-orange-400">{streak}</span>
             </Link>
           )}
+        </div>
+
+        <div className="px-3 pt-3">
+          <AxisScoreWidget {...axisScore} compact className="bg-white/[0.03]" />
         </div>
 
         {/* Navigation */}
@@ -71,16 +79,6 @@ export function Sidebar() {
             );
           })}
         </nav>
-
-        {/* Axis Score */}
-        <div className="px-4 pb-3">
-          <div
-            className="rounded-2xl px-4 py-3"
-            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
-          >
-            <AxisScoreWidget compact />
-          </div>
-        </div>
 
         {/* Bottom section */}
         <div className="px-3 pb-4 space-y-1">
@@ -116,13 +114,26 @@ export function Sidebar() {
               <p className="text-[11px] text-white/40 leading-relaxed mb-3">Unlimited everything. $9/mo.</p>
               <button
                 onClick={async () => {
-                  const res = await fetch("/api/stripe/checkout", { method: "POST" });
-                  const data = await res.json();
-                  if (data.url) window.location.href = data.url;
+                  try {
+                    setStartingCheckout(true);
+                    const res = await fetch("/api/stripe/checkout", { method: "POST" });
+                    const data = await res.json();
+                    if (data.url) {
+                      window.location.href = data.url;
+                      return;
+                    }
+
+                    alert(data.error || "Failed to start checkout.");
+                  } catch {
+                    alert("Network error. Please try again.");
+                  } finally {
+                    setStartingCheckout(false);
+                  }
                 }}
+                disabled={startingCheckout}
                 className="block w-full text-center text-xs font-semibold bg-axis-accent text-axis-dark px-4 py-2 rounded-lg hover:bg-axis-accent/90 transition-all"
               >
-                Upgrade
+                {startingCheckout ? "Opening..." : "Upgrade"}
               </button>
             </div>
           )}

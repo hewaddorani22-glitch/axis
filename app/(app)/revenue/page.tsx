@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRevenue } from "@/hooks/useRevenue";
+import { useObjectives } from "@/hooks/useObjectives";
 import { formatCurrency } from "@/lib/utils";
 import { IconRevenue, IconPlus, IconSync } from "@/components/icons";
 import Link from "next/link";
@@ -19,7 +20,12 @@ export default function RevenuePage() {
   const [entryDate, setEntryDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [newStreamName, setNewStreamName] = useState("");
   const [isNewStreamRecurring, setIsNewStreamRecurring] = useState(false);
+  const [newObjectiveId, setNewObjectiveId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [quickAddRequested, setQuickAddRequested] = useState(false);
+  const entryAmountRef = useRef<HTMLInputElement>(null);
+  const streamNameRef = useRef<HTMLInputElement>(null);
+  const { objectives } = useObjectives();
 
   const handleAddEntry = async () => {
     if (!entryStreamId || !entryAmount) return;
@@ -43,13 +49,11 @@ export default function RevenuePage() {
     if (!newStreamName.trim()) return;
     const colors = ["#CDFF4F", "#F97316", "#3B82F6", "#8B5CF6", "#EC4899", "#14B8A6"];
     const color = colors[streams.length % colors.length];
-    
-    // Pass is_recurring safely 
-    // We didn't add it to useRevenue.addStream signature, let's just make sure we are good or rely on default false. 
-    // Wait, since useRevenue needs an update for is_recurring, let's keep it simple or implement it there too.
-    await addStream(newStreamName.trim(), color); 
+
+    await addStream(newStreamName.trim(), color, isNewStreamRecurring, newObjectiveId || null);
     setNewStreamName("");
     setIsNewStreamRecurring(false);
+    setNewObjectiveId("");
     setShowAddStream(false);
   };
 
@@ -61,6 +65,26 @@ export default function RevenuePage() {
       setShowAddStream(true);
     }
   };
+
+  useEffect(() => {
+    setQuickAddRequested(new URLSearchParams(window.location.search).get("quickAdd") === "entry");
+  }, []);
+
+  useEffect(() => {
+    if (!quickAddRequested) return;
+    openAddEntry();
+  }, [quickAddRequested, streams.length]);
+
+  useEffect(() => {
+    if (showAddEntry) {
+      entryAmountRef.current?.focus();
+      return;
+    }
+
+    if (showAddStream) {
+      streamNameRef.current?.focus();
+    }
+  }, [showAddEntry, showAddStream]);
 
   const grandTotal = streamTotals.reduce((sum, s) => sum + s.total, 0);
   const lastMonth = monthlyTotals.length >= 2 ? monthlyTotals[monthlyTotals.length - 2].total : 0;
@@ -108,30 +132,56 @@ export default function RevenuePage() {
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xs font-bold bg-axis-accent text-axis-dark w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Watch your monthly chart grow and hit your revenue goals</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Watch your monthly chart grow and pace against your revenue themes</p>
             </div>
           </div>
 
           <div className="max-w-sm mx-auto">
             <p className="text-xs font-mono mb-2" style={{ color: "var(--text-tertiary)" }}>Name your first income source</p>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder='e.g. "Freelance Design"'
-                value={newStreamName}
-                onChange={(e) => setNewStreamName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddStream()}
-                className="flex-1 text-sm rounded-xl px-4 py-3 outline-none"
-                style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
-                autoFocus
-              />
-              <button
-                onClick={handleAddStream}
-                disabled={!newStreamName.trim()}
-                className="bg-axis-accent text-axis-dark text-sm font-semibold px-5 py-3 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-40"
-              >
-                Create
-              </button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  ref={streamNameRef}
+                  type="text"
+                  placeholder='e.g. "Freelance Design"'
+                  value={newStreamName}
+                  onChange={(e) => setNewStreamName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddStream()}
+                  className="flex-1 text-sm rounded-xl px-4 py-3 outline-none"
+                  style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
+                  autoFocus
+                />
+                <button
+                  onClick={handleAddStream}
+                  disabled={!newStreamName.trim()}
+                  className="bg-axis-accent text-axis-dark text-sm font-semibold px-5 py-3 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-40"
+                >
+                  Create
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <select
+                  value={newObjectiveId}
+                  onChange={(e) => setNewObjectiveId(e.target.value)}
+                  className="w-full text-xs font-mono rounded-xl px-3 py-2.5 outline-none"
+                  style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
+                >
+                  <option value="">No theme</option>
+                  {objectives.map((objective) => (
+                    <option key={objective.id} value={objective.id}>
+                      {objective.title}
+                    </option>
+                  ))}
+                </select>
+                <label className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-mono" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
+                  <input
+                    type="checkbox"
+                    checked={isNewStreamRecurring}
+                    onChange={(e) => setIsNewStreamRecurring(e.target.checked)}
+                  />
+                  Recurring
+                </label>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
               {["Freelance", "Shopify", "YouTube", "Consulting", "SaaS"].map((s) => (
@@ -236,6 +286,7 @@ export default function RevenuePage() {
               <div>
                 <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Amount ($)</label>
                 <input
+                  ref={entryAmountRef}
                   type="number"
                   placeholder="0.00"
                   value={entryAmount}
@@ -340,18 +391,44 @@ export default function RevenuePage() {
           </button>
         </div>
         {showAddStream && (
-          <div className="flex items-center gap-3 mb-4 p-3 rounded-xl" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}>
-            <input
-              type="text"
-              placeholder='e.g. "Freelance", "Shopify", "Consulting"'
-              value={newStreamName}
-              onChange={(e) => setNewStreamName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddStream()}
-              className="flex-1 text-sm rounded-lg px-3 py-2 outline-none"
-              style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
-              autoFocus
-            />
-            <button onClick={handleAddStream} disabled={!newStreamName.trim()} className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-40">Add</button>
+          <div className="mb-4 space-y-3 rounded-xl p-3" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}>
+            <div className="flex items-center gap-3">
+              <input
+                ref={streamNameRef}
+                type="text"
+                placeholder='e.g. "Freelance", "Shopify", "Consulting"'
+                value={newStreamName}
+                onChange={(e) => setNewStreamName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddStream()}
+                className="flex-1 text-sm rounded-lg px-3 py-2 outline-none"
+                style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
+                autoFocus
+              />
+              <button onClick={handleAddStream} disabled={!newStreamName.trim()} className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-40">Add</button>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <select
+                value={newObjectiveId}
+                onChange={(e) => setNewObjectiveId(e.target.value)}
+                className="w-full text-xs font-mono rounded-lg px-3 py-2 outline-none"
+                style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
+              >
+                <option value="">No theme</option>
+                {objectives.map((objective) => (
+                  <option key={objective.id} value={objective.id}>
+                    {objective.title}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-mono" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-secondary)" }}>
+                <input
+                  type="checkbox"
+                  checked={isNewStreamRecurring}
+                  onChange={(e) => setIsNewStreamRecurring(e.target.checked)}
+                />
+                Recurring
+              </label>
+            </div>
           </div>
         )}
         {streams.length === 0 ? (

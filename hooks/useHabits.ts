@@ -10,6 +10,7 @@ export interface Habit {
   icon: string;
   archived: boolean;
   sort_order: number;
+  objective_id?: string | null;
   target_value?: number | null;
   unit?: string | null;
 }
@@ -51,9 +52,9 @@ export function useHabits() {
     const { data: logs } = await supabase
       .from("habit_logs")
       .select("*")
+      .eq("user_id", user.id)
       .gte("date", weekAgoStr)
-      .lte("date", todayStr)
-      .eq("completed", true);
+      .lte("date", todayStr);
 
     // Calculate streaks (simplified: count consecutive days up to today)
     const { data: allLogs } = await supabase
@@ -99,7 +100,7 @@ export function useHabits() {
         }
       }
 
-      return { ...habit, todayDone, streak, weekLog } as HabitWithStatus;
+      return { ...habit, todayDone, todaySkipped, todayValue, streak, weekLog } as HabitWithStatus;
     });
 
     setHabits(habitsWithStatus);
@@ -110,7 +111,13 @@ export function useHabits() {
     fetchHabits();
   }, [fetchHabits]);
 
-  const addHabit = async (name: string, icon: string = "◆", target_value?: number | null, unit?: string | null) => {
+  const addHabit = async (
+    name: string,
+    icon: string = "◆",
+    target_value?: number | null,
+    unit?: string | null,
+    objective_id?: string | null
+  ) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -127,6 +134,7 @@ export function useHabits() {
         name, 
         icon, 
         sort_order: habits.length,
+        objective_id: objective_id || null,
         target_value: target_value || null,
         unit: unit || null
       })

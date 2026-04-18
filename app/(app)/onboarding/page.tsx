@@ -98,9 +98,9 @@ export default function OnboardingPage() {
 
   const stepTitles = [
     { title: "Your Profile", subtitle: "Tell us about yourself so we can personalize your experience.", icon: <IconUser size={20} className="text-axis-accent" /> },
-    { title: "Today's Missions", subtitle: "What do you need to accomplish today? Set up to 5 priorities.", icon: <IconTarget size={20} className="text-axis-accent" /> },
-    { title: "Daily Habits", subtitle: "Choose the habits you want to build. Consistency is everything.", icon: <IconHabits size={20} className="text-axis-accent" /> },
-    { title: "Public Profile", subtitle: "Set up your Prove It page. Show the world your accountability.", icon: <IconProve size={20} className="text-axis-accent" /> },
+    { title: "Today's Tasks", subtitle: "What do you need to accomplish today? Set up to 5 priorities.", icon: <IconTarget size={20} className="text-axis-accent" /> },
+    { title: "Habits", subtitle: "Choose the habits you want to build. Consistency is everything.", icon: <IconHabits size={20} className="text-axis-accent" /> },
+    { title: "Public Profile", subtitle: "Set up your public profile. Show the world your accountability.", icon: <IconProve size={20} className="text-axis-accent" /> },
     { title: "All Set!", subtitle: "Review your setup. Everything looks ready — let's go.", icon: <IconCheck size={20} className="text-axis-accent" /> },
   ];
 
@@ -276,7 +276,7 @@ export default function OnboardingPage() {
       {step === 2 && (
         <div className="space-y-3 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Missions are your daily priorities — the things that move the needle.
+            Tasks are your daily priorities — the things that move the needle.
             Set up to 5 for today, ranked by importance. You can always change them later.
           </p>
           {missions.map((mission, i) => (
@@ -326,7 +326,7 @@ export default function OnboardingPage() {
       {step === 3 && (
         <div className="space-y-4 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Pick 2–3 daily habits you want to track. These build your streak and feed into your Focus Score.
+            Pick 2–3 daily habits you want to track. These build your streak and feed into your system health.
             Consistency here separates doers from dreamers.
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -400,7 +400,7 @@ export default function OnboardingPage() {
       {step === 4 && (
         <div className="space-y-5 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Your Prove It profile is your public accountability page. Share it with partners,
+            Your public profile is your public accountability page. Share it with partners,
             on social media, or embed it anywhere. People can see your streaks, grades, and activity.
           </p>
           <div>

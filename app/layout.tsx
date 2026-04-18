@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { CommandPaletteProvider } from "@/components/app/command-palette";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="font-display antialiased">
         <ThemeProvider>
-          {children}
+          <CommandPaletteProvider>{children}</CommandPaletteProvider>
           <Toaster position="bottom-right" theme="system" />
         </ThemeProvider>
       </body>

@@ -16,6 +16,21 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Objectives / Themes
+CREATE TABLE objectives (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  rollup_type TEXT NOT NULL DEFAULT 'missions' CHECK (rollup_type IN ('missions', 'revenue', 'habits')),
+  target_value DECIMAL(12,2),
+  unit TEXT,
+  start_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  deadline DATE,
+  color TEXT DEFAULT '#CDFF4F',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Missions
 CREATE TABLE missions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -26,6 +41,9 @@ CREATE TABLE missions (
   date DATE NOT NULL DEFAULT CURRENT_DATE,
   category TEXT,
   sort_order INTEGER DEFAULT 0,
+  objective_id UUID REFERENCES objectives(id) ON DELETE SET NULL,
+  estimated_time INTEGER, -- in minutes
+  energy_level TEXT CHECK (energy_level IN ('high', 'med', 'low')),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -35,6 +53,8 @@ CREATE TABLE revenue_streams (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   color TEXT DEFAULT '#CDFF4F',
+  is_recurring BOOLEAN DEFAULT false,
+  objective_id UUID REFERENCES objectives(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -55,6 +75,9 @@ CREATE TABLE habits (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   icon TEXT DEFAULT '◆',
+  objective_id UUID REFERENCES objectives(id) ON DELETE SET NULL,
+  target_value DECIMAL(12,2),
+  unit TEXT,
   archived BOOLEAN DEFAULT false,
   sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now()
@@ -66,6 +89,8 @@ CREATE TABLE habit_logs (
   habit_id UUID REFERENCES habits(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL DEFAULT CURRENT_DATE,
+  value DECIMAL(12,2),
+  skipped BOOLEAN DEFAULT false,
   completed BOOLEAN DEFAULT false,
   UNIQUE(habit_id, date)
 );
@@ -144,6 +169,7 @@ CREATE TABLE streak_freezes (
 
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE objectives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE missions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE revenue_streams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE revenue_entries ENABLE ROW LEVEL SECURITY;
@@ -161,6 +187,7 @@ ALTER TABLE streak_freezes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users read own data" ON users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users update own data" ON users FOR UPDATE USING (auth.uid() = id);
 
+CREATE POLICY "Objectives: own data" ON objectives FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Missions: own data" ON missions FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Revenue Streams: own data" ON revenue_streams FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Revenue Entries: own data" ON revenue_entries FOR ALL USING (auth.uid() = user_id);
@@ -180,6 +207,3 @@ CREATE POLICY "Partnerships: update own" ON partnerships FOR UPDATE USING (auth.
 -- Nudges: sender and receiver can read
 CREATE POLICY "Nudges: read own" ON nudges FOR SELECT USING (auth.uid() = from_user OR auth.uid() = to_user);
 CREATE POLICY "Nudges: create own" ON nudges FOR INSERT WITH CHECK (auth.uid() = from_user);
-
--- Public Prove It profiles: anyone can read daily_scores by prove_it_username (via join)
--- This would need a custom function or view for public access

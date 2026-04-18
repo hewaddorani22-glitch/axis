@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useHabits, HabitWithStatus } from "@/hooks/useHabits";
+import { useObjectives } from "@/hooks/useObjectives";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
 import { IconHabits, IconCheck, IconStreak, IconFreeze } from "@/components/icons";
@@ -164,14 +165,18 @@ export default function SystemsPage() {
   const { habits, loading, addHabit, toggleHabit, reorderHabits, completedToday, total } = useHabits();
   const { user } = useUser();
   const { streak } = useStreak();
+  const { objectives } = useObjectives();
   const [newHabit, setNewHabit] = useState("");
   const [newIcon, setNewIcon] = useState("◆");
   const [newTarget, setNewTarget] = useState("");
   const [newUnit, setNewUnit] = useState("");
+  const [newObjectiveId, setNewObjectiveId] = useState("");
   const [showQuantified, setShowQuantified] = useState(false);
   const [freezeUsed, setFreezeUsed] = useState<string | null>(null);
   const [freezeLoading, setFreezeLoading] = useState(true);
   const [freezing, setFreezing] = useState(false);
+  const [quickAddRequested, setQuickAddRequested] = useState(false);
+  const habitInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
 
@@ -199,6 +204,15 @@ export default function SystemsPage() {
     checkFreeze();
   }, [checkFreeze]);
 
+  useEffect(() => {
+    setQuickAddRequested(new URLSearchParams(window.location.search).get("quickAdd") === "1");
+  }, []);
+
+  useEffect(() => {
+    if (!quickAddRequested) return;
+    habitInputRef.current?.focus();
+  }, [quickAddRequested]);
+
   const handleFreeze = async () => {
     if (freezing) return;
     setFreezing(true);
@@ -215,12 +229,12 @@ export default function SystemsPage() {
     const targetVal = showQuantified && newTarget ? parseFloat(newTarget) : null;
     const unitVal = showQuantified && newUnit ? newUnit.trim() : null;
     
-    // We pass target and unit to addHabit. We need to update useHabits to support it.
-    await addHabit(newHabit.trim(), newIcon || "◆", targetVal, unitVal);
+    await addHabit(newHabit.trim(), newIcon || "◆", targetVal, unitVal, newObjectiveId || null);
     setNewHabit("");
     setNewIcon("◆");
     setNewTarget("");
     setNewUnit("");
+    setNewObjectiveId("");
     setShowQuantified(false);
   };
 
@@ -353,6 +367,7 @@ export default function SystemsPage() {
             maxLength={2}
           />
           <input
+            ref={habitInputRef}
             type="text"
             placeholder="Add a new habit..."
             value={newHabit}
@@ -381,7 +396,7 @@ export default function SystemsPage() {
         </div>
         
         {showQuantified && (
-          <div className="flex items-center gap-3 pl-14 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-wrap items-center gap-3 pl-14 animate-in fade-in slide-in-from-top-2 duration-300">
             <input
               type="number"
               placeholder="Target (e.g. 5)"
@@ -398,6 +413,19 @@ export default function SystemsPage() {
               className="w-48 text-xs rounded-lg px-3 py-2 outline-none"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
             />
+            <select
+              value={newObjectiveId}
+              onChange={(e) => setNewObjectiveId(e.target.value)}
+              className="min-w-[170px] text-xs font-mono rounded-lg px-3 py-2 outline-none"
+              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
+            >
+              <option value="">No theme</option>
+              {objectives.map((objective) => (
+                <option key={objective.id} value={objective.id}>
+                  {objective.title}
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>

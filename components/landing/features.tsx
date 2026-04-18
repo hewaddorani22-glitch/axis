@@ -29,7 +29,7 @@ export function Features() {
     {
       icon: <IconGoals size={24} />,
       title: "Goals",
-      description: "Set targets with deadlines. Track your milestones and see your progress at a glance.",
+      description: "Set targets with deadlines. Progress bars auto-update and warn you when you're falling behind.",
       badge: "Goals",
     },
     {

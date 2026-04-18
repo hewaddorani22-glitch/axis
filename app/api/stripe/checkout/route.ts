@@ -14,9 +14,13 @@ export async function POST() {
 
     const { data: profile } = await supabase
       .from("users")
-      .select("stripe_customer_id, email, name")
+      .select("plan, stripe_customer_id, email, name")
       .eq("id", user.id)
       .single();
+
+    if (profile?.plan === "pro") {
+      return NextResponse.json({ error: "You are already on Pro." }, { status: 409 });
+    }
 
     let customerId = profile?.stripe_customer_id;
 
@@ -37,7 +41,7 @@ export async function POST() {
     const headersList = await headers();
     const origin = headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://useaxis.com";
 
-    const lineItems: any[] = process.env.STRIPE_PRO_PRICE_ID
+    const lineItems = process.env.STRIPE_PRO_PRICE_ID
       ? [{ price: process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }]
       : [{
           price_data: {
@@ -46,7 +50,7 @@ export async function POST() {
               name: "AXIS Pro",
               description: "Unlimited everything. Your complete Business OS.",
             },
-            recurring: { interval: "month" },
+            recurring: { interval: "month" as const },
             unit_amount: 900,
           },
           quantity: 1,
@@ -54,11 +58,15 @@ export async function POST() {
 
     const session = await getStripe().checkout.sessions.create({
       customer: customerId,
+      client_reference_id: user.id,
       mode: "subscription",
       line_items: lineItems,
-      success_url: `${origin}/settings?upgrade=success`,
+      success_url: `${origin}/settings?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/settings?upgrade=cancelled`,
       metadata: { supabase_user_id: user.id },
+      subscription_data: {
+        metadata: { supabase_user_id: user.id },
+      },
       allow_promotion_codes: true,
     });
 

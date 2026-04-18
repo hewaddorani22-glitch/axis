@@ -29,6 +29,7 @@ export async function DELETE() {
     admin.from("missions").delete().eq("user_id", userId),
     admin.from("habits").delete().eq("user_id", userId),
     admin.from("goals").delete().eq("user_id", userId),
+    admin.from("objectives").delete().eq("user_id", userId),
     admin.from("revenue_entries").delete().eq("user_id", userId),
     admin.from("partnerships").delete().or(`user_a.eq.${userId},user_b.eq.${userId}`),
   ]);

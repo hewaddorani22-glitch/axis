@@ -49,6 +49,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_PRO_PRICE_ID: ${{ secrets.STRIPE_PRO_PRICE_ID }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           deploy_args=""
@@ -69,6 +71,8 @@ jobs:
             -e NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
             -e NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL}" \
             -e STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+            -e STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET}" \
+            -e STRIPE_PRO_PRICE_ID="${STRIPE_PRO_PRICE_ID}" \
             -e SUPABASE_DB_URL="${SUPABASE_DB_URL}")
 
           echo "deploy_label=${deploy_label}" >> "${GITHUB_OUTPUT}"
