@@ -66,7 +66,7 @@ export async function GET(request: Request) {
           .limit(1);
 
         if (yesterdayMissions && yesterdayMissions.length > 0) {
-          // Has a streak at risk — send warning
+          // Has a streak at risk: send warning
           await sendStreakWarning(user.email, user.name || "there", 1);
           sentCount++;
         }

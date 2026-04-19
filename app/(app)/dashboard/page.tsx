@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { EmptyState } from "@/components/app/empty-state";
 import { AxisScoreWidget } from "@/components/app/axis-score-widget";
+import { useAxisScore } from "@/hooks/useAxisScore";
 import { motion, AnimatePresence } from "framer-motion";
 
 const containerVariants = {
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const { habits, toggleHabit, completedToday: habitsCompleted, total: habitsTotal, loading: habitsLoading } = useHabits();
   const { mtdTotal, loading: revenueLoading } = useRevenue();
   const { streak, loading: streakLoading } = useStreak();
+  const axisScore = useAxisScore();
 
   const currentHour = new Date().getHours();
   const isLate = currentHour >= 20;
@@ -41,7 +43,7 @@ export default function DashboardPage() {
 
   const greeting = getGreeting();
   const displayName = user?.name || "there";
-  const isLoading = userLoading || missionsLoading || habitsLoading || revenueLoading || streakLoading;
+  const isLoading = userLoading || missionsLoading || habitsLoading || revenueLoading || streakLoading || axisScore.loading;
 
   const stats = [
     { label: "MTD Revenue", value: formatCurrency(mtdTotal), change: mtdTotal > 0 ? "This month" : "No entries yet", changeColor: "text-emerald-500", icon: <IconRevenue size={18} className="text-emerald-500" /> },
@@ -134,7 +136,7 @@ export default function DashboardPage() {
           </motion.div>
         ))}
         <motion.div variants={itemVariants}>
-          <AxisScoreWidget />
+          <AxisScoreWidget {...axisScore} loading={axisScore.loading} />
         </motion.div>
       </motion.div>
 

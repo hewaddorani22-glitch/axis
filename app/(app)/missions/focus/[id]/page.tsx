@@ -1,396 +1,362 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useId, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { Mission } from "@/hooks/useMissions";
-import { IconCheck, IconChevronLeft, IconTimer } from "@/components/icons";
+import { IconCheck, IconChevronLeft, IconFocus, IconTarget, IconTimer } from "@/components/icons";
 
-// ── Particle ──────────────────────────────────────────────────────────────────
+type FocusMission = {
+  id: string;
+  title: string;
+  status: "active" | "done";
+  priority: "high" | "med" | "low";
+  estimated_time: number | null;
+  energy_level: "high" | "med" | "low" | null;
+};
 
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  opacity: number;
-  color: string;
+const burstParticles = Array.from({ length: 18 }, (_, index) => ({
+  id: index,
+  x: Math.cos((index / 18) * Math.PI * 2) * (120 + (index % 3) * 24),
+  y: Math.sin((index / 18) * Math.PI * 2) * (120 + (index % 4) * 18),
+  delay: index * 0.02,
+}));
+
+function formatCountdown(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-const COLORS = ["#CDFF4F", "#76A300", "#ffffff", "#a8e063", "#f0ff8a"];
-
-function useParticles(active: boolean) {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const frameRef = useRef<number>(0);
-  const nextId = useRef(0);
-
-  const spawn = useCallback(() => {
-    const count = 60;
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
-    const burst: Particle[] = Array.from({ length: count }, () => {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 3 + Math.random() * 8;
-      return {
-        id: nextId.current++,
-        x: cx,
-        y: cy,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 4,
-        size: 4 + Math.random() * 8,
-        opacity: 1,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      };
-    });
-    setParticles(burst);
-  }, []);
-
-  useEffect(() => {
-    if (!active) return;
-    spawn();
-  }, [active, spawn]);
-
-  useEffect(() => {
-    if (particles.length === 0) return;
-
-    const tick = () => {
-      setParticles((prev) => {
-        const next = prev
-          .map((p) => ({
-            ...p,
-            x: p.x + p.vx,
-            y: p.y + p.vy,
-            vy: p.vy + 0.25,
-            opacity: p.opacity - 0.015,
-          }))
-          .filter((p) => p.opacity > 0);
-        return next;
-      });
-      frameRef.current = requestAnimationFrame(tick);
-    };
-
-    frameRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameRef.current);
-  }, [particles.length > 0]);
-
-  return particles;
-}
-
-// ── Radial Timer ──────────────────────────────────────────────────────────────
-
-function RadialTimer({
-  elapsed,
-  total,
-  paused,
-}: {
-  elapsed: number;
-  total: number;
-  paused: boolean;
-}) {
-  const radius = 110;
-  const circumference = 2 * Math.PI * radius;
-  const progress = total > 0 ? Math.min(elapsed / total, 1) : 0;
-  const dashOffset = circumference * (1 - progress);
-
-  const remaining = Math.max(total - elapsed, 0);
-  const mins = Math.floor(remaining / 60);
-  const secs = remaining % 60;
-
-  return (
-    <div className="relative flex items-center justify-center">
-      <svg width={280} height={280} className="-rotate-90">
-        <circle
-          cx={140}
-          cy={140}
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth={8}
-        />
-        <motion.circle
-          cx={140}
-          cy={140}
-          r={radius}
-          fill="none"
-          stroke="#CDFF4F"
-          strokeWidth={8}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          transition={{ duration: 0.5, ease: "linear" }}
-          style={{ filter: "drop-shadow(0 0 12px rgba(205,255,79,0.6))" }}
-        />
-      </svg>
-
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span
-          key={remaining}
-          initial={{ scale: 1.05 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.2 }}
-          className="font-mono text-5xl font-bold tabular-nums"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-        </motion.span>
-        <span
-          className="text-xs font-mono mt-1 tracking-widest uppercase"
-          style={{ color: "var(--text-tertiary)" }}
-        >
-          {paused ? "paused" : "remaining"}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-export default function FocusPage() {
-  const { id } = useParams<{ id: string }>();
+export default function MissionFocusPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const supabase = createClient();
-
-  const [mission, setMission] = useState<Mission | null>(null);
+  const gradientId = useId();
+  const [mission, setMission] = useState<FocusMission | null>(null);
   const [loading, setLoading] = useState(true);
-  const [elapsed, setElapsed] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [showBurst, setShowBurst] = useState(false);
 
-  const totalSecs = (mission?.estimated_time ?? 0) * 60;
-  const particles = useParticles(completed);
-
-  // Fetch mission
   useEffect(() => {
-    supabase
-      .from("missions")
-      .select("*")
-      .eq("id", id)
-      .single()
-      .then(({ data }) => {
-        setMission(data as Mission);
+    let isMounted = true;
+
+    async function fetchMission() {
+      const { data, error } = await supabase
+        .from("missions")
+        .select("id, title, status, priority, estimated_time, energy_level")
+        .eq("id", params.id)
+        .single();
+
+      if (!isMounted) return;
+
+      if (error || !data) {
+        setMission(null);
         setLoading(false);
-      });
-  }, [id]);
+        return;
+      }
 
-  // Countdown tick
+      const nextMission = data as FocusMission;
+      setMission(nextMission);
+      setSecondsLeft((nextMission.estimated_time || 25) * 60);
+      setIsRunning(nextMission.status !== "done");
+      setLoading(false);
+    }
+
+    fetchMission();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [params.id, supabase]);
+
   useEffect(() => {
-    if (paused || completed || totalSecs === 0) return;
-    const interval = setInterval(() => {
-      setElapsed((e) => {
-        if (e + 1 >= totalSecs) {
-          clearInterval(interval);
-          return totalSecs;
-        }
-        return e + 1;
-      });
+    if (!isRunning || secondsLeft <= 0) return;
+
+    const interval = window.setInterval(() => {
+      setSecondsLeft((current) => Math.max(current - 1, 0));
     }, 1000);
-    return () => clearInterval(interval);
-  }, [paused, completed, totalSecs]);
+
+    return () => window.clearInterval(interval);
+  }, [isRunning, secondsLeft]);
+
+  useEffect(() => {
+    if (secondsLeft === 0) {
+      setIsRunning(false);
+    }
+  }, [secondsLeft]);
+
+  const totalSeconds = (mission?.estimated_time || 25) * 60;
+  const progress = totalSeconds > 0 ? (totalSeconds - secondsLeft) / totalSeconds : 0;
+  const radius = 118;
+  const circumference = 2 * Math.PI * radius;
+  const strokeOffset = circumference * (1 - progress);
+
+  const handleReset = () => {
+    setSecondsLeft(totalSeconds);
+    setIsRunning(false);
+  };
 
   const handleComplete = async () => {
     if (!mission) return;
-    setCompleted(true);
-    await supabase.from("missions").update({ status: "done" }).eq("id", id);
-  };
 
-  const handleExit = () => router.push("/missions");
+    await supabase.from("missions").update({ status: "done" }).eq("id", mission.id);
+
+    setMission({ ...mission, status: "done" });
+    setIsRunning(false);
+    setShowBurst(true);
+
+    window.setTimeout(() => {
+      router.push("/missions");
+    }, 1400);
+  };
 
   if (loading) {
     return (
-      <div
-        className="fixed inset-0 flex items-center justify-center"
-        style={{ backgroundColor: "var(--bg-primary)" }}
-      >
-        <div className="axis-skeleton w-32 h-8 rounded-xl" />
+      <div className="flex min-h-screen items-center justify-center px-6">
+        <div className="axis-card w-full max-w-3xl py-20 text-center">
+          <div className="axis-skeleton mx-auto mb-5 h-16 w-16 rounded-full" />
+          <div className="axis-skeleton mx-auto mb-3 h-8 w-52 rounded-xl" />
+          <div className="axis-skeleton mx-auto h-4 w-40 rounded-xl" />
+        </div>
       </div>
     );
   }
 
   if (!mission) {
     return (
-      <div
-        className="fixed inset-0 flex flex-col items-center justify-center gap-4"
-        style={{ backgroundColor: "var(--bg-primary)" }}
-      >
-        <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
-          Mission not found.
-        </p>
-        <button
-          onClick={handleExit}
-          className="text-xs font-mono text-axis-accent hover:underline"
-        >
-          ← Back to Missions
-        </button>
+      <div className="flex min-h-screen items-center justify-center px-6">
+        <div className="axis-card w-full max-w-xl py-16 text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+              <IconTarget size={24} className="text-axis-accent" />
+            </div>
+          </div>
+          <h1 className="mb-2 text-2xl font-semibold">Mission unavailable</h1>
+          <p className="mb-6 text-sm" style={{ color: "var(--text-secondary)" }}>
+            This focus session could not load. Return to Tasks and pick another mission.
+          </p>
+          <Link href="/missions" className="inline-flex rounded-xl bg-axis-accent px-4 py-2 text-sm font-semibold text-axis-dark">
+            Back to Missions
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
-      style={{ backgroundColor: "var(--bg-primary)" }}
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-10"
+      style={{
+        background:
+          "radial-gradient(circle at top, rgba(205,255,79,0.14), transparent 30%), radial-gradient(circle at bottom, rgba(59,130,246,0.12), transparent 28%), var(--bg-primary)",
+      }}
     >
-      {/* Particle canvas */}
-      <div className="pointer-events-none fixed inset-0 z-10">
-        {particles.map((p) => (
-          <div
-            key={p.id}
-            className="absolute rounded-full"
-            style={{
-              left: p.x,
-              top: p.y,
-              width: p.size,
-              height: p.size,
-              backgroundColor: p.color,
-              opacity: p.opacity,
-              transform: "translate(-50%, -50%)",
-            }}
-          />
-        ))}
+      <AnimatePresence>
+        {showBurst
+          ? burstParticles.map((particle) => (
+              <motion.span
+                key={particle.id}
+                initial={{ opacity: 0.95, scale: 0.4, x: 0, y: 0 }}
+                animate={{ opacity: 0, scale: 1.1, x: particle.x, y: particle.y }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8, delay: particle.delay, ease: "easeOut" }}
+                className="pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 rounded-full bg-axis-accent"
+              />
+            ))
+          : null}
+      </AnimatePresence>
+
+      <div className="absolute left-6 top-6 flex items-center gap-3">
+        <Link
+          href="/missions"
+          className="flex items-center gap-2 rounded-2xl px-4 py-2 text-sm transition-colors"
+          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+        >
+          <IconChevronLeft size={14} />
+          <span>Exit focus</span>
+        </Link>
       </div>
 
-      {/* Back button */}
-      <button
-        onClick={handleExit}
-        className="absolute top-6 left-6 flex items-center gap-1.5 text-xs font-mono transition-opacity opacity-40 hover:opacity-100"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        <IconChevronLeft size={14} /> Exit Focus
-      </button>
-
-      {/* Main content */}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 260, damping: 22 }}
-        className="relative z-20 flex flex-col items-center gap-8 px-6 text-center max-w-lg"
-      >
-        {/* Label */}
-        <div className="flex items-center gap-2">
-          <IconTimer size={14} className="text-axis-accent" />
-          <span
-            className="text-[10px] font-mono uppercase tracking-widest"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            Focus Terminal
-          </span>
-        </div>
-
-        {/* Mission title */}
-        <h1
-          className="text-2xl font-bold leading-snug"
-          style={{ color: "var(--text-primary)" }}
+      <div className="w-full max-w-4xl">
+        <div
+          className="relative overflow-hidden rounded-[32px] px-6 py-8 md:px-10 md:py-10"
+          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
         >
-          {mission.title}
-        </h1>
-
-        {/* Timer or no-time state */}
-        {totalSecs > 0 ? (
-          <RadialTimer
-            elapsed={elapsed}
-            total={totalSecs}
-            paused={paused}
-          />
-        ) : (
-          <div
-            className="w-56 h-56 rounded-full border-2 flex items-center justify-center"
-            style={{ borderColor: "rgba(205,255,79,0.2)" }}
-          >
-            <span
-              className="text-xs font-mono"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              No timer set
-            </span>
-          </div>
-        )}
-
-        {/* Controls */}
-        <AnimatePresence mode="wait">
-          {!completed ? (
-            <motion.div
-              key="controls"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3"
-            >
-              {totalSecs > 0 && (
-                <button
-                  onClick={() => setPaused((p) => !p)}
-                  className="px-6 py-3 rounded-2xl text-sm font-semibold transition-all"
-                  style={{
-                    backgroundColor: "var(--bg-secondary)",
-                    border: "1px solid var(--border-primary)",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  {paused ? "Resume" : "Pause"}
-                </button>
-              )}
-              <button
-                onClick={handleComplete}
-                className="flex items-center gap-2 px-8 py-3 rounded-2xl text-sm font-bold bg-axis-accent text-axis-dark transition-all hover:scale-105 active:scale-95"
-                style={{ boxShadow: "0 0 24px rgba(205,255,79,0.4)" }}
-              >
-                <IconCheck size={16} /> Mark Complete
-              </button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="done"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 18 }}
-              className="flex flex-col items-center gap-4"
-            >
-              <div
-                className="w-20 h-20 rounded-full flex items-center justify-center"
-                style={{
-                  backgroundColor: "rgba(205,255,79,0.15)",
-                  border: "2px solid rgba(205,255,79,0.4)",
-                  boxShadow: "0 0 40px rgba(205,255,79,0.3)",
-                }}
-              >
-                <IconCheck size={32} className="text-axis-accent" />
+          <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-4 flex items-center gap-2">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
+                  <IconFocus size={18} className="text-axis-accent" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+                    Focus Mode
+                  </p>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    One mission. No feed. No list churn.
+                  </p>
+                </div>
               </div>
-              <p className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-                Mission Complete
-              </p>
-              <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
-                {mission.estimated_time
-                  ? `Focused for ${mission.estimated_time} min`
-                  : "Great work."}
-              </p>
-              <button
-                onClick={handleExit}
-                className="mt-2 text-xs font-mono text-axis-accent hover:underline"
-              >
-                ← Back to Missions
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Priority badge */}
-        {!completed && (
-          <span
-            className={`text-[10px] font-mono px-3 py-1 rounded-lg ${
-              mission.priority === "high"
-                ? "bg-red-500/10 text-red-500"
-                : mission.priority === "med"
-                ? "bg-amber-500/10 text-amber-500"
-                : "bg-gray-500/10 text-gray-400"
-            }`}
-          >
-            {mission.priority} priority
-          </span>
-        )}
-      </motion.div>
+              <h1 className="text-3xl font-semibold md:text-4xl">{mission.title}</h1>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span
+                  className="rounded-full px-3 py-1 text-[11px] font-mono uppercase"
+                  style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
+                >
+                  Priority {mission.priority}
+                </span>
+                <span
+                  className="rounded-full px-3 py-1 text-[11px] font-mono uppercase"
+                  style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
+                >
+                  {mission.estimated_time || 25} min block
+                </span>
+                {mission.energy_level ? (
+                  <span
+                    className="rounded-full px-3 py-1 text-[11px] font-mono uppercase"
+                    style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
+                  >
+                    {mission.energy_level} energy
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="grid w-full max-w-sm grid-cols-2 gap-3">
+              <div className="rounded-2xl p-4" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+                <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+                  Status
+                </p>
+                <p className="text-lg font-semibold">{mission.status === "done" ? "Mission cleared" : "In execution"}</p>
+              </div>
+              <div className="rounded-2xl p-4" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+                <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+                  Timer
+                </p>
+                <p className="text-lg font-semibold">{formatCountdown(secondsLeft)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="relative flex items-center justify-center">
+              <svg className="h-[320px] w-[320px] -rotate-90" viewBox="0 0 280 280">
+                <circle
+                  cx="140"
+                  cy="140"
+                  r={radius}
+                  stroke="rgba(255,255,255,0.08)"
+                  strokeWidth="12"
+                  fill="none"
+                />
+                <motion.circle
+                  cx="140"
+                  cy="140"
+                  r={radius}
+                  stroke={`url(#${gradientId})`}
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                  fill="none"
+                  initial={false}
+                  animate={{ strokeDashoffset: strokeOffset }}
+                  transition={{ type: "spring", stiffness: 120, damping: 18 }}
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference}
+                />
+                <defs>
+                  <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
+                    <stop offset="0%" stopColor="#3B82F6" />
+                    <stop offset="100%" stopColor="#CDFF4F" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
+                  <IconTimer size={22} className="text-axis-accent" />
+                </div>
+                <p className="text-[11px] font-mono uppercase tracking-[0.3em]" style={{ color: "var(--text-tertiary)" }}>
+                  Countdown
+                </p>
+                <p className="mt-2 text-6xl font-semibold tracking-tight">{formatCountdown(secondsLeft)}</p>
+                <p className="mt-3 text-sm" style={{ color: "var(--text-secondary)" }}>
+                  {secondsLeft === 0 ? "Time block completed. Close it out." : `${Math.round(progress * 100)}% of the block used`}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+                <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+                  Controls
+                </p>
+                <div className="grid gap-3">
+                  <button
+                    onClick={() => setIsRunning((current) => !current)}
+                    disabled={mission.status === "done"}
+                    className="rounded-2xl px-4 py-3 text-sm font-semibold transition-all disabled:opacity-50"
+                    style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+                  >
+                    {isRunning ? "Pause timer" : secondsLeft === totalSeconds ? "Start focus session" : "Resume timer"}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="rounded-2xl px-4 py-3 text-sm font-semibold transition-all"
+                    style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+                  >
+                    Reset block
+                  </button>
+                  <button
+                    onClick={handleComplete}
+                    className="rounded-2xl bg-axis-accent px-4 py-3 text-sm font-semibold text-axis-dark transition-all hover:bg-axis-accent/90"
+                  >
+                    {mission.status === "done" ? "Mission complete" : "Mark mission done"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-3xl p-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+                <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
+                  Protocol
+                </p>
+                <ul className="space-y-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+                  <li>Work the mission until the timer hits zero or the mission is complete.</li>
+                  <li>Pause only for real interruptions, not task switching.</li>
+                  <li>Complete the mission here to push progress back into AXIS immediately.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {showBurst ? (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="pointer-events-none absolute inset-x-6 bottom-6 rounded-2xl px-4 py-3 md:inset-x-auto md:right-6 md:w-[320px]"
+                style={{ backgroundColor: "rgba(205,255,79,0.12)", border: "1px solid rgba(205,255,79,0.28)" }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-axis-accent text-axis-dark">
+                    <IconCheck size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-axis-accent">Mission cleared</p>
+                    <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                      Returning to Tasks with the session logged.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 }

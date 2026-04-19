@@ -1,16 +1,81 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 function SettingsContent() {
-  const { user, loading, updateProfile, signOut } = useUser();
+  const { user, loading, updateProfile, signOut, refetch } = useUser();
   const searchParams = useSearchParams();
   const upgradeStatus = searchParams.get("upgrade");
+  const checkoutSessionId = searchParams.get("session_id");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [fieldValue, setFieldValue] = useState("");
+  const [billingState, setBillingState] = useState<"idle" | "checkout" | "portal" | "confirming">("idle");
+  const [upgradeMessage, setUpgradeMessage] = useState<{ tone: "success" | "warning" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (upgradeStatus !== "success") {
+      return;
+    }
+
+    if (user?.plan === "pro") {
+      setUpgradeMessage({ tone: "success", text: "Welcome to AXIS Pro. Your subscription is active." });
+      return;
+    }
+
+    if (!checkoutSessionId) {
+      setUpgradeMessage({
+        tone: "warning",
+        text: "Payment completed, but AXIS is still syncing your Pro access. Refresh in a moment.",
+      });
+      return;
+    }
+
+    let cancelled = false;
+
+    const confirmUpgrade = async () => {
+      setBillingState("confirming");
+
+      try {
+        const res = await fetch(`/api/stripe/confirm?session_id=${encodeURIComponent(checkoutSessionId)}`);
+        const data = await res.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!res.ok) {
+          setUpgradeMessage({
+            tone: "warning",
+            text: data.error || "Payment completed, but AXIS is still syncing your Pro access.",
+          });
+          return;
+        }
+
+        await refetch();
+        setUpgradeMessage({ tone: "success", text: "Welcome to AXIS Pro. Your subscription is active." });
+      } catch {
+        if (!cancelled) {
+          setUpgradeMessage({
+            tone: "warning",
+            text: "Payment completed, but AXIS could not verify it yet. Refresh in a moment.",
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setBillingState("idle");
+        }
+      }
+    };
+
+    void confirmUpgrade();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [checkoutSessionId, refetch, upgradeStatus, user?.plan]);
 
   const handleSave = async (field: string) => {
     if (!fieldValue.trim()) return;
@@ -21,28 +86,34 @@ function SettingsContent() {
 
   const handleUpgrade = async () => {
     try {
+      setBillingState("checkout");
       const res = await fetch("/api/stripe/checkout", { method: "POST" });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
+        setBillingState("idle");
         alert(data.error || "Failed to start checkout. Check Stripe configuration.");
       }
     } catch {
+      setBillingState("idle");
       alert("Network error. Please try again.");
     }
   };
 
   const handleManagePlan = async () => {
     try {
+      setBillingState("portal");
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
+        setBillingState("idle");
         alert(data.error || "Failed to open portal.");
       }
     } catch {
+      setBillingState("idle");
       alert("Network error. Please try again.");
     }
   };
@@ -60,9 +131,15 @@ function SettingsContent() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Upgrade success/cancel message */}
-      {upgradeStatus === "success" && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-sm rounded-xl px-4 py-3">
-          🎉 Welcome to AXIS Pro! Enjoy unlimited everything.
+      {upgradeMessage && (
+        <div className={`text-sm rounded-xl px-4 py-3 ${
+          upgradeMessage.tone === "success"
+            ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
+            : upgradeMessage.tone === "error"
+              ? "bg-red-500/10 border border-red-500/20 text-red-400"
+              : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+        }`}>
+          {upgradeMessage.text}
         </div>
       )}
       {upgradeStatus === "cancelled" && (
@@ -169,33 +246,39 @@ function SettingsContent() {
             <p className="text-xs mt-1" style={{ color: "var(--text-tertiary)" }}>
               {user?.plan === "pro"
                 ? "Unlimited everything. Thank you for your support!"
-                : "5 missions · 3 habits · 1 stream · 2 goals"}
+                : "5 tasks / 3 habits / 1 stream / 2 themes"}
             </p>
           </div>
         </div>
         {user?.plan === "pro" ? (
           <button
             onClick={handleManagePlan}
+            disabled={billingState === "portal"}
             className="w-full text-center text-sm font-medium px-6 py-3 rounded-xl transition-all"
             style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
           >
-            Manage Subscription
+            {billingState === "portal" ? "Opening billing portal..." : "Manage Subscription"}
           </button>
         ) : (
           <button
             onClick={handleUpgrade}
+            disabled={billingState === "checkout" || billingState === "confirming"}
             className="w-full text-center text-sm font-semibold bg-axis-accent text-axis-dark px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all"
           >
-            Upgrade to Pro — $9/mo
+            {billingState === "checkout"
+              ? "Redirecting to checkout..."
+              : billingState === "confirming"
+                ? "Confirming payment..."
+                : "Upgrade to Pro: $9/mo"}
           </button>
         )}
       </div>
 
-      {/* Prove It Profile */}
+      {/* Public Profile */}
       <div className="axis-card">
-        <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Prove It Profile</h3>
+        <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Public Profile</h3>
         <div className="space-y-4">
           <div>
             <label className="text-xs font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Username</label>
@@ -289,7 +372,7 @@ function SettingsContent() {
           <button
             onClick={async () => {
               const confirmed = confirm(
-                "Are you sure? This will permanently delete your account and ALL your data — missions, habits, revenue, goals, and everything else. This cannot be undone."
+                "Are you sure? This will permanently delete your account and ALL your data: tasks, habits, revenue, themes, and everything else. This cannot be undone."
               );
               if (!confirmed) return;
               const res = await fetch("/api/account/delete", { method: "DELETE" });

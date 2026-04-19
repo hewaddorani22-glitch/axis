@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { IconMail } from "@/components/icons";
 
 function SignupForm() {
   const [name, setName] = useState("");
@@ -26,7 +27,7 @@ function SignupForm() {
         body: JSON.stringify({ inviterId: inviteId }),
       });
     } catch {
-      // Non-fatal — user can connect manually
+      // Non-fatal: user can connect manually
     }
   };
 
@@ -80,7 +81,7 @@ function SignupForm() {
     return (
       <div className="text-center">
         <div className="w-16 h-16 bg-axis-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <span className="text-3xl">✉️</span>
+          <IconMail size={32} className="text-axis-accent" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight mb-2">Check your email</h1>
         <p className="text-sm text-axis-text2 max-w-xs mx-auto">

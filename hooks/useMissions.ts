@@ -12,6 +12,7 @@ export interface Mission {
   date: string;
   category: string | null;
   sort_order: number;
+  objective_id?: string | null;
   estimated_time?: number | null;
   energy_level?: "high" | "med" | "low" | null;
 }
@@ -39,7 +40,14 @@ export function useMissions(date?: string) {
     fetchMissions();
   }, [fetchMissions]);
 
-  const addMission = async (title: string, priority: "high" | "med" | "low" = "med", category?: string, estimated_time?: number, energy_level?: "high" | "med" | "low") => {
+  const addMission = async (
+    title: string,
+    priority: "high" | "med" | "low" = "med",
+    category?: string,
+    estimated_time?: number,
+    energy_level?: "high" | "med" | "low",
+    objective_id?: string
+  ) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -58,6 +66,7 @@ export function useMissions(date?: string) {
         category: category || null,
         date: targetDate,
         sort_order: missions.length,
+        objective_id: objective_id || null,
         estimated_time: estimated_time || null,
         energy_level: energy_level || null,
       })

@@ -29,6 +29,7 @@ export async function DELETE() {
     admin.from("missions").delete().eq("user_id", userId),
     admin.from("habits").delete().eq("user_id", userId),
     admin.from("goals").delete().eq("user_id", userId),
+    admin.from("objectives").delete().eq("user_id", userId),
     admin.from("revenue_entries").delete().eq("user_id", userId),
     admin.from("partnerships").delete().or(`user_a.eq.${userId},user_b.eq.${userId}`),
   ]);
@@ -42,7 +43,7 @@ export async function DELETE() {
   const { error: authError } = await admin.auth.admin.deleteUser(userId);
   if (authError) {
     console.error("Error deleting auth user:", authError);
-    // Don't fail — data is already deleted
+    // Don't fail: data is already deleted
   }
 
   return NextResponse.json({ success: true });

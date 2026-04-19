@@ -36,7 +36,7 @@ export function Navbar() {
             href="/signup"
             className="inline-flex items-center text-sm font-medium bg-axis-text1 text-white px-5 py-2.5 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98]"
           >
-            Get Started — Free
+            Get Started
           </Link>
         </div>
       </div>

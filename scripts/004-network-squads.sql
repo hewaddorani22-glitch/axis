@@ -1,4 +1,4 @@
--- Phase 4: Social Accountability — Squads (The Grid)
+-- Phase 4: Social Accountability | Squads (The Grid)
 -- Creates groups, group_members tables with invite-code system and RLS.
 
 -- ── groups ────────────────────────────────────────────────────────────────────

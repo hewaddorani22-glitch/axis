@@ -1,5 +1,7 @@
+import { IconEdit, IconFocus, IconRevenue } from "@/components/icons";
+
 /**
- * Use Cases section — replaces fake testimonials.
+ * Use Cases section: replaces fake testimonials.
  * Shows real personas and what they track, without fabricated quotes.
  * Swap this out for real testimonials once you have beta users.
  */
@@ -7,21 +9,21 @@ export function Testimonials() {
   const useCases = [
     {
       role: "Freelance Designer",
-      avatar: "🎨",
+      avatar: <IconEdit size={24} className="text-axis-accent" />,
       problem: "Tracking clients in DMs, revenue in Notes, tasks in Notion.",
       outcome: "One system for revenue, missions, and habits. Less switching, more doing.",
       stats: ["Revenue tracking", "Daily missions", "Habit streaks"],
     },
     {
       role: "E-Commerce Founder",
-      avatar: "📦",
-      problem: "Sales spreadsheets, a task app, and a separate goal tracker — none connected.",
+      avatar: <IconRevenue size={24} className="text-emerald-400" />,
+      problem: "Sales spreadsheets, a task app, and a separate goal tracker: none connected.",
       outcome: "MTD revenue visible at a glance. Partner accountability every morning.",
       stats: ["Multiple streams", "Goal deadlines", "Partner nudges"],
     },
     {
       role: "Content Creator",
-      avatar: "🎬",
+      avatar: <IconFocus size={24} className="text-violet-400" />,
       problem: "No system for posting consistency, collab tracking, or income visibility.",
       outcome: "Daily posting habit tracked. Prove It Mode shared on TikTok every morning.",
       stats: ["Habit streaks", "Prove It profile", "Focus Score"],
@@ -40,7 +42,7 @@ export function Testimonials() {
             One system. <span className="text-axis-accent">Every type of builder.</span>
           </h2>
           <p className="text-white/50 max-w-lg mx-auto">
-            Whether you freelance, run a store, or grow an audience — AXIS adapts to how you work.
+            Whether you freelance, run a store, or grow an audience: AXIS adapts to how you work.
           </p>
         </div>
 
@@ -53,11 +55,13 @@ export function Testimonials() {
             >
               {/* Header */}
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl">{uc.avatar}</span>
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                  {uc.avatar}
+                </div>
                 <p className="text-sm font-semibold text-white">{uc.role}</p>
               </div>
 
-              {/* Problem → Outcome */}
+              {/* Problem / Outcome */}
               <div className="space-y-3 mb-5">
                 <div>
                   <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-1">Before</p>
@@ -83,12 +87,12 @@ export function Testimonials() {
 
         {/* CTA */}
         <div className="text-center mt-12">
-          <p className="text-sm text-white/40 mb-4">Public beta — free to join, no credit card needed.</p>
+          <p className="text-sm text-white/40 mb-4">Public beta: free to join, no credit card needed.</p>
           <a
             href="/signup"
             className="inline-flex items-center text-sm font-semibold bg-axis-accent text-axis-dark px-8 py-3 rounded-xl hover:bg-axis-accent/90 transition-all"
           >
-            Start Free →
+            Start Free
           </a>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { IconCheck } from "@/components/icons";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -13,7 +14,7 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  // Supabase sends the access token as a hash fragment — exchange it for a session
+  // Supabase sends the access token as a hash fragment: exchange it for a session
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && hash.includes("access_token")) {
@@ -49,8 +50,8 @@ export default function ResetPasswordPage() {
   if (done) {
     return (
       <div className="text-center">
-        <div className="w-16 h-16 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">✅</span>
+        <div className="w-16 h-16 bg-axis-accent/10 border border-axis-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <IconCheck size={24} className="text-axis-accent" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight mb-2">Password updated</h1>
         <p className="text-sm text-axis-text2">Redirecting to your dashboard...</p>

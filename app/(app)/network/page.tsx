@@ -353,7 +353,7 @@ export default function NetworkPage() {
             The Grid
           </h2>
           <p className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-            Social accountability — track your squad's daily consistency
+            Social accountability | track your squad's daily consistency
           </p>
         </div>
       </div>
@@ -535,7 +535,7 @@ export default function NetworkPage() {
                     className="text-[10px] font-mono uppercase tracking-widest px-1"
                     style={{ color: "var(--text-tertiary)" }}
                   >
-                    Habit Consistency — Last 7 Days
+                    Habit Consistency | Last 7 Days
                   </p>
                   {loadingMembers ? (
                     <div className="space-y-2">
@@ -548,7 +548,7 @@ export default function NetworkPage() {
                       className="text-sm text-center py-8"
                       style={{ color: "var(--text-tertiary)" }}
                     >
-                      No members yet — share the invite code!
+                      No members yet | share the invite code!
                     </p>
                   ) : (
                     <div className="space-y-2">

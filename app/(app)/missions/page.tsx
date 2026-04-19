@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMissions, Mission } from "@/hooks/useMissions";
-import { IconTarget, IconCheck, IconPlus, IconTimer, IconEnergy, IconFocus } from "@/components/icons";
+import { useObjectives } from "@/hooks/useObjectives";
+import { IconTarget, IconCheck, IconTimer, IconEnergy, IconFocus } from "@/components/icons";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -30,11 +30,11 @@ type Priority = "high" | "med" | "low";
 function SortableMissionItem({
   mission,
   toggleMission,
-  onFocus,
+  isFocusable,
 }: {
   mission: Mission;
   toggleMission: (id: string) => void;
-  onFocus: (id: string) => void;
+  isFocusable: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: mission.id });
 
@@ -91,6 +91,18 @@ function SortableMissionItem({
         </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
+        {isFocusable && mission.estimated_time ? (
+          <Link
+            href={`/missions/focus/${mission.id}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+            className="flex h-9 w-9 items-center justify-center rounded-xl transition-all hover:-translate-y-0.5"
+            style={{ backgroundColor: "var(--bg-accent-soft)", color: "var(--text-primary)" }}
+            title="Enter focus mode"
+          >
+            <IconFocus size={14} className="text-axis-accent" />
+          </Link>
+        ) : null}
         {mission.estimated_time && (
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
             <IconTimer size={10} className="text-axis-accent" /> {mission.estimated_time}m
@@ -112,36 +124,30 @@ function SortableMissionItem({
         >
           {mission.priority}
         </span>
-        {mission.estimated_time && mission.status !== "done" && (
-          <button
-            onClick={() => onFocus(mission.id)}
-            title="Enter Focus Mode"
-            className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:bg-axis-accent/20"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            <IconFocus size={13} className="text-axis-accent" />
-          </button>
-        )}
       </div>
     </div>
   );
 }
 
 export default function MissionsPage() {
-  const router = useRouter();
   const [selectedDay, setSelectedDay] = useState(0);
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("med");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [newTime, setNewTime] = useState("");
   const [newEnergy, setNewEnergy] = useState<"high" | "med" | "low">("med");
+  const [newObjectiveId, setNewObjectiveId] = useState("");
+  const [quickAddRequested, setQuickAddRequested] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const targetDate = new Date();
   targetDate.setDate(targetDate.getDate() + selectedDay);
   const dateStr = targetDate.toISOString().split("T")[0];
+  const isTodayView = selectedDay === 0;
 
   const { missions, loading, addMission, toggleMission, reorderMissions, completedCount, completionRate, total } =
     useMissions(dateStr);
+  const { objectives } = useObjectives();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -160,11 +166,28 @@ export default function MissionsPage() {
     const estimated_time = showAdvanced && newTime ? parseInt(newTime, 10) : undefined;
     const energy_level = showAdvanced ? newEnergy : undefined;
     
-    await addMission(newTitle.trim(), newPriority, undefined, estimated_time, energy_level);
+    await addMission(
+      newTitle.trim(),
+      newPriority,
+      undefined,
+      estimated_time,
+      energy_level,
+      newObjectiveId || undefined
+    );
     setNewTitle("");
     setNewTime("");
+    setNewObjectiveId("");
     setShowAdvanced(false);
   };
+
+  useEffect(() => {
+    setQuickAddRequested(new URLSearchParams(window.location.search).get("quickAdd") === "1");
+  }, []);
+
+  useEffect(() => {
+    if (!quickAddRequested) return;
+    inputRef.current?.focus();
+  }, [quickAddRequested]);
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -239,6 +262,7 @@ export default function MissionsPage() {
             style={{ borderColor: "var(--border-secondary)" }}
           />
           <input
+            ref={inputRef}
             type="text"
             placeholder="Add a new mission..."
             value={newTitle}
@@ -277,7 +301,7 @@ export default function MissionsPage() {
         </div>
         
         {showAdvanced && (
-          <div className="flex items-center gap-3 pl-8 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex flex-wrap items-center gap-3 pl-8 animate-in fade-in slide-in-from-top-2 duration-300">
             <input
               type="number"
               placeholder="Est. Minutes (e.g. 45)"
@@ -299,6 +323,19 @@ export default function MissionsPage() {
                 <option value="low">Low</option>
               </select>
             </div>
+            <select
+              value={newObjectiveId}
+              onChange={(e) => setNewObjectiveId(e.target.value)}
+              className="min-w-[170px] text-xs font-mono rounded-lg px-3 py-2 outline-none"
+              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
+            >
+              <option value="">No theme</option>
+              {objectives.map((objective) => (
+                <option key={objective.id} value={objective.id}>
+                  {objective.title}
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>
@@ -321,7 +358,12 @@ export default function MissionsPage() {
           <SortableContext items={missions.map((m) => m.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
               {missions.map((m) => (
-                <SortableMissionItem key={m.id} mission={m} toggleMission={toggleMission} onFocus={(id) => router.push(`/missions/focus/${id}`)} />
+                <SortableMissionItem
+                  key={m.id}
+                  mission={m}
+                  toggleMission={toggleMission}
+                  isFocusable={isTodayView}
+                />
               ))}
             </div>
           </SortableContext>
@@ -333,7 +375,7 @@ export default function MissionsPage() {
         style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}
       >
         <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-          {total}/5 missions today ·{" "}
+          {total}/5 missions today /{" "}
           <Link href="/settings" className="text-axis-accent hover:underline">
             Upgrade to Pro
           </Link>{" "}

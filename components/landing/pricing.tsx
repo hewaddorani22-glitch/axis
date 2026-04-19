@@ -75,7 +75,7 @@ export function Pricing() {
               href="/signup"
               className="w-full flex items-center justify-center text-sm font-semibold bg-axis-accent text-axis-text1 px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] mb-8"
             >
-              Start Pro — $9/mo
+              Start Pro: $9/mo
             </Link>
 
             <ul className="space-y-3">

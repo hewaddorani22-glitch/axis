@@ -33,7 +33,7 @@ function formatWeekLabel(weekStart: string): string {
   const end = new Date(weekStart + "T00:00:00");
   end.setDate(end.getDate() + 6);
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  return `${start.toLocaleDateString("en-US", opts)} – ${end.toLocaleDateString("en-US", opts)}`;
+  return `${start.toLocaleDateString("en-US", opts)} / ${end.toLocaleDateString("en-US", opts)}`;
 }
 
 function isSunday(): boolean {
@@ -113,49 +113,46 @@ export default function ReviewPage() {
 
   if (!userLoading && !isPro) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* What you get — shown with real layout, no fake data */}
-        <div className="axis-card">
-          <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: "var(--bg-accent-soft)" }}
-            >
-              <span className="text-axis-accent font-bold font-mono text-lg">W</span>
+      <div className="max-w-2xl mx-auto relative group">
+        {/* Fake blurred content */}
+        <div className="pointer-events-none opacity-40 blur-sm scale-[0.98] transition-all duration-500 group-hover:blur-md select-none space-y-6">
+          <div className="axis-card">
+            <h2 className="text-base font-semibold mb-1" style={{ color: "var(--text-primary)" }}>This Week&apos;s Review</h2>
+            <div className="grid grid-cols-3 gap-3 my-5">
+              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-axis-accent">S</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>WEEKLY GRADE</p></div>
+              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-axis-text1">$1,4k</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>MTD REVENUE</p></div>
+              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-orange-500">14</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>DAY STREAK</p></div>
             </div>
-            <div>
-              <h2 className="text-base font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-                Weekly Review — Pro Feature
-              </h2>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                Every Sunday, review what you won, where you struggled, and what to focus on next week. Your stats (grade, revenue, streak) are auto-filled — you just write.
-              </p>
+            <div className="space-y-4">
+              <div className="w-full h-24 rounded-xl" style={{ backgroundColor: "var(--bg-tertiary)" }}></div>
+              <div className="w-full h-24 rounded-xl" style={{ backgroundColor: "var(--bg-tertiary)" }}></div>
             </div>
           </div>
+        </div>
 
-          <ul className="space-y-2 mb-6">
-            {[
-              "Auto-populated weekly stats from your real data",
-              "3 reflection prompts: Wins · Struggles · Next focus",
-              "12 weeks of past reviews, always accessible",
-              "Your accountability record — not someone else's",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-                <span className="text-axis-accent mt-0.5 flex-shrink-0">✓</span>
-                {item}
-              </li>
-            ))}
-          </ul>
-
+        {/* Premium Lock Overlay */}
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-axis-dark flex items-center justify-center mb-6 shadow-2xl border border-axis-border/10">
+            <span className="text-3xl relative">
+              🔒
+              <span className="absolute -top-1 -right-2 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded pl-1 bg-axis-accent text-axis-dark">PRO</span>
+            </span>
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight mb-3" style={{ color: "var(--text-primary)" }}>
+            Unlock Focus Reviews
+          </h2>
+          <p className="text-sm max-w-sm mx-auto mb-8" style={{ color: "var(--text-secondary)" }}>
+            Tracking your tasks is basic. Reflecting on them is how you win. Deep weekly insights, win tracking, and focus scores are available for Pro users.
+          </p>
           <Link
             href="/settings"
-            className="flex items-center justify-center gap-2 text-sm font-semibold bg-axis-accent text-axis-dark px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98]"
+            className="flex items-center gap-2 text-sm font-semibold bg-axis-accent text-axis-dark px-8 py-3.5 rounded-xl hover:bg-axis-accent/90 transition-all hover:scale-105 hover:shadow-xl active:scale-95"
           >
-            Upgrade to Pro — $9/mo
+            Upgrade to Pro
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+               <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
           </Link>
-          <p className="text-center text-xs mt-3" style={{ color: "var(--text-tertiary)" }}>
-            Cancel anytime. Includes streak freeze, CSV export, and unlimited everything.
-          </p>
         </div>
       </div>
     );
@@ -174,7 +171,7 @@ export default function ReviewPage() {
           </h2>
           {isSunday() && (
             <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-axis-accent/10 text-axis-accent">
-              Sunday — do your review
+              Sunday: do your review
             </span>
           )}
         </div>
@@ -207,7 +204,7 @@ export default function ReviewPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              🏆 Wins this week
+              Wins this week
             </label>
             <textarea
               value={wins}
@@ -227,7 +224,7 @@ export default function ReviewPage() {
 
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              ⚠️ Struggles
+              Struggles
             </label>
             <textarea
               value={struggles}
@@ -247,7 +244,7 @@ export default function ReviewPage() {
 
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              🎯 Next week&apos;s focus
+              Next week&apos;s focus
             </label>
             <textarea
               value={nextFocus}
@@ -297,7 +294,7 @@ export default function ReviewPage() {
                   {formatWeekLabel(review.week_start)}
                 </p>
                 <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-                  {review.wins || review.struggles || review.next_week_focus ? "View ↓" : "Empty"}
+                  {review.wins || review.struggles || review.next_week_focus ? "View" : "Empty"}
                 </span>
               </summary>
               <div className="mt-4 pt-4 space-y-3" style={{ borderTop: "1px solid var(--border-primary)" }}>

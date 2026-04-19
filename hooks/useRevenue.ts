@@ -9,6 +9,7 @@ export interface RevenueStream {
   name: string;
   color: string;
   is_recurring?: boolean;
+  objective_id?: string | null;
 }
 
 export interface RevenueEntry {
@@ -50,7 +51,12 @@ export function useRevenue() {
     fetchData();
   }, [fetchData]);
 
-  const addStream = async (name: string, color: string = "#CDFF4F") => {
+  const addStream = async (
+    name: string,
+    color: string = "#CDFF4F",
+    isRecurring = false,
+    objectiveId?: string | null
+  ) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -62,7 +68,7 @@ export function useRevenue() {
 
     const { data } = await supabase
       .from("revenue_streams")
-      .insert({ user_id: user.id, name, color })
+      .insert({ user_id: user.id, name, color, is_recurring: isRecurring, objective_id: objectiveId || null })
       .select()
       .single();
 

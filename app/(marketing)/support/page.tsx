@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Support — AXIS",
+  title: "Support | AXIS",
   description: "Get help with AXIS.",
 };
 
@@ -23,7 +23,7 @@ export default function SupportPage() {
           </div>
           <h3 className="text-lg font-semibold mb-1">Email support</h3>
           <p className="text-sm text-axis-text3 mb-3">Best for bugs, account issues, billing</p>
-          <span className="text-sm font-medium text-axis-text1 group-hover:underline">support@useaxis.com →</span>
+          <span className="text-sm font-medium text-axis-text1 group-hover:underline">support@useaxis.com</span>
         </a>
 
         <a
@@ -39,7 +39,7 @@ export default function SupportPage() {
           </div>
           <h3 className="text-lg font-semibold mb-1">Twitter / X</h3>
           <p className="text-sm text-axis-text3 mb-3">For quick questions + feature requests</p>
-          <span className="text-sm font-medium text-axis-text1 group-hover:underline">@useaxis →</span>
+          <span className="text-sm font-medium text-axis-text1 group-hover:underline">@useaxis</span>
         </a>
       </div>
 
@@ -48,15 +48,15 @@ export default function SupportPage() {
         <div className="space-y-5">
           <div>
             <h3 className="font-semibold mb-1">How do I cancel my Pro subscription?</h3>
-            <p className="text-sm text-white/60">Settings → Plan → Manage Subscription. Takes effect at the end of your current billing cycle.</p>
+            <p className="text-sm text-white/60">Settings / Plan / Manage Subscription. Takes effect at the end of your current billing cycle.</p>
           </div>
           <div>
             <h3 className="font-semibold mb-1">Can I get a refund?</h3>
-            <p className="text-sm text-white/60">Yes — within 14 days of your first Pro charge, no questions asked. Email support@useaxis.com.</p>
+            <p className="text-sm text-white/60">Yes: within 14 days of your first Pro charge, no questions asked. Email support@useaxis.com.</p>
           </div>
           <div>
             <h3 className="font-semibold mb-1">How do I export my data?</h3>
-            <p className="text-sm text-white/60">Settings → Data → Export Data (CSV). Pro feature.</p>
+            <p className="text-sm text-white/60">Settings / Data / Export Data (CSV). Pro feature.</p>
           </div>
           <div>
             <h3 className="font-semibold mb-1">I deleted my account by mistake. Can you restore it?</h3>
@@ -64,7 +64,7 @@ export default function SupportPage() {
           </div>
           <div>
             <h3 className="font-semibold mb-1">My streak broke even though I did everything.</h3>
-            <p className="text-sm text-white/60">Streaks require at least 1 completed mission AND 1 completed habit per day, in your local timezone. Check Settings → Timezone.</p>
+            <p className="text-sm text-white/60">Streaks require at least 1 completed mission AND 1 completed habit per day, in your local timezone. Check Settings / Timezone.</p>
           </div>
         </div>
       </div>

@@ -13,6 +13,12 @@ import {
   IconChevronRight,
   IconChevronLeft,
   IconGlobe,
+  IconFocus,
+  IconEdit,
+  IconEnergy,
+  IconReview,
+  IconBriefing,
+  IconLink,
 } from "@/components/icons";
 
 type UserType = "entrepreneur" | "student" | "creator" | "professional";
@@ -37,14 +43,14 @@ const timezones = [
 ];
 
 const suggestedHabits = [
-  { name: "Deep Work", icon: "focus" },
-  { name: "Content Creation", icon: "create" },
-  { name: "Exercise", icon: "fitness" },
-  { name: "Reading", icon: "read" },
-  { name: "Outreach", icon: "connect" },
-  { name: "Meditation", icon: "calm" },
-  { name: "Journaling", icon: "write" },
-  { name: "Cold Calling", icon: "call" },
+  { name: "Deep Work", icon: <IconFocus size={16} /> },
+  { name: "Content Creation", icon: <IconEdit size={16} /> },
+  { name: "Exercise", icon: <IconEnergy size={16} /> },
+  { name: "Reading", icon: <IconReview size={16} /> },
+  { name: "Outreach", icon: <IconGlobe size={16} /> },
+  { name: "Meditation", icon: <IconHabits size={16} /> },
+  { name: "Journaling", icon: <IconBriefing size={16} /> },
+  { name: "Cold Calling", icon: <IconLink size={16} /> },
 ];
 
 export default function OnboardingPage() {
@@ -98,10 +104,10 @@ export default function OnboardingPage() {
 
   const stepTitles = [
     { title: "Your Profile", subtitle: "Tell us about yourself so we can personalize your experience.", icon: <IconUser size={20} className="text-axis-accent" /> },
-    { title: "Today's Missions", subtitle: "What do you need to accomplish today? Set up to 5 priorities.", icon: <IconTarget size={20} className="text-axis-accent" /> },
-    { title: "Daily Habits", subtitle: "Choose the habits you want to build. Consistency is everything.", icon: <IconHabits size={20} className="text-axis-accent" /> },
-    { title: "Public Profile", subtitle: "Set up your Prove It page. Show the world your accountability.", icon: <IconProve size={20} className="text-axis-accent" /> },
-    { title: "All Set!", subtitle: "Review your setup. Everything looks ready — let's go.", icon: <IconCheck size={20} className="text-axis-accent" /> },
+    { title: "Today's Tasks", subtitle: "What do you need to accomplish today? Set up to 5 priorities.", icon: <IconTarget size={20} className="text-axis-accent" /> },
+    { title: "Habits", subtitle: "Choose the habits you want to build. Consistency is everything.", icon: <IconHabits size={20} className="text-axis-accent" /> },
+    { title: "Public Profile", subtitle: "Set up your public profile. Show the world your accountability.", icon: <IconProve size={20} className="text-axis-accent" /> },
+    { title: "All Set!", subtitle: "Review your setup. Everything looks ready: let's go.", icon: <IconCheck size={20} className="text-axis-accent" /> },
   ];
 
   const canProceed = () => {
@@ -144,8 +150,8 @@ export default function OnboardingPage() {
     }
 
     const allHabits = [
-      ...selectedHabits.map((name) => ({ name, icon: "◆" })),
-      ...customHabits.map((name) => ({ name, icon: "◆" })),
+      ...selectedHabits.map((name) => ({ name, icon: "IconHabits" })),
+      ...customHabits.map((name) => ({ name, icon: "IconHabits" })),
     ];
     if (allHabits.length > 0) {
       await supabase.from("habits").insert(
@@ -276,7 +282,7 @@ export default function OnboardingPage() {
       {step === 2 && (
         <div className="space-y-3 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Missions are your daily priorities — the things that move the needle.
+            Tasks are your daily priorities: the things that move the needle.
             Set up to 5 for today, ranked by importance. You can always change them later.
           </p>
           {missions.map((mission, i) => (
@@ -294,7 +300,7 @@ export default function OnboardingPage() {
                   i === 0 ? "Most important task today..." :
                   i === 1 ? "Second priority..." :
                   i === 2 ? "Third task..." :
-                  `Task ${i + 1} (optional)...`
+                  `Task ${ i + 1 } (optional)...`
                 }
                 value={mission.title}
                 onChange={(e) => {
@@ -326,7 +332,7 @@ export default function OnboardingPage() {
       {step === 3 && (
         <div className="space-y-4 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Pick 2–3 daily habits you want to track. These build your streak and feed into your Focus Score.
+            Pick 2-3 daily habits you want to track. These build your streak and feed into your system health.
             Consistency here separates doers from dreamers.
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -350,7 +356,9 @@ export default function OnboardingPage() {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                     isSelected ? "bg-axis-accent/20" : "bg-white/[0.04]"
                   }`}>
-                    <IconHabits size={14} className={isSelected ? "text-axis-accent" : "text-white/30"} />
+                    <div className={isSelected ? "text-axis-accent" : "text-white/30"}>
+                      {habit.icon}
+                    </div>
                   </div>
                   <span className="text-sm text-white/80">{habit.name}</span>
                   {isSelected && <IconCheck size={14} className="text-axis-accent ml-auto" />}
@@ -363,7 +371,7 @@ export default function OnboardingPage() {
             <div key={i} className="flex items-center gap-2 bg-axis-accent/5 border border-axis-accent/15 rounded-xl px-4 py-3">
               <IconCheck size={14} className="text-axis-accent" />
               <span className="text-sm text-white/70 flex-1">{h}</span>
-              <button onClick={() => setCustomHabits(customHabits.filter((_, j) => j !== i))} className="text-white/20 text-xs">×</button>
+              <button onClick={() => setCustomHabits(customHabits.filter((_, j) => j !== i))} className="text-white/20 text-xs">x</button>
             </div>
           ))}
 
@@ -400,7 +408,7 @@ export default function OnboardingPage() {
       {step === 4 && (
         <div className="space-y-5 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Your Prove It profile is your public accountability page. Share it with partners,
+            Your public profile is your public accountability page. Share it with partners,
             on social media, or embed it anywhere. People can see your streaks, grades, and activity.
           </p>
           <div>
@@ -424,7 +432,7 @@ export default function OnboardingPage() {
             <label className="text-xs font-mono text-white/40 block mb-2">Bio (optional)</label>
             <input
               type="text"
-              placeholder="e.g. Entrepreneur · Building my SaaS"
+              placeholder="e.g. Entrepreneur / Building my SaaS"
               value={proveBio}
               onChange={(e) => setProveBio(e.target.value)}
               className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20"
@@ -455,7 +463,7 @@ export default function OnboardingPage() {
                 <span className="text-[10px] font-mono text-white/40">PROFILE</span>
               </div>
               <p className="text-sm font-semibold text-white">{name}</p>
-              <p className="text-xs text-white/30">{userType} · {timezone.split("/")[1]}</p>
+              <p className="text-xs text-white/30">{userType} / {timezone.split("/")[1]}</p>
             </div>
             
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
@@ -464,7 +472,7 @@ export default function OnboardingPage() {
                 <span className="text-[10px] font-mono text-white/40">MISSIONS</span>
               </div>
               <p className="text-sm font-semibold text-white">{missions.filter((m) => m.title.trim()).length} for today</p>
-              <p className="text-xs text-white/30 truncate">{missions.filter((m) => m.title.trim())[0]?.title || "—"}</p>
+              <p className="text-xs text-white/30 truncate">{missions.filter((m) => m.title.trim())[0]?.title || "0"}</p>
             </div>
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
