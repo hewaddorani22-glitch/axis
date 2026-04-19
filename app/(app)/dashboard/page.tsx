@@ -123,8 +123,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stat cards — 3 plain + AxisScoreWidget */}
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stat cards */}
+      <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((stat) => (
           <motion.div variants={itemVariants} key={stat.label} className="axis-stat-card-dark">
             <div className="flex items-center justify-between mb-3">
@@ -135,9 +135,11 @@ export default function DashboardPage() {
             <p className={`text-xs font-mono ${stat.changeColor}`}>{stat.change}</p>
           </motion.div>
         ))}
-        <motion.div variants={itemVariants}>
-          <AxisScoreWidget {...axisScore} loading={axisScore.loading} />
-        </motion.div>
+      </motion.div>
+
+      {/* Axis Score */}
+      <motion.div variants={itemVariants} initial="hidden" animate="show">
+        <AxisScoreWidget {...axisScore} loading={axisScore.loading} />
       </motion.div>
 
       {/* Two columns — Missions + Habits */}

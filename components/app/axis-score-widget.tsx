@@ -92,18 +92,12 @@ export function AxisScoreWidget({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className={cn("flex items-center gap-2", compact ? "mb-2 flex-wrap" : "mb-3")}>
+          <div className={cn("flex items-center gap-2", compact ? "mb-2" : "mb-3")}>
             <span
               className="rounded-full px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em]"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
             >
               Grade {grade}
-            </span>
-            <span
-              className="rounded-full px-3 py-1 text-[10px] font-mono uppercase tracking-[0.22em]"
-              style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
-            >
-              {label}
             </span>
           </div>
 
