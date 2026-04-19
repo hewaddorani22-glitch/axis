@@ -1,18 +1,18 @@
 "use client";
 
 import { getGreeting, formatCurrency, formatDate } from "@/lib/utils";
-import { calculateFocusScore } from "@/lib/scoring";
 import { useUser } from "@/hooks/useUser";
 import { useMissions } from "@/hooks/useMissions";
 import { useHabits } from "@/hooks/useHabits";
 import { useRevenue } from "@/hooks/useRevenue";
 import { useStreak } from "@/hooks/useStreak";
 import {
-  IconCommand, IconRevenue, IconTarget, IconStreak, IconFocus,
+  IconCommand, IconRevenue, IconTarget, IconStreak,
   IconBriefing, IconCheck, IconHabits, IconWarning
 } from "@/components/icons";
 import Link from "next/link";
 import { EmptyState } from "@/components/app/empty-state";
+import { AxisScoreWidget } from "@/components/app/axis-score-widget";
 import { motion, AnimatePresence } from "framer-motion";
 
 const containerVariants = {
@@ -35,28 +35,18 @@ export default function DashboardPage() {
   const { mtdTotal, loading: revenueLoading } = useRevenue();
   const { streak, loading: streakLoading } = useStreak();
 
-  // Streak at risk logic
   const currentHour = new Date().getHours();
-  const isLate = currentHour >= 20; // 8 PM
+  const isLate = currentHour >= 20;
   const streakAtRisk = streak >= 3 && habitsCompleted === 0 && isLate;
 
   const greeting = getGreeting();
   const displayName = user?.name || "there";
   const isLoading = userLoading || missionsLoading || habitsLoading || revenueLoading || streakLoading;
 
-  const score = calculateFocusScore({
-    missionsCompleted: completedCount,
-    missionsTotal: Math.max(missionsTotal, 1),
-    habitsCompleted,
-    habitsTotal: Math.max(habitsTotal, 1),
-    streakDays: streak,
-  });
-
   const stats = [
     { label: "MTD Revenue", value: formatCurrency(mtdTotal), change: mtdTotal > 0 ? "This month" : "No entries yet", changeColor: "text-emerald-500", icon: <IconRevenue size={18} className="text-emerald-500" /> },
     { label: "Missions Done", value: `${completedCount}/${missionsTotal}`, change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add missions", changeColor: "text-emerald-500", icon: <IconTarget size={18} className="text-axis-accent" /> },
     { label: "Streak", value: `${streak} day${streak !== 1 ? "s" : ""}`, change: streak >= 7 ? "On fire!" : streak > 0 ? "Keep going!" : "Start today", changeColor: "text-orange-500", icon: <IconStreak size={18} className="text-orange-500" /> },
-    { label: "Focus Score", value: score.focusScore.toString(), change: `Grade: ${score.grade}`, changeColor: "text-violet-500", icon: <IconFocus size={18} className="text-violet-500" /> },
   ];
 
   const Skeleton = ({ className = "" }: { className?: string }) => (
@@ -82,7 +72,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Streak At Risk Alert (Pro upsell hook) */}
+      {/* Streak At Risk Alert */}
       {!isLoading && streakAtRisk && (
         <div className="rounded-2xl p-5 border border-red-500/30 bg-red-500/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
@@ -131,7 +121,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stat cards */}
+      {/* Stat cards — 3 plain + AxisScoreWidget */}
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <motion.div variants={itemVariants} key={stat.label} className="axis-stat-card-dark">
@@ -143,9 +133,12 @@ export default function DashboardPage() {
             <p className={`text-xs font-mono ${stat.changeColor}`}>{stat.change}</p>
           </motion.div>
         ))}
+        <motion.div variants={itemVariants}>
+          <AxisScoreWidget />
+        </motion.div>
       </motion.div>
 
-      {/* Two columns */}
+      {/* Two columns — Missions + Habits */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Missions */}
         <div className="axis-card">
@@ -234,7 +227,7 @@ export default function DashboardPage() {
                           <IconCheck size={14} />
                         </motion.div>
                       ) : h.todaySkipped ? (
-                         <span className="text-sm font-bold">−</span>
+                        <span className="text-sm font-bold">−</span>
                       ) : (
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--border-secondary)" }} />
                       )}
