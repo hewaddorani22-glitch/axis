@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   const today = new Date().toISOString().split("T")[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
-  // Get all users (timezones for 8am filtering — simplified: send to all for now)
+  // Get all users (timezones for 8am filtering: simplified: send to all for now)
   const { data: users } = await admin
     .from("users")
     .select("id, email, name, plan")
@@ -109,14 +109,14 @@ export async function GET(request: Request) {
 
     // Streak milestone message
     let streakMsg = "";
-    if (streak === 7) streakMsg = "You just hit 7 days. Keep that fire going 🔥";
+    if (streak === 7) streakMsg = "You just hit 7 days. Keep that fire going.";
     else if (streak === 14) streakMsg = "14 days straight. You're building something real.";
     else if (streak === 30) streakMsg = "30-DAY STREAK. Most people never get here.";
     else if (streak === 60) streakMsg = "60 days. You are the system.";
     else if (streak === 90) streakMsg = "90 days. Legendary. Don't stop.";
     else if (streak >= 7) streakMsg = `${30 - streak > 0 ? `${30 - streak} more days to 30` : `${streak} days and counting`}. Don't break it.`;
     else if (streak > 0) streakMsg = `Day ${streak}. Keep showing up.`;
-    else streakMsg = "Start your streak today — complete one mission and one habit.";
+    else streakMsg = "Start your streak today: complete one mission and one habit.";
 
     const name = user.name || "there";
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://useaxis.com";
@@ -125,7 +125,7 @@ export async function GET(request: Request) {
       await resend.emails.send({
         from: FROM_EMAIL,
         to: user.email,
-        subject: `☀️ Morning, ${name} — ${score.grade} yesterday. Today's your chance.`,
+        subject: `Morning, ${name} | ${score.grade} yesterday. Today's your chance.`,
         html: `
           <div style="font-family: 'Outfit', -apple-system, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; background: #FAFAFA;">
             <!-- Header -->
@@ -156,7 +156,7 @@ export async function GET(request: Request) {
                   <p style="font-size: 10px; font-family: monospace; color: rgba(255,255,255,0.3); margin: 4px 0 0 0; text-transform: uppercase;">Missions</p>
                 </div>
                 <div>
-                  <span style="font-size: 24px; font-weight: 700; color: #F97316;">${streak > 0 ? "🔥" : ""}${streak}</span>
+                  <span style="font-size: 24px; font-weight: 700; color: #F97316;">${streak}</span>
                   <p style="font-size: 10px; font-family: monospace; color: rgba(255,255,255,0.3); margin: 4px 0 0 0; text-transform: uppercase;">Day Streak</p>
                 </div>
                 <div>
@@ -177,13 +177,13 @@ export async function GET(request: Request) {
             <div style="text-align: center; margin-bottom: 32px;">
               <a href="${appUrl}/dashboard"
                 style="display: inline-block; background: #0B0B0F; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: -0.2px;">
-                Open Dashboard →
+                Open Dashboard
               </a>
             </div>
 
             <!-- Footer -->
             <p style="text-align: center; font-size: 12px; color: #A1A1AA; margin: 0;">
-              AXIS — Your Business OS ·
+              AXIS | Your Business OS
               <a href="${appUrl}/settings" style="color: #A1A1AA;">Manage preferences</a>
             </p>
           </div>

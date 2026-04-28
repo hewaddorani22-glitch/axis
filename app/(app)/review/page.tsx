@@ -33,7 +33,7 @@ function formatWeekLabel(weekStart: string): string {
   const end = new Date(weekStart + "T00:00:00");
   end.setDate(end.getDate() + 6);
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  return `${start.toLocaleDateString("en-US", opts)} – ${end.toLocaleDateString("en-US", opts)}`;
+  return `${start.toLocaleDateString("en-US", opts)} / ${end.toLocaleDateString("en-US", opts)}`;
 }
 
 function isSunday(): boolean {
@@ -171,7 +171,7 @@ export default function ReviewPage() {
           </h2>
           {isSunday() && (
             <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-axis-accent/10 text-axis-accent">
-              Sunday — do your review
+              Great day to reflect
             </span>
           )}
         </div>
@@ -204,7 +204,7 @@ export default function ReviewPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              🏆 Wins this week
+              Wins this week
             </label>
             <textarea
               value={wins}
@@ -224,7 +224,7 @@ export default function ReviewPage() {
 
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              ⚠️ Struggles
+              Struggles
             </label>
             <textarea
               value={struggles}
@@ -244,7 +244,7 @@ export default function ReviewPage() {
 
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              🎯 Next week&apos;s focus
+              Next week&apos;s focus
             </label>
             <textarea
               value={nextFocus}
@@ -294,7 +294,7 @@ export default function ReviewPage() {
                   {formatWeekLabel(review.week_start)}
                 </p>
                 <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-                  {review.wins || review.struggles || review.next_week_focus ? "View ↓" : "Empty"}
+                  {review.wins || review.struggles || review.next_week_focus ? "View" : "Empty"}
                 </span>
               </summary>
               <div className="mt-4 pt-4 space-y-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
@@ -324,7 +324,7 @@ export default function ReviewPage() {
 
       {!reviewsLoading && reviews.length === 0 && (
         <p className="text-center text-sm py-4" style={{ color: "var(--text-tertiary)" }}>
-          Complete your first weekly review above. Come back every Sunday.
+          Complete your first weekly review above. Reflect anytime — weekly is ideal.
         </p>
       )}
     </div>

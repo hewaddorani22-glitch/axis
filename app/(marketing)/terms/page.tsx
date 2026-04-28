@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Terms of Service — AXIS",
+  title: "Terms of Service | AXIS",
   description: "AXIS terms of service.",
 };
 
@@ -32,7 +32,7 @@ export default function TermsPage() {
           <ul className="list-disc pl-6 space-y-2">
             <li>Free plan: 5 missions, 3 habits, 1 revenue stream, 2 goals. No expiration.</li>
             <li>Pro plan: $9/month, billed monthly via Stripe.</li>
-            <li>Cancel anytime from Settings → Manage Subscription. No questions asked.</li>
+            <li>Cancel anytime from Settings / Manage Subscription. No questions asked.</li>
             <li>We offer a 14-day refund if AXIS doesn't work out. Email support@useaxis.com.</li>
           </ul>
         </section>

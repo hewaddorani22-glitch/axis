@@ -14,7 +14,7 @@ export async function generateMetadata({
   
   if (!data) {
     return {
-      title: `${username} — AXIS Prove It`,
+      title: `${username} | AXIS Prove It`,
       description: `Check out ${username}'s accountability profile on AXIS.`,
     };
   }
@@ -26,7 +26,7 @@ export async function generateMetadata({
   if (grade) ogUrl.searchParams.set("score", grade);
 
   return {
-    title: `${username} — AXIS Prove It`,
+    title: `${username} | AXIS Prove It`,
     description: `Check out ${username}'s accountability profile on AXIS. Streak: ${streak}. Grade: ${grade}.`,
     openGraph: {
       images: [
@@ -321,7 +321,7 @@ export default async function ProveItPublicPage({
             <div className="flex items-center justify-center gap-5 text-center mb-4">
               <div>
                 <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                  {todayDone}/{todayTotal || "—"}
+                  {todayDone}/{todayTotal || "0"}
                 </p>
                 <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>MISSIONS</p>
               </div>

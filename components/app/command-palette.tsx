@@ -1,20 +1,20 @@
 "use client";
 
 import {
+  ComponentType,
   ReactNode,
   createContext,
   startTransition,
   useContext,
   useDeferredValue,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
-import { useStreak } from "@/hooks/useStreak";
-import { cn } from "@/lib/utils";
+import { primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
 import {
   IconCommand,
   IconGoals,
@@ -24,7 +24,6 @@ import {
   IconSettings,
   IconTarget,
 } from "@/components/icons";
-import { pageTitles, primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
 
 type CommandPaletteContextValue = {
   openPalette: () => void;
@@ -34,18 +33,19 @@ type CommandPaletteContextValue = {
 
 type Command = {
   id: string;
-  section: string;
+  section: "Navigate" | "Capture" | "System";
   label: string;
-  description: string;
+  hint: string;
   keywords: string[];
-  shortcut: string;
-  icon: ReactNode;
+  shortcut?: string;
+  icon: ComponentType<{ size?: number; className?: string }>;
+  tone?: string;
   run: () => void;
 };
 
 const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(null);
 
-function isTypingTarget(target: EventTarget | null) {
+function isInteractiveTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
@@ -54,18 +54,16 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  const { streak } = useStreak();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sequenceRef = useRef<string | null>(null);
-  const sequenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deferredQuery = useDeferredValue(query);
 
   const closePalette = () => {
     setOpen(false);
     setQuery("");
+    setSelectedIndex(0);
   };
 
   const navigate = (href: string) => {
@@ -75,100 +73,105 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const commands = useMemo<Command[]>(() => {
-    const navCommands = [...primaryNavItems, ...secondaryNavItems].map((item) => ({
-      id: item.href,
-      section: "Jump",
-      label: item.label,
-      description: `Open ${item.label.toLowerCase()}.`,
-      keywords: [item.label, item.href, "go", "open", "navigate"],
-      shortcut: `g ${item.shortcutKey}`,
-      icon: <item.icon size={16} className="text-axis-accent" />,
-      run: () => navigate(item.href),
-    }));
+  const commands: Command[] = [
+    ...[...primaryNavItems, ...secondaryNavItems].map((item) => {
+      const shortLabel = "shortLabel" in item && typeof item.shortLabel === "string" ? item.shortLabel : "";
 
-    return [
-      ...navCommands,
-      {
-        id: "new-mission",
-        section: "Create",
-        label: "New Mission",
-        description: "Jump to Mission Control and focus the quick-add input.",
-        keywords: ["mission", "task", "todo", "quick add"],
-        shortcut: "n m",
-        icon: <IconTarget size={16} className="text-axis-accent" />,
-        run: () => navigate("/missions?quickAdd=1"),
-      },
-      {
-        id: "new-habit",
-        section: "Create",
-        label: "New Habit",
-        description: "Open Daily Systems and focus the add-habit form.",
-        keywords: ["habit", "system", "routine", "quick add"],
-        shortcut: "n h",
-        icon: <IconHabits size={16} className="text-axis-accent" />,
-        run: () => navigate("/systems?quickAdd=1"),
-      },
-      {
-        id: "new-goal",
-        section: "Create",
-        label: "New Goal",
-        description: "Open Goals and start a new target.",
-        keywords: ["goal", "target", "milestone", "quick add"],
-        shortcut: "n g",
-        icon: <IconGoals size={16} className="text-axis-accent" />,
-        run: () => navigate("/goals?quickAdd=1"),
-      },
-      {
-        id: "log-income",
-        section: "Create",
-        label: "Log Income",
-        description: "Open Revenue Tracker and start a new income entry.",
-        keywords: ["revenue", "income", "payment", "sale", "quick add"],
-        shortcut: "n r",
-        icon: <IconRevenue size={16} className="text-emerald-500" />,
-        run: () => navigate("/revenue?quickAdd=1"),
-      },
-      {
-        id: "toggle-theme",
-        section: "App",
-        label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
-        description: "Toggle the app theme.",
-        keywords: ["theme", "dark", "light", "appearance"],
-        shortcut: "",
-        icon: <IconSettings size={16} className="text-axis-accent" />,
-        run: () => {
-          closePalette();
+      return {
+        id: `nav-${item.href}`,
+        section: "Navigate" as const,
+        label: item.label,
+        hint: `Open ${item.label.toLowerCase()}.`,
+        keywords: [item.label, shortLabel, item.href, "open", "jump", "go"],
+        shortcut: item.shortcutKey ? `g ${item.shortcutKey}` : undefined,
+        icon: item.icon,
+        run: () => navigate(item.href),
+      };
+    }),
+    {
+      id: "create-mission",
+      section: "Capture",
+      label: "Add Task",
+      hint: "Jump into Tasks and focus the quick-add bar.",
+      keywords: ["mission", "task", "todo", "capture"],
+      shortcut: "n m",
+      icon: IconTarget,
+      tone: "text-axis-accent",
+      run: () => navigate("/missions?quickAdd=1"),
+    },
+    {
+      id: "create-habit",
+      section: "Capture",
+      label: "Add Habit",
+      hint: "Open Habits and focus the habit composer.",
+      keywords: ["habit", "system", "routine", "capture"],
+      shortcut: "n h",
+      icon: IconHabits,
+      tone: "text-axis-accent",
+      run: () => navigate("/systems?quickAdd=1"),
+    },
+    {
+      id: "create-theme",
+      section: "Capture",
+      label: "Add Theme",
+      hint: "Open Themes and start a new operating objective.",
+      keywords: ["theme", "goal", "milestone", "target", "capture"],
+      shortcut: "n g",
+      icon: IconGoals,
+      tone: "text-axis-accent",
+      run: () => navigate("/goals?quickAdd=1"),
+    },
+    {
+      id: "log-income",
+      section: "Capture",
+      label: "Log Income",
+      hint: "Open Revenue Tracker and start a new income entry.",
+      keywords: ["income", "revenue", "payment", "sale", "capture"],
+      shortcut: "n r",
+      icon: IconRevenue,
+      tone: "text-emerald-500",
+      run: () => navigate("/revenue?quickAdd=entry"),
+    },
+    {
+      id: "toggle-theme",
+      section: "System",
+      label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
+      hint: "Toggle the global app appearance.",
+      keywords: ["theme", "dark", "light", "appearance"],
+      icon: IconSettings,
+      tone: "text-axis-accent",
+      run: () => {
+        closePalette();
+        startTransition(() => {
           toggleTheme();
-        },
+        });
       },
-    ];
-  }, [navigate, theme, toggleTheme]);
+    },
+  ];
 
-  const filteredCommands = useMemo(() => {
-    const terms = deferredQuery
-      .toLowerCase()
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+  const queryTerms = deferredQuery
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
 
-    if (terms.length === 0) return commands;
+  const filteredCommands =
+    queryTerms.length === 0
+      ? commands
+      : commands.filter((command) => {
+          const haystack = [command.label, command.hint, command.shortcut || "", ...command.keywords]
+            .join(" ")
+            .toLowerCase();
+          return queryTerms.every((term) => haystack.includes(term));
+        });
 
-    return commands.filter((command) => {
-      const haystack = [command.label, command.description, command.shortcut, ...command.keywords]
-        .join(" ")
-        .toLowerCase();
-      return terms.every((term) => haystack.includes(term));
-    });
-  }, [commands, deferredQuery]);
-
-  const groupedCommands = useMemo(() => {
-    return filteredCommands.reduce<Record<string, Command[]>>((groups, command) => {
-      if (!groups[command.section]) groups[command.section] = [];
+  const groupedCommands = filteredCommands.reduce<Record<Command["section"], Command[]>>(
+    (groups, command) => {
       groups[command.section].push(command);
       return groups;
-    }, {});
-  }, [filteredCommands]);
+    },
+    { Navigate: [], Capture: [], System: [] }
+  );
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -179,222 +182,271 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    const label = pageTitles[pathname] || "AXIS";
-    document.title = streak > 0 ? `${streak}-day streak | ${label} | AXIS` : `${label} | AXIS`;
-  }, [pathname, streak]);
-
-  useEffect(() => {
     if (!open) return;
+
     inputRef.current?.focus();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
     return () => {
       document.body.style.overflow = previousOverflow;
     };
   }, [open]);
 
   useEffect(() => {
-    const clearSequence = () => {
-      if (sequenceTimeoutRef.current) clearTimeout(sequenceTimeoutRef.current);
-      sequenceRef.current = null;
-    };
-
-    const setSequence = (next: string) => {
-      clearSequence();
-      sequenceRef.current = next;
-      sequenceTimeoutRef.current = setTimeout(() => {
-        sequenceRef.current = null;
-      }, 900);
-    };
-
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       const withModifier = event.metaKey || event.ctrlKey;
 
       if (withModifier && key === "k") {
         event.preventDefault();
-        setOpen(true);
+        setOpen((current) => !current);
         return;
       }
 
-      if (open && key === "escape") {
+      if (!open) return;
+
+      if (key === "escape") {
         event.preventDefault();
         closePalette();
         return;
       }
 
-      if (open || isTypingTarget(event.target)) return;
-
-      if (sequenceRef.current === "g") {
-        const destination = [...primaryNavItems, ...secondaryNavItems].find((item) => item.shortcutKey === key);
-        if (destination) {
-          event.preventDefault();
-          clearSequence();
-          navigate(destination.href);
-          return;
-        }
+      if (key === "arrowdown") {
+        event.preventDefault();
+        setSelectedIndex((current) => Math.min(current + 1, Math.max(filteredCommands.length - 1, 0)));
+        return;
       }
 
-      if (sequenceRef.current === "n") {
-        const quickActions: Record<string, string> = {
-          m: "/missions?quickAdd=1",
-          h: "/systems?quickAdd=1",
-          g: "/goals?quickAdd=1",
-          r: "/revenue?quickAdd=1",
-        };
-        if (quickActions[key]) {
-          event.preventDefault();
-          clearSequence();
-          navigate(quickActions[key]);
-          return;
-        }
+      if (key === "arrowup") {
+        event.preventDefault();
+        setSelectedIndex((current) => Math.max(current - 1, 0));
+        return;
       }
+
+      if (key === "enter" && filteredCommands[selectedIndex]) {
+        event.preventDefault();
+        filteredCommands[selectedIndex].run();
+      }
+    };
+
+    const handleGlobalShortcuts = (event: KeyboardEvent) => {
+      if (open || isInteractiveTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      const quickRoutes: Record<string, string> = {
+        m: "/missions?quickAdd=1",
+        h: "/systems?quickAdd=1",
+        g: "/goals?quickAdd=1",
+        r: "/revenue?quickAdd=entry",
+      };
+
+      if (event.shiftKey && key === "n") return;
+
+      if (event.altKey || event.metaKey || event.ctrlKey) return;
 
       if (key === "g" || key === "n") {
+        const nextKeyHandler = (followup: KeyboardEvent) => {
+          const followupKey = followup.key.toLowerCase();
+
+          if (key === "g") {
+            const destination = [...primaryNavItems, ...secondaryNavItems].find(
+              (item) => item.shortcutKey === followupKey
+            );
+            if (destination) {
+              followup.preventDefault();
+              navigate(destination.href);
+            }
+          }
+
+          if (key === "n" && quickRoutes[followupKey]) {
+            followup.preventDefault();
+            navigate(quickRoutes[followupKey]);
+          }
+
+          window.removeEventListener("keydown", nextKeyHandler, true);
+        };
+
         event.preventDefault();
-        setSequence(key);
+        window.addEventListener("keydown", nextKeyHandler, true);
+        window.setTimeout(() => {
+          window.removeEventListener("keydown", nextKeyHandler, true);
+        }, 900);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleGlobalShortcuts);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      if (sequenceTimeoutRef.current) clearTimeout(sequenceTimeoutRef.current);
+      window.removeEventListener("keydown", handleGlobalShortcuts);
     };
-  }, [navigate, open]);
+  }, [filteredCommands, navigate, open, selectedIndex]);
+
+  let visibleIndex = 0;
 
   return (
     <CommandPaletteContext.Provider
       value={{
         openPalette: () => setOpen(true),
         closePalette,
-        togglePalette: () => setOpen((value) => !value),
+        togglePalette: () => setOpen((current) => !current),
       }}
     >
       {children}
 
-      {open && (
-        <div className="fixed inset-0 z-[80] bg-black/55 px-4 py-8 backdrop-blur-sm" onClick={closePalette}>
-          <div
-            className="mx-auto flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-[28px]"
-            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)", boxShadow: "0 30px 80px rgba(0,0,0,0.28)" }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 border-b px-4 py-4" style={{ borderColor: "var(--border-primary)" }}>
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--bg-tertiary)" }}>
-                <IconSearch size={18} style={{ color: "var(--text-tertiary)" }} />
-              </div>
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    setSelectedIndex((index) => Math.min(index + 1, filteredCommands.length - 1));
-                  }
-                  if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    setSelectedIndex((index) => Math.max(index - 1, 0));
-                  }
-                  if (event.key === "Enter" && filteredCommands[selectedIndex]) {
-                    event.preventDefault();
-                    filteredCommands[selectedIndex].run();
-                  }
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closePalette}
+              className="fixed inset-0 z-[90] bg-black/55 backdrop-blur-sm"
+            />
+
+            <div className="pointer-events-none fixed inset-0 z-[91] flex items-start justify-center px-4 pt-[12vh]">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: -18 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: -14 }}
+                transition={{ type: "spring", stiffness: 320, damping: 28 }}
+                className="pointer-events-auto w-full max-w-2xl overflow-hidden rounded-[28px]"
+                style={{
+                  backgroundColor: "var(--bg-secondary)",
+                  border: "1px solid var(--border-primary)",
+                  boxShadow: "0 28px 90px rgba(0,0,0,0.34)",
                 }}
-                placeholder="Jump, create, or search commands..."
-                className="flex-1 bg-transparent text-base outline-none placeholder:text-white/20"
-                style={{ color: "var(--text-primary)" }}
-              />
-              <button
-                onClick={closePalette}
-                className="rounded-xl px-3 py-2 text-xs font-mono"
-                style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }}
               >
-                ESC
-              </button>
-            </div>
-
-            <div className="axis-scrollbar overflow-y-auto px-3 py-3">
-              {filteredCommands.length === 0 ? (
-                <div className="px-4 py-12 text-center">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--bg-tertiary)" }}>
-                    <IconCommand size={24} style={{ color: "var(--text-tertiary)" }} />
+                <div className="flex items-center gap-3 border-b px-4 py-4" style={{ borderColor: "var(--border-primary)" }}>
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: "var(--bg-tertiary)" }}
+                  >
+                    <IconSearch size={18} className="text-axis-accent" />
                   </div>
-                  <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-                    No matching commands
-                  </p>
-                  <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-                    Try page names, actions like "new mission", or shortcuts like "g m".
-                  </p>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Jump, capture, or control the system..."
+                    className="flex-1 bg-transparent text-base outline-none placeholder:text-white/25"
+                    style={{ color: "var(--text-primary)" }}
+                  />
+                  <div
+                    className="rounded-xl px-3 py-2 text-[10px] font-mono uppercase"
+                    style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }}
+                  >
+                    Esc
+                  </div>
                 </div>
-              ) : (
-                Object.entries(groupedCommands).map(([section, items]) => (
-                  <div key={section} className="mb-4">
-                    <p className="px-3 pb-2 text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
-                      {section}
-                    </p>
-                    <div className="space-y-1">
-                      {items.map((command) => {
-                        const absoluteIndex = filteredCommands.findIndex((item) => item.id === command.id);
-                        const isSelected = absoluteIndex === selectedIndex;
-                        return (
-                          <button
-                            key={command.id}
-                            onClick={command.run}
-                            className={cn(
-                              "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all",
-                              isSelected ? "translate-x-0.5" : ""
-                            )}
-                            style={{
-                              backgroundColor: isSelected ? "var(--bg-tertiary)" : "transparent",
-                              border: `1px solid ${isSelected ? "var(--border-secondary)" : "transparent"}`,
-                            }}
-                          >
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
-                              {command.icon}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                                {command.label}
-                              </p>
-                              <p className="truncate text-xs" style={{ color: "var(--text-secondary)" }}>
-                                {command.description}
-                              </p>
-                            </div>
-                            {command.shortcut && (
-                              <span
-                                className="rounded-lg px-2 py-1 text-[10px] font-mono uppercase"
-                                style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-tertiary)" }}
-                              >
-                                {command.shortcut}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-xs" style={{ borderColor: "var(--border-primary)", color: "var(--text-tertiary)" }}>
-              <p className="font-mono">Mod+K opens palette. Use G then a page key, or N then a create key.</p>
-              <p className="font-mono">Arrows to move, Enter to run.</p>
+                <div className="axis-scrollbar max-h-[420px] overflow-y-auto px-3 py-3">
+                  {filteredCommands.length === 0 ? (
+                    <div className="px-4 py-14 text-center">
+                      <div
+                        className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
+                        style={{ backgroundColor: "var(--bg-tertiary)" }}
+                      >
+                        <IconCommand size={24} style={{ color: "var(--text-tertiary)" }} />
+                      </div>
+                      <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
+                        No matching commands
+                      </p>
+                      <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+                        Try page names, actions like &quot;log income&quot;, or shortcuts like &quot;g r&quot;.
+                      </p>
+                    </div>
+                  ) : (
+                    (Object.keys(groupedCommands) as Command["section"][]).map((section) => {
+                      const items = groupedCommands[section];
+
+                      if (items.length === 0) return null;
+
+                      return (
+                        <div key={section} className="mb-4">
+                          <p
+                            className="px-3 pb-2 text-[10px] font-mono uppercase tracking-[0.22em]"
+                            style={{ color: "var(--text-tertiary)" }}
+                          >
+                            {section}
+                          </p>
+                          <div className="space-y-1">
+                            {items.map((command) => {
+                              const isSelected = visibleIndex === selectedIndex;
+                              const Icon = command.icon;
+
+                              visibleIndex += 1;
+
+                              return (
+                                <button
+                                  key={command.id}
+                                  onClick={command.run}
+                                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all"
+                                  style={{
+                                    backgroundColor: isSelected ? "var(--bg-tertiary)" : "transparent",
+                                    border: `1px solid ${
+                                      isSelected ? "var(--border-secondary)" : "transparent"
+                                    }`,
+                                  }}
+                                >
+                                  <div
+                                    className="flex h-10 w-10 items-center justify-center rounded-2xl"
+                                    style={{ backgroundColor: "var(--bg-accent-soft)" }}
+                                  >
+                                    <Icon size={16} className={command.tone || "text-axis-accent"} />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                                      {command.label}
+                                    </p>
+                                    <p className="truncate text-xs" style={{ color: "var(--text-secondary)" }}>
+                                      {command.hint}
+                                    </p>
+                                  </div>
+                                  {command.shortcut ? (
+                                    <span
+                                      className="rounded-lg px-2 py-1 text-[10px] font-mono uppercase"
+                                      style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-tertiary)" }}
+                                    >
+                                      {command.shortcut}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div
+                  className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-xs"
+                  style={{ borderColor: "var(--border-primary)", color: "var(--text-tertiary)" }}
+                >
+                  <p className="font-mono">Mod+K to open. G then a nav key, N then a capture key.</p>
+                  <p className="font-mono">Arrows move, Enter runs.</p>
+                </div>
+              </motion.div>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </AnimatePresence>
     </CommandPaletteContext.Provider>
   );
 }
 
 export function useCommandPalette() {
   const context = useContext(CommandPaletteContext);
+
   if (!context) {
     throw new Error("useCommandPalette must be used within CommandPaletteProvider");
   }
+
   return context;
 }

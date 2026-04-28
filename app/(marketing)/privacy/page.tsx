@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Privacy Policy — AXIS",
+  title: "Privacy Policy | AXIS",
   description: "How AXIS handles your data.",
 };
 
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
           <p>When you use AXIS, we collect only what we need to run the service:</p>
           <ul className="list-disc pl-6 space-y-2 mt-3">
             <li><strong>Account info:</strong> email, name, timezone</li>
-            <li><strong>Your data:</strong> missions, habits, revenue entries, goals — stored encrypted on Supabase</li>
+            <li><strong>Your data:</strong> missions, habits, revenue entries, goals: stored encrypted on Supabase</li>
             <li><strong>Billing:</strong> handled by Stripe (we never see your card number)</li>
             <li><strong>Usage:</strong> basic analytics to improve the product (page views, clicks)</li>
           </ul>
@@ -24,7 +24,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold text-axis-text1 mb-3">What we don't do</h2>
           <ul className="list-disc pl-6 space-y-2">
-            <li>We don't sell your data — ever.</li>
+            <li>We don't sell your data: ever.</li>
             <li>We don't share your data with advertisers.</li>
             <li>We don't read your mission titles, habit names, or revenue notes to train AI.</li>
             <li>We don't track you across the web.</li>
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Your rights</h2>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Export:</strong> Pro users can download all their data as CSV from Settings at any time.</li>
-            <li><strong>Delete:</strong> "Delete Account" in Settings permanently erases everything — no recovery, no soft-delete.</li>
+            <li><strong>Delete:</strong> "Delete Account" in Settings permanently erases everything: no recovery, no soft-delete.</li>
             <li><strong>Access:</strong> email <a href="mailto:support@useaxis.com" className="text-axis-accent2 hover:underline">support@useaxis.com</a> for a full data report.</li>
           </ul>
         </section>
@@ -44,10 +44,10 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Third parties</h2>
           <p>AXIS uses:</p>
           <ul className="list-disc pl-6 space-y-2 mt-3">
-            <li><strong>Supabase</strong> — database + auth (EU/US hosting)</li>
-            <li><strong>Stripe</strong> — subscription billing</li>
-            <li><strong>Resend</strong> — transactional email (welcome, morning briefings)</li>
-            <li><strong>Vercel</strong> — hosting</li>
+            <li><strong>Supabase</strong> | database + auth (EU/US hosting)</li>
+            <li><strong>Stripe</strong> | subscription billing</li>
+            <li><strong>Resend</strong> | transactional email (welcome, morning briefings)</li>
+            <li><strong>Vercel</strong> | hosting</li>
           </ul>
         </section>
 

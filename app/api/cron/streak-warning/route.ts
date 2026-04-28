@@ -2,21 +2,20 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendStreakWarning } from "@/lib/resend";
 
-// Service role for cron jobs
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export async function GET(request: Request) {
-  // Verify cron secret (for Vercel Cron)
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    // In development, allow without auth
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (
+    process.env.CRON_SECRET &&
+    authHeader !== `Bearer ${process.env.CRON_SECRET}`
+  ) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Client created inside handler so env vars are read at runtime, not build time
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   try {
     const today = new Date().toISOString().split("T")[0];
@@ -66,7 +65,7 @@ export async function GET(request: Request) {
           .limit(1);
 
         if (yesterdayMissions && yesterdayMissions.length > 0) {
-          // Has a streak at risk — send warning
+          // Has a streak at risk: send warning
           await sendStreakWarning(user.email, user.name || "there", 1);
           sentCount++;
         }

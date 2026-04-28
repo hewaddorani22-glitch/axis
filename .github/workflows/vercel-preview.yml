@@ -1,0 +1,88 @@
+name: Vercel Deploy
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Link Vercel Project
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          mkdir -p .vercel
+          cat > .vercel/project.json <<EOF
+          {
+            "orgId": "${VERCEL_ORG_ID}",
+            "projectId": "${VERCEL_PROJECT_ID}"
+          }
+          EOF
+
+      - name: Deploy To Vercel
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_PRO_PRICE_ID: ${{ secrets.STRIPE_PRO_PRICE_ID }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          deploy_args=""
+          deploy_label="Preview"
+
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            deploy_args="--prod"
+            deploy_label="Production"
+          fi
+
+          deploy_url=$(vercel deploy --token="${VERCEL_TOKEN}" --yes --force ${deploy_args} \
+            -m githubCommitSha="${{ github.sha }}" \
+            -m githubCommitRef="${{ github.ref_name }}" \
+            -b NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL}" \
+            -b NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+            -b NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL}" \
+            -e NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL}" \
+            -e NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+            -e NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL}" \
+            -e STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY}" \
+            -e STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET}" \
+            -e STRIPE_PRO_PRICE_ID="${STRIPE_PRO_PRICE_ID}" \
+            -e SUPABASE_DB_URL="${SUPABASE_DB_URL}" \
+            -e SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY}" \
+            -e RESEND_API_KEY="${RESEND_API_KEY}" \
+            -e CRON_SECRET="${CRON_SECRET}")
+
+          echo "deploy_label=${deploy_label}" >> "${GITHUB_OUTPUT}"
+          echo "deploy_url=${deploy_url}" >> "${GITHUB_OUTPUT}"
+
+      - name: Deployment URL
+        run: echo "${{ steps.deploy.outputs.deploy_label }} deployed to ${{ steps.deploy.outputs.deploy_url }}"

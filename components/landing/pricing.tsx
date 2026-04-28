@@ -1,16 +1,46 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 
+const MONTHLY_PRICE = 9;
+const ANNUAL_PRICE = 7; // billed as $84/yr
+
 export function Pricing() {
+  const [annual, setAnnual] = useState(false);
+
   return (
     <section id="pricing" className="py-20 md:py-28">
       <div className="max-w-5xl mx-auto px-6">
         {/* Section header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <span className="inline-block text-xs font-mono font-semibold text-axis-text3 uppercase tracking-wider mb-3">Pricing</span>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
             Start free. <span className="axis-highlight">Upgrade when ready.</span>
           </h2>
           <p className="text-lg text-axis-text2">No credit card required. No trial expiry.</p>
+        </div>
+
+        {/* Billing toggle */}
+        <div className="flex items-center justify-center gap-4 mb-10">
+          <span className={`text-sm font-medium transition-colors ${!annual ? "text-axis-text1" : "text-axis-text3"}`}>
+            Monthly
+          </span>
+          <button
+            onClick={() => setAnnual((v) => !v)}
+            aria-label="Toggle annual billing"
+            className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${annual ? "bg-axis-accent" : "bg-axis-border2"}`}
+          >
+            <span
+              className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${annual ? "translate-x-6" : "translate-x-0"}`}
+            />
+          </button>
+          <span className={`text-sm font-medium flex items-center gap-2 transition-colors ${annual ? "text-axis-text1" : "text-axis-text3"}`}>
+            Annual
+            <span className="text-[10px] font-mono font-bold bg-axis-accent text-axis-text1 px-2 py-0.5 rounded-full">
+              SAVE 22%
+            </span>
+          </span>
         </div>
 
         {/* Plans */}
@@ -38,7 +68,7 @@ export function Pricing() {
                 "5 daily missions",
                 "3 habit trackers",
                 "1 revenue stream",
-                "2 goals",
+                "2 themes",
                 "Command Center",
                 "Prove It profile",
                 "1 accountability partner",
@@ -55,27 +85,33 @@ export function Pricing() {
 
           {/* Pro Plan */}
           <div className="relative bg-axis-text1 text-white rounded-2xl p-8 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
-            {/* Popular badge */}
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-axis-accent text-axis-text1 text-xs font-mono font-bold px-4 py-1.5 rounded-full">
-                MOST POPULAR
-              </span>
-            </div>
+            {annual && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="bg-axis-accent text-axis-text1 text-xs font-mono font-bold px-4 py-1.5 rounded-full whitespace-nowrap">
+                  BEST VALUE
+                </span>
+              </div>
+            )}
 
             <div className="mb-6">
               <span className="text-xs font-mono font-semibold text-white/50 uppercase tracking-wider">Pro</span>
               <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-4xl font-bold">$9</span>
-                <span className="text-white/50 text-sm">/month</span>
+                <span className="text-4xl font-bold">${annual ? ANNUAL_PRICE : MONTHLY_PRICE}</span>
+                <span className="text-white/50 text-sm">/mo{annual ? ", billed annually" : ""}</span>
               </div>
+              {annual && (
+                <p className="text-xs font-mono text-white/40 mt-1">
+                  $84/yr — save ${(MONTHLY_PRICE - ANNUAL_PRICE) * 12} vs monthly
+                </p>
+              )}
               <p className="text-sm text-white/60 mt-2">For those who are serious about their system.</p>
             </div>
 
             <Link
-              href="/signup"
+              href={`/signup?plan=pro${annual ? "&billing=annual" : ""}`}
               className="w-full flex items-center justify-center text-sm font-semibold bg-axis-accent text-axis-text1 px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] mb-8"
             >
-              Start Pro — $9/mo
+              {annual ? `Start Pro: $84/yr` : `Start Pro: $${MONTHLY_PRICE}/mo`}
             </Link>
 
             <ul className="space-y-3">
@@ -83,7 +119,7 @@ export function Pricing() {
                 "Unlimited missions",
                 "Unlimited habits",
                 "Unlimited revenue streams",
-                "Unlimited goals",
+                "Unlimited themes",
                 "Weekly Review system",
                 "Focus Score history",
                 "Streak Freeze (1x/month)",
@@ -101,6 +137,10 @@ export function Pricing() {
             </ul>
           </div>
         </div>
+
+        <p className="text-center text-xs text-axis-text3 mt-8 font-mono">
+          Annual plan billed as a single charge of $84. Cancel anytime.
+        </p>
       </div>
     </section>
   );
