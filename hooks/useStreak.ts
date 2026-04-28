@@ -63,7 +63,10 @@ export function useStreak() {
     for (let i = 0; i < 365; i++) {
       const dateStr = getDateInTimezone(tz, i);
 
-      if (missionDates.has(dateStr) && habitDates.has(dateStr)) {
+      // A day counts if the user completed at least one mission OR one habit.
+      // Previously this required both, which broke streaks on productive days
+      // where only one side was logged — a punishing and demoralizing outcome.
+      if (missionDates.has(dateStr) || habitDates.has(dateStr)) {
         currentStreak++;
       } else if (frozenDates.has(dateStr)) {
         currentStreak++;

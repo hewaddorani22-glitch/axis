@@ -92,6 +92,11 @@ export default function DashboardPage() {
   const streakNeedsAttention = streak >= 3 && habitsCompleted === 0 && isLate;
   const streakAtRisk = streakNeedsAttention && recoveryAvailable === 0;
 
+  // Comeback mechanic: detect users returning after a streak break.
+  // Show a supportive reset message instead of a silent zero.
+  const hadStreakBefore = streak === 0 && (completedCount > 0 || habitsCompleted > 0);
+  const isReturningUser = !isLoading && streak === 0 && (missionsTotal > 0 || habits.length > 0);
+
   const nextBestAction = (() => {
     if (streakNeedsAttention) {
       return {
@@ -198,8 +203,8 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header — greeting + hero score zone */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-axis-accent/10 border border-axis-accent/20">
             <IconCommand size={22} className="text-axis-accent" />
@@ -209,34 +214,72 @@ export default function DashboardPage() {
               <><Skeleton className="h-6 w-40 mb-1" /><Skeleton className="h-4 w-24" /></>
             ) : (
               <>
-                <h2 className="text-xl font-semibold">{getGreeting()}, {user?.name || "there"}</h2>
-                <p className="text-[11px] font-mono tracking-widest text-white/30">{formatDate(new Date())}</p>
+                <h2 className="text-xl font-semibold">
+                  {getGreeting()}, {user?.name || "there"}
+                  {streak >= 7 && <span className="ml-2 text-base">🔥</span>}
+                </h2>
+                <p className="text-[11px] font-mono tracking-widest" style={{ color: "var(--text-tertiary)" }}>
+                  {formatDate(new Date())}
+                  {streak > 0 && (
+                    <span className="ml-2 text-axis-accent font-semibold">· {streak}-day streak</span>
+                  )}
+                </p>
               </>
             )}
           </div>
         </div>
-        <div className="hidden md:block">
-           <AxisScoreWidget {...axisScore} loading={isLoading} compact />
+        {/* Grade + Score hero — primary focal point on desktop */}
+        <div className="flex items-center gap-3">
+          {!isLoading && (
+            <div className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}>
+              <div className="text-center">
+                <p className="text-2xl font-bold leading-none text-axis-accent font-mono">{axisScore.grade}</p>
+                <p className="text-[9px] font-mono mt-1" style={{ color: "var(--text-tertiary)" }}>TODAY</p>
+              </div>
+              <div className="w-px h-8" style={{ backgroundColor: "var(--border-primary)" }} />
+              <div className="text-center">
+                <p className="text-2xl font-bold leading-none font-mono" style={{ color: "var(--text-primary)" }}>{axisScore.score}</p>
+                <p className="text-[9px] font-mono mt-1" style={{ color: "var(--text-tertiary)" }}>FOCUS</p>
+              </div>
+            </div>
+          )}
+          <div className="hidden md:block">
+            <AxisScoreWidget {...axisScore} loading={isLoading} compact />
+          </div>
         </div>
       </div>
 
-      {/* Extreme Focus Alert */}
-      {!isLoading && (streakAtRisk || streakNeedsAttention) && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="axis-card border-red-500/30 bg-red-500/5 p-5 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <IconWarning size={24} className="text-red-500 mt-1" />
+      {/* Comeback banner — for users returning after a streak break */}
+      {!isLoading && isReturningUser && !streakNeedsAttention && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="axis-card border-axis-accent/20 bg-axis-accent/5 p-5 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <IconStreak size={20} className="text-axis-accent mt-0.5 shrink-0" />
             <div>
-              <p className="text-red-500 font-bold mb-1">STREAK AT RISK</p>
-              <p className="text-sm text-white/50">
-                {recoveryAvailable > 0 
-                  ? `Your ${streak}-day streak is exposed. Close a habit tonight so the recovery buffer stays unused.`
-                  : `Your ${streak}-day streak is exposed. No recovery buffer left. Close one habit before midnight.`
-                }
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "var(--text-primary)" }}>Welcome back. Today is day one of your next streak.</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Complete one mission and one habit — that&apos;s all it takes to restart momentum.</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Streak attention banner — supportive, not punishing */}
+      {!isLoading && (streakAtRisk || streakNeedsAttention) && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="axis-card border-amber-500/20 bg-amber-500/5 p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <IconWarning size={20} className="text-amber-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+                {streak > 0 ? `Your ${streak}-day streak needs one more thing today.` : "Today's still yours."}
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                {recoveryAvailable > 0
+                  ? `Close a habit to protect your streak — you have a recovery buffer available.`
+                  : `Log one habit before midnight to keep the streak alive.`}
               </p>
             </div>
           </div>
-          <Link href="/systems" className="w-full md:w-auto text-xs font-bold bg-axis-accent text-axis-dark px-6 py-2.5 rounded-xl hover:scale-105 transition-all text-center">
-            ACT NOW
+          <Link href="/systems" className="w-full md:w-auto text-xs font-semibold bg-axis-accent text-axis-dark px-6 py-2.5 rounded-xl hover:scale-105 transition-all text-center shrink-0">
+            Open Habits
           </Link>
         </motion.div>
       )}
@@ -332,12 +375,15 @@ export default function DashboardPage() {
               {isLoading ? (
                 <div className="space-y-3">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-12 w-full" />)}</div>
               ) : openHabits.length === 0 ? (
-                <EmptyState
-                  icon={<IconHabits size={18} className="text-axis-accent" />}
-                  title="No open habits"
-                  description="Today's tracked habits are already closed."
-                  compact
-                />
+                <div className="flex items-center gap-3 px-1 py-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-axis-accent/10">
+                    <IconCheck size={14} className="text-axis-accent" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>All systems clear.</p>
+                    <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Every habit logged. Strong day.</p>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-2">
                   {openHabits.slice(0, 4).map((habit) => (

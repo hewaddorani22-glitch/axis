@@ -171,7 +171,7 @@ export default function ReviewPage() {
           </h2>
           {isSunday() && (
             <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-axis-accent/10 text-axis-accent">
-              Sunday: do your review
+              Great day to reflect
             </span>
           )}
         </div>
@@ -324,7 +324,7 @@ export default function ReviewPage() {
 
       {!reviewsLoading && reviews.length === 0 && (
         <p className="text-center text-sm py-4" style={{ color: "var(--text-tertiary)" }}>
-          Complete your first weekly review above. Come back every Sunday.
+          Complete your first weekly review above. Reflect anytime — weekly is ideal.
         </p>
       )}
     </div>

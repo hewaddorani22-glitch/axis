@@ -106,8 +106,8 @@ export default function OnboardingPage() {
     { title: "Your Profile", subtitle: "Tell us about yourself so we can personalize your experience.", icon: <IconUser size={20} className="text-axis-accent" /> },
     { title: "Today's Tasks", subtitle: "What do you need to accomplish today? Set up to 5 priorities.", icon: <IconTarget size={20} className="text-axis-accent" /> },
     { title: "Habits", subtitle: "Choose the habits you want to build. Consistency is everything.", icon: <IconHabits size={20} className="text-axis-accent" /> },
-    { title: "Public Profile", subtitle: "Set up your public profile. Show the world your accountability.", icon: <IconProve size={20} className="text-axis-accent" /> },
-    { title: "All Set!", subtitle: "Review your setup. Everything looks ready: let's go.", icon: <IconCheck size={20} className="text-axis-accent" /> },
+    { title: "Public Profile", subtitle: "Optional: claim your accountability profile URL. You can set this later in settings.", icon: <IconProve size={20} className="text-axis-accent" /> },
+    { title: "All Set!", subtitle: "Your system is ready. Let's get to work.", icon: <IconCheck size={20} className="text-axis-accent" /> },
   ];
 
   const canProceed = () => {
@@ -115,7 +115,8 @@ export default function OnboardingPage() {
       case 1: return name.trim().length > 0 && userType !== null;
       case 2: return missions.some((m) => m.title.trim().length > 0);
       case 3: return selectedHabits.length + customHabits.length >= 2;
-      case 4: return proveUsername.trim().length >= 3;
+      // Step 4 (Public Profile) is optional — username can be blank or set later
+      case 4: return true;
       case 5: return true;
       default: return true;
     }
@@ -126,12 +127,14 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const usernameValue = proveUsername.trim().toLowerCase();
     await supabase.from("users").update({
       name: name.trim(),
       user_type: userType,
       timezone,
       onboarding_done: true,
-      prove_it_username: proveUsername.trim().toLowerCase(),
+      // Only save username if the user filled it in — it's optional
+      ...(usernameValue.length >= 3 ? { prove_it_username: usernameValue } : {}),
       prove_it_bio: proveBio.trim() || null,
     }).eq("id", user.id);
 
@@ -408,8 +411,8 @@ export default function OnboardingPage() {
       {step === 4 && (
         <div className="space-y-5 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Your public profile is your public accountability page. Share it with partners,
-            on social media, or embed it anywhere. People can see your streaks, grades, and activity.
+            Your public accountability page — share your streaks, grades, and progress with the world.
+            This is optional. You can set it up anytime in settings and skip for now.
           </p>
           <div>
             <label className="text-xs font-mono text-white/40 block mb-2">Username</label>
@@ -514,13 +517,24 @@ export default function OnboardingPage() {
         )}
 
         {step < totalSteps ? (
-          <button
-            onClick={() => canProceed() && setStep(step + 1)}
-            disabled={!canProceed()}
-            className="flex items-center gap-1.5 bg-axis-accent text-axis-dark text-sm font-semibold px-8 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            Continue <IconChevronRight size={16} />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Step 4 (Public Profile) is optional — show explicit skip */}
+            {step === 4 && (
+              <button
+                onClick={() => setStep(step + 1)}
+                className="text-sm text-white/30 hover:text-white/50 transition-colors"
+              >
+                Skip for now
+              </button>
+            )}
+            <button
+              onClick={() => canProceed() && setStep(step + 1)}
+              disabled={!canProceed()}
+              className="flex items-center gap-1.5 bg-axis-accent text-axis-dark text-sm font-semibold px-8 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Continue <IconChevronRight size={16} />
+            </button>
+          </div>
         ) : (
           <button
             onClick={handleComplete}

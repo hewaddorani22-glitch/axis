@@ -86,12 +86,23 @@ export async function POST(request: Request) {
       const userId = session.metadata?.supabase_user_id || session.client_reference_id;
 
       if (userId) {
-        await updateUserById(userId, {
-          plan: "pro",
-          stripeCustomerId: session.customer as string,
-        });
+        // Idempotency: check current plan before upgrading to avoid double-processing
+        // on Stripe webhook retries (Stripe retries on any non-2xx response).
+        const currentPlanResult = await getPool().query(
+          "SELECT plan FROM public.users WHERE id = $1",
+          [userId]
+        );
+        const alreadyPro = currentPlanResult.rows[0]?.plan === "pro";
 
-        console.log(`User ${userId} upgraded to Pro`);
+        if (!alreadyPro) {
+          await updateUserById(userId, {
+            plan: "pro",
+            stripeCustomerId: session.customer as string,
+          });
+          console.log(`User ${userId} upgraded to Pro`);
+        } else {
+          console.log(`User ${userId} already Pro — skipping duplicate upgrade`);
+        }
       }
       break;
     }

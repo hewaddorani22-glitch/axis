@@ -1,17 +1,23 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isRateLimited, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
  * POST /api/partners/invite
  * Body: { inviterId: string }
  * Creates a partnership between the current user and the inviter.
  * Called after signup when an ?invite= param is present.
+ * Rate limited to 20 invites per user per hour.
  */
 export async function POST(request: Request) {
   const userClient = await createServerClient();
   const { data: { user } } = await userClient.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (isRateLimited(`invite:${user.id}`, 20, 60 * 60 * 1000)) {
+    return rateLimitedResponse();
+  }
 
   const { inviterId } = await request.json();
   if (!inviterId) return NextResponse.json({ error: "Missing inviterId" }, { status: 400 });
