@@ -1,21 +1,21 @@
-# AXIS — Project Brief & Technical Specification
+# lomoura — Project Brief & Technical Specification
 
-> This document contains the complete product vision, design decisions, feature specs, and technical roadmap for AXIS. It serves as the single source of truth for development.
+> This document contains the complete product vision, design decisions, feature specs, and technical roadmap for lomoura. It serves as the single source of truth for development.
 
 ---
 
 ## 1. Product Overview
 
-**Name:** AXIS
+**Name:** lomoura
 **Tagline:** Your Business OS
-**URL:** axis.app or useaxis.com (TBD)
+**URL:** lomoura.com or lomoura.com (TBD)
 **One-liner:** One system for everything you do — missions, revenue, habits, goals.
 
-AXIS is a web-based productivity software that replaces the 6+ apps people juggle daily. It's not a blank canvas like Notion — it's an opinionated system that tells you what to focus on, tracks your money, and holds you accountable.
+lomoura is a web-based productivity software that replaces the 6+ apps people juggle daily. It's not a blank canvas like Notion — it's an opinionated system that tells you what to focus on, tracks your money, and holds you accountable.
 
 **Target audience:** Everyone who wants clarity — entrepreneurs, students, creators, professionals.
 **Pricing:** Freemium. Free forever plan + $9/mo Pro.
-**Marketing channel:** TikTok slideshows ("6 apps every entrepreneur needs" — AXIS is included in the list).
+**Marketing channel:** TikTok slideshows ("6 apps every entrepreneur needs" — lomoura is included in the list).
 
 ---
 
@@ -109,7 +109,7 @@ Invite-based system where users connect with friends and see each other's progre
 - This is a viral loop: every user invites at least one partner → organic growth
 
 ### 3.8 Prove It Mode (Public Profile)
-Public-facing profile page at axis.app/prove/[username].
+Public-facing profile page at lomoura.com/prove/[username].
 - **Profile shows:** Avatar, name, bio
 - **Public stats:** Current streak (with fire emoji), today's grade, Focus Score, 30-day completion rate
 - **28-day activity heatmap:** GitHub-style grid showing daily activity intensity
@@ -119,14 +119,14 @@ Public-facing profile page at axis.app/prove/[username].
   - Perfect Week ⚡
   - 100 Missions Done 🎯
   - (Revenue amounts on achievements are opt-in/private by default)
-- **Shareable card:** Dark-themed card designed for screenshots. Shows grade, missions, habits, streak, and "axis.app/prove/username" watermark. Optimized for TikTok/Instagram stories.
+- **Shareable card:** Dark-themed card designed for screenshots. Shows grade, missions, habits, streak, and "lomoura.com/prove/username" watermark. Optimized for TikTok/Instagram stories.
 - **Daily Scorecard:** Grade A+ to F based on:
   - Missions completed / total (40% weight)
   - Habits completed / total (40% weight)
   - Revenue logged today (10% weight)
   - Streak maintained (10% weight)
 - **Copy link button:** One-click copy of profile URL
-- Purpose: Users screenshot their scorecard/profile → post on social media → followers see AXIS branding → free marketing
+- Purpose: Users screenshot their scorecard/profile → post on social media → followers see lomoura branding → free marketing
 
 ### 3.9 Focus Score Algorithm
 Weighted score (0-100) calculated daily:
@@ -217,7 +217,7 @@ Using Resend + React Email, triggered programmatically.
 | Payments | Stripe (Checkout + Customer Portal) | Industry standard, webhooks, self-service portal |
 | Email | Resend + React Email | Transactional emails with good design |
 | Hosting | Vercel | Native Next.js, global CDN, auto-deploy |
-| Domain | useaxis.com or getaxis.app | Custom domain, SSL auto via Vercel |
+| Domain | lomoura.com or getlomoura.com | Custom domain, SSL auto via Vercel |
 
 ---
 
@@ -373,7 +373,7 @@ CREATE TABLE streak_freezes (
 ## 9. Build Phases
 
 ### Phase 1 — Foundation (Week 1-2)
-- Next.js project setup with Tailwind + AXIS design tokens
+- Next.js project setup with Tailwind + lomoura design tokens
 - Supabase project, database schema, RLS policies
 - Auth: Google OAuth + email/password
 - Base layout: sidebar nav, top bar, responsive (sidebar → bottom tabs on mobile)
@@ -489,11 +489,11 @@ axis/
 │   ├── usePartners.ts
 │   └── useUser.ts
 ├── styles/
-│   └── globals.css           # Tailwind + AXIS design tokens
+│   └── globals.css           # Tailwind + lomoura design tokens
 ├── public/
 │   ├── axis-logo.svg
 │   └── og-image.png          # Social share image
-├── AXIS-BRIEF.md             # THIS FILE
+├── lomoura-BRIEF.md             # THIS FILE
 ├── tailwind.config.ts
 ├── next.config.ts
 └── package.json
@@ -530,4 +530,4 @@ fontFamily: {
 ---
 
 *Last updated: April 15, 2026*
-*This document is the single source of truth for the AXIS project.*
+*This document is the single source of truth for the lomoura project.*

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,8 @@ export async function GET(request: Request) {
       );
     }
 
-    const { error } = await supabase
+    const admin = createAdminClient();
+    const { error } = await admin
       .from("users")
       .update({
         plan: "pro",

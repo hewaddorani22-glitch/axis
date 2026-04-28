@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase/server";
+import { getAppUrl } from "@/lib/env";
 import { headers } from "next/headers";
 
 export async function POST() {
@@ -23,7 +24,7 @@ export async function POST() {
     }
 
     const headersList = await headers();
-    const origin = headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://useaxis.com";
+    const origin = getAppUrl(headersList.get("origin"));
 
     const session = await getStripe().billingPortal.sessions.create({
       customer: profile.stripe_customer_id,

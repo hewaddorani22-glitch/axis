@@ -1,18 +1,20 @@
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/support";
+
 export const metadata = {
-  title: "Privacy Policy | AXIS",
-  description: "How AXIS handles your data.",
+  title: "Privacy Policy | lomoura",
+  description: "How lomoura handles your data.",
 };
 
 export default function PrivacyPage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-32">
-      <h1 className="text-4xl font-bold tracking-tight mb-3">Privacy Policy</h1>
+    <div className="max-w-3xl mx-auto px-4 py-28 sm:px-6 sm:py-32">
+      <h1 className="text-3xl font-bold tracking-tight mb-3 sm:text-4xl">Privacy Policy</h1>
       <p className="text-sm font-mono text-axis-text3 mb-12">Last updated: April 2026</p>
 
-      <div className="prose prose-lg max-w-none space-y-8 text-axis-text2">
+      <div className="prose prose-base max-w-none space-y-8 text-axis-text2 sm:prose-lg">
         <section>
           <h2 className="text-xl font-bold text-axis-text1 mb-3">What we collect</h2>
-          <p>When you use AXIS, we collect only what we need to run the service:</p>
+          <p>When you use lomoura, we collect only what we need to run the service:</p>
           <ul className="list-disc pl-6 space-y-2 mt-3">
             <li><strong>Account info:</strong> email, name, timezone</li>
             <li><strong>Your data:</strong> missions, habits, revenue entries, goals: stored encrypted on Supabase</li>
@@ -36,13 +38,13 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Export:</strong> Pro users can download all their data as CSV from Settings at any time.</li>
             <li><strong>Delete:</strong> "Delete Account" in Settings permanently erases everything: no recovery, no soft-delete.</li>
-            <li><strong>Access:</strong> email <a href="mailto:support@useaxis.com" className="text-axis-accent2 hover:underline">support@useaxis.com</a> for a full data report.</li>
+            <li><strong>Access:</strong> email <a href={SUPPORT_MAILTO} className="text-axis-accent2 hover:underline">{SUPPORT_EMAIL}</a> for a full data report.</li>
           </ul>
         </section>
 
         <section>
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Third parties</h2>
-          <p>AXIS uses:</p>
+          <p>lomoura uses:</p>
           <ul className="list-disc pl-6 space-y-2 mt-3">
             <li><strong>Supabase</strong> | database + auth (EU/US hosting)</li>
             <li><strong>Stripe</strong> | subscription billing</li>
@@ -53,7 +55,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Contact</h2>
-          <p>Questions? <a href="mailto:support@useaxis.com" className="text-axis-accent2 hover:underline">support@useaxis.com</a></p>
+          <p>Questions? <a href={SUPPORT_MAILTO} className="text-axis-accent2 hover:underline">{SUPPORT_EMAIL}</a></p>
         </section>
       </div>
     </div>

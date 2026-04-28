@@ -5,31 +5,46 @@ import { formatDate } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import { useCommandPalette } from "@/components/app/command-palette";
 import { pageTitles } from "@/components/app/navigation";
-import { IconCommand } from "@/components/icons";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/support";
+import { IconCommand, IconMail } from "@/components/icons";
 
 export function Topbar() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { openPalette } = useCommandPalette();
-  const title = pageTitles[pathname] || "AXIS";
+  const title = pageTitles[pathname] || "lomoura";
 
   return (
     <header
-      className="h-16 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-30"
+      className="h-16 backdrop-blur-xl flex items-center justify-between gap-3 px-4 sm:px-6 sticky top-0 z-30"
       style={{
         backgroundColor: theme === "dark" ? "rgba(9,9,11,0.8)" : "rgba(250,250,250,0.85)",
         borderBottom: `1px solid var(--border-primary)`,
       }}
     >
-      <div>
-        <h1 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h1>
+      <div className="min-w-0">
+        <h1 className="truncate text-base font-semibold sm:text-lg" style={{ color: "var(--text-primary)" }}>{title}</h1>
         <p className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>{formatDate(new Date())}</p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <a
+          href={SUPPORT_MAILTO}
+          className="flex h-9 items-center gap-2 rounded-xl px-2.5 transition-all sm:px-3"
+          style={{
+            backgroundColor: theme === "dark" ? "rgba(255,255,255,0.035)" : "rgba(0,0,0,0.035)",
+            border: `1px solid var(--border-primary)`,
+            color: "var(--text-tertiary)",
+          }}
+          title={`Email support: ${SUPPORT_EMAIL}`}
+        >
+          <IconMail size={15} />
+          <span className="hidden text-sm font-medium md:inline">Support</span>
+        </a>
+
         <button
           onClick={openPalette}
-          className="flex items-center gap-2 rounded-xl px-3 py-2 transition-all"
+          className="flex h-9 items-center gap-2 rounded-xl px-2.5 transition-all sm:px-3"
           style={{
             backgroundColor: theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
             border: `1px solid var(--border-primary)`,
@@ -38,9 +53,9 @@ export function Topbar() {
           title="Open command palette"
         >
           <IconCommand size={15} />
-          <span className="hidden text-sm font-medium sm:inline">Quick Actions</span>
+          <span className="hidden text-sm font-medium md:inline">Quick Actions</span>
           <span
-            className="rounded-lg px-2 py-1 text-[10px] font-mono uppercase"
+            className="hidden rounded-lg px-2 py-1 text-[10px] font-mono uppercase sm:inline"
             style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-tertiary)" }}
           >
             Mod K
@@ -50,7 +65,7 @@ export function Topbar() {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+          className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-all"
           style={{
             backgroundColor: theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
             border: `1px solid var(--border-primary)`,

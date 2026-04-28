@@ -1,57 +1,35 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
-
-const { Pool } = require("pg");
-
-let pool: any = null;
-
-function getPool() {
-  if (!process.env.SUPABASE_DB_URL) {
-    throw new Error("SUPABASE_DB_URL is not set");
-  }
-
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.SUPABASE_DB_URL,
-      ssl: { rejectUnauthorized: false },
-    });
-  }
-
-  return pool;
-}
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getStripeWebhookSecret } from "@/lib/env";
 
 async function updateUserById(userId: string, updates: { plan?: "free" | "pro"; stripeCustomerId?: string | null }) {
-  const assignments: string[] = [];
-  const values: Array<string | null> = [];
-
-  if (updates.plan) {
-    assignments.push(`plan = $${values.length + 1}`);
-    values.push(updates.plan);
-  }
-
+  const update: Record<string, string | null> = {};
+  if (updates.plan) update.plan = updates.plan;
   if (Object.prototype.hasOwnProperty.call(updates, "stripeCustomerId")) {
-    assignments.push(`stripe_customer_id = $${values.length + 1}`);
-    values.push(updates.stripeCustomerId ?? null);
+    update.stripe_customer_id = updates.stripeCustomerId ?? null;
   }
 
-  if (assignments.length === 0) {
-    return;
-  }
+  if (Object.keys(update).length === 0) return;
 
-  values.push(userId);
-  await getPool().query(
-    `UPDATE public.users SET ${assignments.join(", ")} WHERE id = $${values.length}`,
-    values
-  );
+  const { error } = await createAdminClient()
+    .from("users")
+    .update(update)
+    .eq("id", userId);
+
+  if (error) throw error;
 }
 
 async function updateUserPlanByCustomerId(customerId: string, plan: "free" | "pro") {
-  const result = await getPool().query(
-    "UPDATE public.users SET plan = $1 WHERE stripe_customer_id = $2 RETURNING id",
-    [plan, customerId]
-  );
+  const { data, error } = await createAdminClient()
+    .from("users")
+    .update({ plan })
+    .eq("stripe_customer_id", customerId)
+    .select("id")
+    .maybeSingle();
 
-  return result.rows[0]?.id ?? null;
+  if (error) throw error;
+  return data?.id ?? null;
 }
 
 export async function POST(request: Request) {
@@ -63,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   let event;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = getStripeWebhookSecret();
 
   if (!webhookSecret) {
     return NextResponse.json({ error: "STRIPE_WEBHOOK_SECRET is not set" }, { status: 500 });
@@ -86,23 +64,12 @@ export async function POST(request: Request) {
       const userId = session.metadata?.supabase_user_id || session.client_reference_id;
 
       if (userId) {
-        // Idempotency: check current plan before upgrading to avoid double-processing
-        // on Stripe webhook retries (Stripe retries on any non-2xx response).
-        const currentPlanResult = await getPool().query(
-          "SELECT plan FROM public.users WHERE id = $1",
-          [userId]
-        );
-        const alreadyPro = currentPlanResult.rows[0]?.plan === "pro";
+        await updateUserById(userId, {
+          plan: "pro",
+          stripeCustomerId: session.customer as string,
+        });
 
-        if (!alreadyPro) {
-          await updateUserById(userId, {
-            plan: "pro",
-            stripeCustomerId: session.customer as string,
-          });
-          console.log(`User ${userId} upgraded to Pro`);
-        } else {
-          console.log(`User ${userId} already Pro — skipping duplicate upgrade`);
-        }
+        console.log(`User ${userId} upgraded to Pro`);
       }
       break;
     }

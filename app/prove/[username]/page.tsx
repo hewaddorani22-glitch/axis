@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { calculateFocusScore } from "@/lib/scoring";
 import { IconTarget, IconCheck, IconStreak, IconRevenue, AxisLogo } from "@/components/icons";
+import { ScorecardDownloadButton } from "@/components/prove/scorecard-download-button";
+import { buildProveStats, daysAgo } from "@/lib/prove-stats";
 import { notFound } from "next/navigation";
 
 export async function generateMetadata({
@@ -14,20 +15,20 @@ export async function generateMetadata({
   
   if (!data) {
     return {
-      title: `${username} | AXIS Prove It`,
-      description: `Check out ${username}'s accountability profile on AXIS.`,
+      title: `${username} | lomoura Prove It`,
+      description: `Check out ${username}'s accountability profile on lomoura.`,
     };
   }
 
   const { streak, grade } = data;
-  const ogUrl = new URL(`https://useaxis.com/api/og`);
+  const ogUrl = new URL(`https://lomoura.com/api/og`);
   ogUrl.searchParams.set("username", username);
   if (streak > 0) ogUrl.searchParams.set("streak", streak.toString());
   if (grade) ogUrl.searchParams.set("score", grade);
 
   return {
-    title: `${username} | AXIS Prove It`,
-    description: `Check out ${username}'s accountability profile on AXIS. Streak: ${streak}. Grade: ${grade}.`,
+    title: `${username} | lomoura Prove It`,
+    description: `Check out ${username}'s accountability profile on lomoura. Streak: ${streak}. Grade: ${grade}.`,
     openGraph: {
       images: [
         {
@@ -59,96 +60,52 @@ async function getProveItData(username: string) {
   const userId = profile.id;
   const today = new Date().toISOString().split("T")[0];
 
-  // Date helpers
-  const daysAgo = (n: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() - n);
-    return d.toISOString().split("T")[0];
-  };
-
   // Fetch all needed data in parallel
   const [
     todayMissionsRes,
+    activeHabitsRes,
     todayHabitLogsRes,
-    last28DaysMissionsRes,
-    last28DaysHabitLogsRes,
+    last30DaysMissionsRes,
+    last30DaysHabitLogsRes,
     achievementsRes,
-    revenueTodayRes,
+    totalMissionsDoneRes,
+    revenueRes,
   ] = await Promise.all([
     admin.from("missions").select("status").eq("user_id", userId).eq("date", today),
+    admin.from("habits").select("id").eq("user_id", userId).eq("archived", false),
     admin.from("habit_logs").select("date").eq("user_id", userId).eq("date", today).eq("completed", true),
-    // Last 28 days for heatmap and streak
-    admin.from("missions").select("date").eq("user_id", userId).eq("status", "done").gte("date", daysAgo(27)),
-    admin.from("habit_logs").select("date").eq("user_id", userId).eq("completed", true).gte("date", daysAgo(27)),
+    // Last 30 days for streaks and achievements. The heatmap displays the last 28.
+    admin.from("missions").select("date").eq("user_id", userId).eq("status", "done").gte("date", daysAgo(29)).lte("date", today),
+    admin.from("habit_logs").select("date").eq("user_id", userId).eq("completed", true).gte("date", daysAgo(29)).lte("date", today),
     admin.from("achievements").select("type, earned_at").eq("user_id", userId),
-    admin.from("revenue_entries").select("amount").eq("user_id", userId).eq("date", today),
+    admin.from("missions").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "done"),
+    admin.from("revenue_entries").select("amount, date").eq("user_id", userId),
   ]);
 
   const todayMissions = todayMissionsRes.data || [];
   const todayDone = todayMissions.filter((m) => m.status === "done").length;
   const todayTotal = todayMissions.length;
   const todayHabits = todayHabitLogsRes.data?.length ?? 0;
-
-  // 28-day heatmap: true if user had activity (mission done OR habit logged) that day
-  const missionDates28 = new Set(last28DaysMissionsRes.data?.map((m) => m.date) || []);
-  const habitDates28 = new Set(last28DaysHabitLogsRes.data?.map((l) => l.date) || []);
-
-  const heatmap: number[] = [];
-  for (let i = 27; i >= 0; i--) {
-    const dateStr = daysAgo(i);
-    const hasMission = missionDates28.has(dateStr);
-    const hasHabit = habitDates28.has(dateStr);
-    if (hasMission && hasHabit) heatmap.push(1.0);
-    else if (hasMission || hasHabit) heatmap.push(0.5);
-    else heatmap.push(0);
-  }
-
-  // Streak: consecutive days from today backward with both mission + habit
-  let streak = 0;
-  for (let i = 0; i < 28; i++) {
-    const dateStr = daysAgo(i);
-    if (missionDates28.has(dateStr) && habitDates28.has(dateStr)) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-
-  // 30-day completion rate
-  const totalDaysWithActivity = heatmap.filter((v) => v > 0).length;
-  const completionRate = Math.round((totalDaysWithActivity / 28) * 100);
-
-  const revenueToday = (revenueTodayRes.data?.length ?? 0) > 0;
-
-  // Daily score
-  const score = calculateFocusScore({
-    missionsCompleted: todayDone,
-    missionsTotal: Math.max(todayTotal, 1),
-    habitsCompleted: todayHabits,
-    habitsTotal: Math.max(todayHabits, 1),
-    streakDays: streak,
-  });
-
-  // Achievements
-  const earnedTypes = new Set(achievementsRes.data?.map((a) => a.type) || []);
-
-  return {
-    profile,
-    streak,
-    grade: score.grade,
-    focusScore: score.focusScore,
-    completionRate,
-    heatmap,
+  const habitsTotal = activeHabitsRes.data?.length ?? 0;
+  const computed = buildProveStats({
     todayDone,
     todayTotal,
     todayHabits,
-    revenueToday,
-    achievements: [
-      { type: "100_missions", title: "100 Missions Done", earned: earnedTypes.has("100_missions") },
-      { type: "perfect_week", title: "Perfect Week", earned: earnedTypes.has("perfect_week") },
-      { type: "30_day_streak", title: "30-Day Streak", earned: earnedTypes.has("30_day_streak") || streak >= 30 },
-      { type: "first_10k", title: "First $10K Month", earned: earnedTypes.has("first_10k") },
-    ],
+    habitsTotal,
+    missionDates: last30DaysMissionsRes.data?.map((mission) => mission.date) || [],
+    habitDates: last30DaysHabitLogsRes.data?.map((log) => log.date) || [],
+    earnedTypes: achievementsRes.data?.map((achievement) => achievement.type) || [],
+    totalMissionsDone: totalMissionsDoneRes.count || 0,
+    revenueEntries: revenueRes.data || [],
+  });
+
+  return {
+    profile,
+    ...computed,
+    todayDone,
+    todayTotal,
+    todayHabits,
+    habitsTotal,
   };
 }
 
@@ -162,7 +119,8 @@ export default async function ProveItPublicPage({
 
   if (!data) notFound();
 
-  const { profile, streak, grade, focusScore, completionRate, heatmap, todayDone, todayTotal, todayHabits, achievements } = data;
+  const { profile, streak, grade, focusScore, completionRate, heatmap, todayDone, todayTotal, todayHabits, habitsTotal, achievements } = data;
+  const displayName = profile.name || profile.prove_it_username || "lomoura user";
 
   const badgeIcons: Record<string, React.ReactNode> = {
     "100_missions": <IconTarget size={20} className="text-axis-accent" />,
@@ -175,39 +133,39 @@ export default async function ProveItPublicPage({
     <div className="min-h-screen" style={{ backgroundColor: "var(--bg-primary)" }}>
       {/* Header */}
       <div style={{ backgroundColor: "var(--bg-secondary)", borderBottom: "1px solid var(--border-primary)" }}>
-        <div className="max-w-2xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex items-center gap-2">
             <AxisLogo size={24} />
-            <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>AXIS</span>
+            <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>lomoura</span>
             <span className="text-xs font-mono ml-1" style={{ color: "var(--text-tertiary)" }}>/ prove</span>
           </div>
           <a
             href="/"
-            className="text-xs font-medium bg-axis-accent text-axis-dark px-4 py-2 rounded-lg hover:bg-axis-accent/90 transition-all"
+            className="shrink-0 text-xs font-medium bg-axis-accent text-axis-dark px-3 py-2 rounded-lg hover:bg-axis-accent/90 transition-all sm:px-4"
           >
-            Get AXIS Free
+            Get lomoura Free
           </a>
         </div>
       </div>
 
       {/* Profile */}
-      <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+      <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
         {/* User info */}
         <div className="text-center">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
             style={{ backgroundColor: "var(--bg-accent-soft)" }}>
             <span className="text-2xl font-bold font-mono text-axis-accent">
-              {(profile.name || profile.prove_it_username || "?").charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </span>
           </div>
           <h1 className="text-2xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-            {profile.name || profile.prove_it_username}
+            {displayName}
           </h1>
           {profile.prove_it_bio && (
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{profile.prove_it_bio}</p>
           )}
-          <p className="text-xs font-mono mt-2" style={{ color: "var(--text-tertiary)" }}>
-            useaxis.com/prove/{username}
+          <p className="break-all text-xs font-mono mt-2" style={{ color: "var(--text-tertiary)" }}>
+            lomoura.com/prove/{username}
           </p>
         </div>
 
@@ -258,7 +216,7 @@ export default async function ProveItPublicPage({
               />
             ))}
           </div>
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex flex-wrap items-center gap-3 mt-3">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "rgba(205,255,79,0.6)" }} />
               <span className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>Full day</span>
@@ -278,7 +236,7 @@ export default async function ProveItPublicPage({
         <div className="rounded-2xl p-6 border"
           style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-primary)" }}>
           <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Achievements</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {achievements.map((badge) => (
               <div
                 key={badge.type}
@@ -289,7 +247,7 @@ export default async function ProveItPublicPage({
                 }}
               >
                 <div className="flex-shrink-0">{badgeIcons[badge.type]}</div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-semibold"
                     style={{ color: badge.earned ? "var(--text-primary)" : "var(--text-secondary)" }}>
                     {badge.title}
@@ -304,17 +262,17 @@ export default async function ProveItPublicPage({
         </div>
 
         {/* Shareable card */}
-        <div className="rounded-2xl p-8 text-center border"
+        <div className="rounded-2xl p-5 text-center border sm:p-8"
           style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-primary)" }}>
           <p className="text-xs font-mono mb-4" style={{ color: "var(--text-tertiary)" }}>DAILY SCORECARD</p>
-          <div className="max-w-[280px] mx-auto rounded-xl p-6 border"
+          <div className="mx-auto w-full max-w-[280px] rounded-xl p-5 border sm:p-6"
             style={{ backgroundColor: "var(--bg-tertiary)", borderColor: "var(--border-primary)" }}>
             <div className="flex items-center gap-2 justify-center mb-4">
               <AxisLogo size={20} />
-              <span className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>AXIS</span>
+              <span className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>lomoura</span>
             </div>
             <p className="text-sm font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              {profile.name || profile.prove_it_username}
+              {displayName}
             </p>
             <p className="text-4xl font-bold text-axis-accent mb-1">{grade}</p>
             <p className="text-[10px] font-mono mb-4" style={{ color: "var(--text-tertiary)" }}>Daily Scorecard</p>
@@ -326,7 +284,7 @@ export default async function ProveItPublicPage({
                 <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>MISSIONS</p>
               </div>
               <div>
-                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{todayHabits}</p>
+                <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{todayHabits}/{habitsTotal}</p>
                 <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>HABITS</p>
               </div>
               <div>
@@ -337,22 +295,38 @@ export default async function ProveItPublicPage({
                 <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>STREAK</p>
               </div>
             </div>
-            <p className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-              useaxis.com/prove/{username}
+            <p className="break-all text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
+              lomoura.com/prove/{username}
             </p>
+          </div>
+          <div className="mt-4">
+            <ScorecardDownloadButton
+              data={{
+                displayName,
+                username,
+                grade,
+                focusScore,
+                todayDone,
+                todayTotal,
+                todayHabits,
+                habitsTotal,
+                streak,
+                completionRate,
+              }}
+            />
           </div>
         </div>
 
         {/* CTA */}
         <div className="text-center py-8">
           <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-            Build your own system like {profile.name || profile.prove_it_username}.
+            Build your own system like {displayName}.
           </p>
           <a
             href="/"
             className="inline-flex items-center text-sm font-semibold bg-axis-accent text-axis-dark px-8 py-3 rounded-xl hover:bg-axis-accent/90 transition-all"
           >
-            Get AXIS Free
+            Get lomoura Free
           </a>
         </div>
       </div>

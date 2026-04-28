@@ -113,12 +113,12 @@ export default function ReviewPage() {
 
   if (!userLoading && !isPro) {
     return (
-      <div className="max-w-2xl mx-auto relative group">
+      <div className="mx-auto w-full max-w-2xl relative group">
         {/* Fake blurred content */}
         <div className="pointer-events-none opacity-40 blur-sm scale-[0.98] transition-all duration-500 group-hover:blur-md select-none space-y-6">
           <div className="axis-card">
             <h2 className="text-base font-semibold mb-1" style={{ color: "var(--text-primary)" }}>This Week&apos;s Review</h2>
-            <div className="grid grid-cols-3 gap-3 my-5">
+            <div className="grid grid-cols-1 gap-3 my-5 sm:grid-cols-3">
               <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-axis-accent">S</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>WEEKLY GRADE</p></div>
               <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-axis-text1">$1,4k</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>MTD REVENUE</p></div>
               <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-orange-500">14</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>DAY STREAK</p></div>
@@ -162,16 +162,16 @@ export default function ReviewPage() {
   const pastReviews = reviews.filter((r) => r.week_start !== thisWeek);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6">
       {/* This Week */}
       <div className="axis-card">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex flex-col gap-2 mb-1 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
             This Week&apos;s Review
           </h2>
           {isSunday() && (
             <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-axis-accent/10 text-axis-accent">
-              Great day to reflect
+              Sunday: do your review
             </span>
           )}
         </div>
@@ -180,7 +180,7 @@ export default function ReviewPage() {
         </p>
 
         {/* Auto-filled stats */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-3">
           <div className="rounded-xl p-3 text-center"
             style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}>
             <p className="text-xl font-bold text-axis-accent">{score.grade}</p>
@@ -289,7 +289,7 @@ export default function ReviewPage() {
               key={review.id}
               className="axis-card group"
             >
-              <summary className="flex items-center justify-between cursor-pointer list-none">
+              <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
                 <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                   {formatWeekLabel(review.week_start)}
                 </p>
@@ -324,7 +324,7 @@ export default function ReviewPage() {
 
       {!reviewsLoading && reviews.length === 0 && (
         <p className="text-center text-sm py-4" style={{ color: "var(--text-tertiary)" }}>
-          Complete your first weekly review above. Reflect anytime — weekly is ideal.
+          Complete your first weekly review above. Come back every Sunday.
         </p>
       )}
     </div>

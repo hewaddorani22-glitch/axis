@@ -148,7 +148,7 @@ export default function MissionFocusPage() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-10"
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-24 sm:px-6 sm:py-10"
       style={{
         background:
           "radial-gradient(circle at top, rgba(205,255,79,0.14), transparent 30%), radial-gradient(circle at bottom, rgba(59,130,246,0.12), transparent 28%), var(--bg-primary)",
@@ -169,7 +169,7 @@ export default function MissionFocusPage() {
           : null}
       </AnimatePresence>
 
-      <div className="absolute left-6 top-6 flex items-center gap-3">
+      <div className="absolute left-4 top-4 flex items-center gap-3 sm:left-6 sm:top-6">
         <Link
           href="/missions"
           className="flex items-center gap-2 rounded-2xl px-4 py-2 text-sm transition-colors"
@@ -182,11 +182,11 @@ export default function MissionFocusPage() {
 
       <div className="w-full max-w-4xl">
         <div
-          className="relative overflow-hidden rounded-[32px] px-6 py-8 md:px-10 md:py-10"
+          className="relative overflow-hidden rounded-3xl px-4 py-6 sm:px-6 sm:py-8 md:px-10 md:py-10"
           style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
         >
           <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-            <div className="max-w-2xl">
+            <div className="min-w-0 max-w-2xl">
               <div className="mb-4 flex items-center gap-2">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
                   <IconFocus size={18} className="text-axis-accent" />
@@ -201,7 +201,7 @@ export default function MissionFocusPage() {
                 </div>
               </div>
 
-              <h1 className="text-3xl font-semibold md:text-4xl">{mission.title}</h1>
+              <h1 className="break-words text-2xl font-semibold sm:text-3xl md:text-4xl">{mission.title}</h1>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <span
                   className="rounded-full px-3 py-1 text-[11px] font-mono uppercase"
@@ -226,7 +226,7 @@ export default function MissionFocusPage() {
               </div>
             </div>
 
-            <div className="grid w-full max-w-sm grid-cols-2 gap-3">
+            <div className="grid w-full max-w-sm grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-2xl p-4" style={{ backgroundColor: "var(--bg-tertiary)" }}>
                 <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
                   Status
@@ -244,7 +244,7 @@ export default function MissionFocusPage() {
 
           <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="relative flex items-center justify-center">
-              <svg className="h-[320px] w-[320px] -rotate-90" viewBox="0 0 280 280">
+              <svg className="h-[min(320px,78vw)] w-[min(320px,78vw)] -rotate-90" viewBox="0 0 280 280">
                 <circle
                   cx="140"
                   cy="140"
@@ -282,7 +282,7 @@ export default function MissionFocusPage() {
                 <p className="text-[11px] font-mono uppercase tracking-[0.3em]" style={{ color: "var(--text-tertiary)" }}>
                   Countdown
                 </p>
-                <p className="mt-2 text-6xl font-semibold tracking-tight">{formatCountdown(secondsLeft)}</p>
+                <p className="mt-2 text-4xl font-semibold tracking-tight sm:text-6xl">{formatCountdown(secondsLeft)}</p>
                 <p className="mt-3 text-sm" style={{ color: "var(--text-secondary)" }}>
                   {secondsLeft === 0 ? "Time block completed. Close it out." : `${Math.round(progress * 100)}% of the block used`}
                 </p>
@@ -326,7 +326,7 @@ export default function MissionFocusPage() {
                 <ul className="space-y-2 text-sm" style={{ color: "var(--text-secondary)" }}>
                   <li>Work the mission until the timer hits zero or the mission is complete.</li>
                   <li>Pause only for real interruptions, not task switching.</li>
-                  <li>Complete the mission here to push progress back into AXIS immediately.</li>
+                  <li>Complete the mission here to push progress back into lomoura immediately.</li>
                 </ul>
               </div>
             </div>

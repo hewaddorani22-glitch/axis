@@ -7,16 +7,32 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function runSchema() {
   const envPath = join(__dirname, "..", ".env.local");
-  const envContent = readFileSync(envPath, "utf-8");
+  let envContent = "";
+  try {
+    envContent = readFileSync(envPath, "utf-8");
+  } catch {
+    // .env.local is optional when values are provided by the shell/Vercel.
+  }
+
   const getEnv = (key) => {
     const match = envContent.match(new RegExp(`${key}=(.+)`));
-    return match ? match[1].trim() : null;
+    const value = process.env[key] || (match ? match[1].trim() : "");
+    return value.replace(/^["']|["']$/g, "").replace(/\\n/g, "").trim();
   };
 
+  const explicitConnString = getEnv("SUPABASE_DB_URL") || getEnv("DATABASE_URL");
   const supabaseUrl = getEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const projectRef = supabaseUrl.replace("https://", "").replace(".supabase.co", "");
-  const dbPassword = "IchBinC00l#";
-  const connString = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`;
+  const dbPassword = getEnv("SUPABASE_DB_PASSWORD");
+
+  if (!explicitConnString && (!supabaseUrl || !dbPassword)) {
+    throw new Error("Set SUPABASE_DB_URL, or set NEXT_PUBLIC_SUPABASE_URL plus SUPABASE_DB_PASSWORD.");
+  }
+
+  const projectRef = supabaseUrl
+    ? supabaseUrl.replace("https://", "").replace(".supabase.co", "")
+    : "";
+  const connString = explicitConnString ||
+    `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`;
 
   const client = new pg.Client({
     connectionString: connString,

@@ -106,8 +106,8 @@ export default function OnboardingPage() {
     { title: "Your Profile", subtitle: "Tell us about yourself so we can personalize your experience.", icon: <IconUser size={20} className="text-axis-accent" /> },
     { title: "Today's Tasks", subtitle: "What do you need to accomplish today? Set up to 5 priorities.", icon: <IconTarget size={20} className="text-axis-accent" /> },
     { title: "Habits", subtitle: "Choose the habits you want to build. Consistency is everything.", icon: <IconHabits size={20} className="text-axis-accent" /> },
-    { title: "Public Profile", subtitle: "Optional: claim your accountability profile URL. You can set this later in settings.", icon: <IconProve size={20} className="text-axis-accent" /> },
-    { title: "All Set!", subtitle: "Your system is ready. Let's get to work.", icon: <IconCheck size={20} className="text-axis-accent" /> },
+    { title: "Public Profile", subtitle: "Set up your public profile. Show the world your accountability.", icon: <IconProve size={20} className="text-axis-accent" /> },
+    { title: "All Set!", subtitle: "Review your setup. Everything looks ready: let's go.", icon: <IconCheck size={20} className="text-axis-accent" /> },
   ];
 
   const canProceed = () => {
@@ -115,8 +115,7 @@ export default function OnboardingPage() {
       case 1: return name.trim().length > 0 && userType !== null;
       case 2: return missions.some((m) => m.title.trim().length > 0);
       case 3: return selectedHabits.length + customHabits.length >= 2;
-      // Step 4 (Public Profile) is optional — username can be blank or set later
-      case 4: return true;
+      case 4: return proveUsername.trim().length >= 3;
       case 5: return true;
       default: return true;
     }
@@ -127,14 +126,16 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const usernameValue = proveUsername.trim().toLowerCase();
+    await supabase.auth.updateUser({
+      data: { full_name: name.trim(), name: name.trim() },
+    });
+
     await supabase.from("users").update({
       name: name.trim(),
       user_type: userType,
       timezone,
       onboarding_done: true,
-      // Only save username if the user filled it in — it's optional
-      ...(usernameValue.length >= 3 ? { prove_it_username: usernameValue } : {}),
+      prove_it_username: proveUsername.trim().toLowerCase(),
       prove_it_bio: proveBio.trim() || null,
     }).eq("id", user.id);
 
@@ -182,10 +183,10 @@ export default function OnboardingPage() {
   const currentStep = stepTitles[step - 1];
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="mx-auto w-full max-w-2xl">
       <div className="flex items-center gap-3 mb-2">
         <AxisLogo size={24} />
-        <span className="text-sm font-bold text-white">AXIS Setup</span>
+        <span className="text-sm font-bold text-white">lomoura Setup</span>
       </div>
 
       <div className="mb-8">
@@ -221,7 +222,7 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-start gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-axis-accent/10 border border-axis-accent/20 flex items-center justify-center">
           {currentStep.icon}
         </div>
@@ -247,7 +248,7 @@ export default function OnboardingPage() {
 
           <div>
             <label className="text-xs font-mono text-white/40 block mb-2">What describes you best?</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {userTypes.map((type) => (
                 <button
                   key={type.value}
@@ -289,7 +290,7 @@ export default function OnboardingPage() {
             Set up to 5 for today, ranked by importance. You can always change them later.
           </p>
           {missions.map((mission, i) => (
-            <div key={i} className="flex items-center gap-3">
+            <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                 i === 0 ? "bg-red-500/10 text-red-400" :
                 i < 3 ? "bg-amber-500/10 text-amber-400" :
@@ -311,7 +312,7 @@ export default function OnboardingPage() {
                   updated[i].title = e.target.value;
                   setMissions(updated);
                 }}
-                className="flex-1 bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20 focus:border-axis-accent/50 transition-all"
+                className="w-full flex-1 bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20 focus:border-axis-accent/50 transition-all"
                 autoFocus={i === 0}
               />
               <select
@@ -321,7 +322,7 @@ export default function OnboardingPage() {
                   updated[i].priority = e.target.value as "high" | "med" | "low";
                   setMissions(updated);
                 }}
-                className="bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-white/40 rounded-lg px-2 py-2 outline-none"
+                className="w-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-white/40 rounded-lg px-2 py-2 outline-none sm:w-auto"
               >
                 <option value="high">High</option>
                 <option value="med">Med</option>
@@ -338,7 +339,7 @@ export default function OnboardingPage() {
             Pick 2-3 daily habits you want to track. These build your streak and feed into your system health.
             Consistency here separates doers from dreamers.
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {suggestedHabits.map((habit) => {
               const isSelected = selectedHabits.includes(habit.name);
               return (
@@ -350,7 +351,7 @@ export default function OnboardingPage() {
                       prev.length + customHabits.length < 5 ? [...prev, habit.name] : prev
                     );
                   }}
-                  className={`flex items-center gap-3 p-4 rounded-xl transition-all border ${
+                  className={`flex min-w-0 items-center gap-3 p-4 rounded-xl transition-all border ${
                     isSelected
                       ? "bg-axis-accent/10 border-axis-accent/30"
                       : "bg-white/[0.03] border-white/[0.06] hover:border-white/[0.12]"
@@ -363,7 +364,7 @@ export default function OnboardingPage() {
                       {habit.icon}
                     </div>
                   </div>
-                  <span className="text-sm text-white/80">{habit.name}</span>
+                  <span className="min-w-0 flex-1 text-left text-sm text-white/80">{habit.name}</span>
                   {isSelected && <IconCheck size={14} className="text-axis-accent ml-auto" />}
                 </button>
               );
@@ -378,7 +379,7 @@ export default function OnboardingPage() {
             </div>
           ))}
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="text"
               placeholder="Or type your own habit..."
@@ -390,7 +391,7 @@ export default function OnboardingPage() {
                   setCustomInput("");
                 }
               }}
-              className="flex-1 bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20"
+              className="min-w-0 flex-1 bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20"
             />
             <button
               onClick={() => {
@@ -399,7 +400,7 @@ export default function OnboardingPage() {
                   setCustomInput("");
                 }
               }}
-              className="bg-white/[0.06] text-white/50 text-sm px-4 py-3 rounded-xl hover:bg-white/[0.1] transition-all"
+              className="w-full bg-white/[0.06] text-white/50 text-sm px-4 py-3 rounded-xl hover:bg-white/[0.1] transition-all sm:w-auto"
             >
               Add
             </button>
@@ -411,19 +412,19 @@ export default function OnboardingPage() {
       {step === 4 && (
         <div className="space-y-5 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Your public accountability page — share your streaks, grades, and progress with the world.
-            This is optional. You can set it up anytime in settings and skip for now.
+            Your public profile is your public accountability page. Share it with partners,
+            on social media, or embed it anywhere. People can see your streaks, grades, and activity.
           </p>
           <div>
             <label className="text-xs font-mono text-white/40 block mb-2">Username</label>
-            <div className="flex items-center gap-0 bg-white/[0.06] border border-white/[0.08] rounded-xl overflow-hidden">
-              <span className="text-xs font-mono text-white/20 px-4 bg-white/[0.03] py-3.5 border-r border-white/[0.06]">axis.app/prove/</span>
+            <div className="flex flex-col bg-white/[0.06] border border-white/[0.08] rounded-xl overflow-hidden sm:flex-row sm:items-center">
+              <span className="break-all bg-white/[0.03] px-4 py-3 text-xs font-mono text-white/20 sm:border-r sm:border-white/[0.06] sm:py-3.5">lomoura.com/prove/</span>
               <input
                 type="text"
                 placeholder="your-name"
                 value={proveUsername}
                 onChange={(e) => setProveUsername(e.target.value.replace(/[^a-zA-Z0-9-_]/g, "").toLowerCase())}
-                className="flex-1 bg-transparent text-sm text-white px-3 py-3 outline-none placeholder:text-white/20 font-mono"
+                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm font-mono text-white outline-none placeholder:text-white/20 sm:px-3"
                 autoFocus
               />
             </div>
@@ -452,14 +453,14 @@ export default function OnboardingPage() {
             </div>
             <p className="text-base font-semibold text-white">{name || "Your Name"}</p>
             <p className="text-xs text-white/30 mt-0.5">{proveBio || "Your bio"}</p>
-            <p className="text-[10px] font-mono text-white/15 mt-2">axis.app/prove/{proveUsername || "..."}</p>
+          <p className="break-all text-[10px] font-mono text-white/15 mt-2">lomoura.com/prove/{proveUsername || "..."}</p>
           </div>
         </div>
       )}
 
       {step === 5 && (
         <div className="space-y-4 animate-fade-in">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <IconUser size={14} className="text-axis-accent" />
@@ -504,7 +505,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-10 pb-8">
+      <div className="flex items-center justify-between gap-3 mt-10 pb-8">
         {step > 1 ? (
           <button
             onClick={() => setStep(step - 1)}
@@ -517,29 +518,18 @@ export default function OnboardingPage() {
         )}
 
         {step < totalSteps ? (
-          <div className="flex items-center gap-3">
-            {/* Step 4 (Public Profile) is optional — show explicit skip */}
-            {step === 4 && (
-              <button
-                onClick={() => setStep(step + 1)}
-                className="text-sm text-white/30 hover:text-white/50 transition-colors"
-              >
-                Skip for now
-              </button>
-            )}
-            <button
-              onClick={() => canProceed() && setStep(step + 1)}
-              disabled={!canProceed()}
-              className="flex items-center gap-1.5 bg-axis-accent text-axis-dark text-sm font-semibold px-8 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Continue <IconChevronRight size={16} />
-            </button>
-          </div>
+          <button
+            onClick={() => canProceed() && setStep(step + 1)}
+            disabled={!canProceed()}
+            className="flex min-w-[132px] items-center justify-center gap-1.5 bg-axis-accent text-axis-dark text-sm font-semibold px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed sm:px-8"
+          >
+            Continue <IconChevronRight size={16} />
+          </button>
         ) : (
           <button
             onClick={handleComplete}
             disabled={loading}
-            className="flex items-center gap-2 bg-axis-accent text-axis-dark text-sm font-semibold px-8 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-50"
+            className="flex min-w-[156px] items-center justify-center gap-2 bg-axis-accent text-axis-dark text-sm font-semibold px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-50 sm:px-8"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-axis-dark/30 border-t-axis-dark rounded-full animate-spin" />

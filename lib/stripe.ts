@@ -1,22 +1,24 @@
 import Stripe from "stripe";
+import { getStripePriceId, getStripeSecretKey } from "@/lib/env";
 
 let _stripe: Stripe | null = null;
 
 export function getStripe(): Stripe {
   if (!_stripe) {
-    if (!process.env.STRIPE_SECRET_KEY) {
+    const secretKey = getStripeSecretKey();
+    if (!secretKey) {
       throw new Error("STRIPE_SECRET_KEY is not set");
     }
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    _stripe = new Stripe(secretKey);
   }
   return _stripe;
 }
 
 export const PLANS = {
   pro: {
-    name: "AXIS Pro",
+    name: "lomoura Pro",
     price: 900, // $9.00 in cents
-    priceId: process.env.STRIPE_PRO_PRICE_ID || "",
+    priceId: getStripePriceId(),
     features: [
       "Unlimited missions",
       "Unlimited habits",

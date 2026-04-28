@@ -59,7 +59,7 @@ export async function GET() {
   };
 
   // ── Export date ──────────────────────────────────────────────────────────
-  lines.push(`AXIS Data Export | ${profile.name || profile.email}`);
+  lines.push(`lomoura Data Export | ${profile.name || profile.email}`);
   lines.push(`Exported: ${new Date().toISOString()}`);
   lines.push("");
 
@@ -157,7 +157,7 @@ export async function GET() {
   );
 
   const content = lines.join("\n");
-  const filename = `axis-export-${new Date().toISOString().split("T")[0]}.txt`;
+  const filename = `lomoura-export-${new Date().toISOString().split("T")[0]}.txt`;
 
   return new NextResponse(content, {
     headers: {

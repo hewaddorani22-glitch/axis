@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getAppUrl, getStripePriceId } from "@/lib/env";
 import { headers } from "next/headers";
 
 export async function POST() {
@@ -12,43 +14,58 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
+    const admin = createAdminClient();
+    const { data: profile } = await admin
       .from("users")
       .select("plan, stripe_customer_id, email, name")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profile?.plan === "pro") {
       return NextResponse.json({ error: "You are already on Pro." }, { status: 409 });
     }
 
     let customerId = profile?.stripe_customer_id;
+    const email = profile?.email || user.email!;
+    const name = profile?.name || user.user_metadata?.full_name || user.user_metadata?.name || undefined;
+
+    if (!profile) {
+      await admin.from("users").upsert(
+        {
+          id: user.id,
+          email,
+          name: name || email.split("@")[0],
+        },
+        { onConflict: "id" }
+      );
+    }
 
     if (!customerId) {
       const customer = await getStripe().customers.create({
-        email: profile?.email || user.email!,
-        name: profile?.name || undefined,
+        email,
+        name,
         metadata: { supabase_user_id: user.id },
       });
       customerId = customer.id;
 
-      await supabase
+      await admin
         .from("users")
         .update({ stripe_customer_id: customerId })
         .eq("id", user.id);
     }
 
     const headersList = await headers();
-    const origin = headersList.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://useaxis.com";
+    const origin = getAppUrl(headersList.get("origin"));
+    const priceId = getStripePriceId();
 
-    const lineItems = process.env.STRIPE_PRO_PRICE_ID
-      ? [{ price: process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }]
+    const lineItems = priceId
+      ? [{ price: priceId, quantity: 1 }]
       : [{
           price_data: {
             currency: "usd",
             product_data: {
-              name: "AXIS Pro",
-              description: "Unlimited everything. Your complete Business OS.",
+              name: "lomoura Pro",
+              description: "Unlimited missions, habits, revenue tracking, goals, and accountability.",
             },
             recurring: { interval: "month" as const },
             unit_amount: 900,

@@ -1,5 +1,5 @@
 /**
- * AXIS Focus Score Algorithm
+ * lomoura Focus Score Algorithm
  *
  * Weighted score (0-100) calculated daily:
  * - Mission completion rate: 40%

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { IconMail } from "@/components/icons";
+import { getBrowserAppUrl } from "@/lib/env";
 
 function SignupForm() {
   const [name, setName] = useState("");
@@ -41,7 +42,12 @@ function SignupForm() {
       password,
       options: {
         data: { full_name: name },
-        emailRedirectTo: `${window.location.origin}/callback?next=/onboarding`,
+        emailRedirectTo: (() => {
+          const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
+          callbackUrl.searchParams.set("next", "/onboarding");
+          if (inviteId) callbackUrl.searchParams.set("invite", inviteId);
+          return callbackUrl.toString();
+        })(),
       },
     });
 
@@ -67,13 +73,16 @@ function SignupForm() {
   };
 
   const handleGoogleSignup = async () => {
-    const redirectTo = inviteId
-      ? `${window.location.origin}/callback?next=/onboarding&invite=${inviteId}`
-      : `${window.location.origin}/callback?next=/onboarding`;
+    const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
+    callbackUrl.searchParams.set("next", "/onboarding");
+    if (inviteId) callbackUrl.searchParams.set("invite", inviteId);
 
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo },
+      options: {
+        redirectTo: callbackUrl.toString(),
+        queryParams: { prompt: "select_account" },
+      },
     });
   };
 
@@ -87,7 +96,7 @@ function SignupForm() {
         <p className="text-sm text-axis-text2 max-w-xs mx-auto">
           We sent a confirmation link to{" "}
           <span className="font-medium text-axis-text1">{email}</span>.
-          Click the link to activate your account.
+          Click the link to activate your account and jump straight into lomoura.
         </p>
       </div>
     );
@@ -99,7 +108,7 @@ function SignupForm() {
         <h1 className="text-2xl font-bold tracking-tight mb-2">Create your account</h1>
         {inviteId ? (
           <p className="text-sm text-axis-text2">
-            You were invited to AXIS.{" "}
+            You were invited to lomoura.{" "}
             <span className="text-axis-accent font-medium">Sign up to connect with your partner.</span>
           </p>
         ) : (
@@ -141,7 +150,7 @@ function SignupForm() {
           <input
             id="name"
             type="text"
-            placeholder="King"
+            placeholder="Your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"

@@ -1,24 +1,21 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { sendWeeklyDigest } from "@/lib/resend";
 import { calculateFocusScore } from "@/lib/scoring";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getCronSecret } from "@/lib/env";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  const cronSecret = getCronSecret();
+  if (!cronSecret) {
+    return NextResponse.json({ error: "CRON_SECRET is not set" }, { status: 500 });
+  }
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Client created inside handler so env vars are read at runtime, not build time
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   try {
+    const supabase = createAdminClient();
     const { data: users } = await supabase.from("users").select("id, email, name");
     if (!users) return NextResponse.json({ sent: 0 });
 

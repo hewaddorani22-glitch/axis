@@ -1,22 +1,16 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isRateLimited, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
  * DELETE /api/account/delete
  * Deletes all user data and the auth account.
  * Uses admin client to delete across all tables (RLS bypassed).
- * Rate limited to 3 attempts per user per hour.
  */
 export async function DELETE() {
   const userClient = await createServerClient();
   const { data: { user } } = await userClient.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  if (isRateLimited(`account-delete:${user.id}`, 3, 60 * 60 * 1000)) {
-    return rateLimitedResponse();
-  }
 
   const admin = createAdminClient();
   const userId = user.id;

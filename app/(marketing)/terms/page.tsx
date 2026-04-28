@@ -1,19 +1,21 @@
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/support";
+
 export const metadata = {
-  title: "Terms of Service | AXIS",
-  description: "AXIS terms of service.",
+  title: "Terms of Service | lomoura",
+  description: "lomoura terms of service.",
 };
 
 export default function TermsPage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-32">
-      <h1 className="text-4xl font-bold tracking-tight mb-3">Terms of Service</h1>
+    <div className="max-w-3xl mx-auto px-4 py-28 sm:px-6 sm:py-32">
+      <h1 className="text-3xl font-bold tracking-tight mb-3 sm:text-4xl">Terms of Service</h1>
       <p className="text-sm font-mono text-axis-text3 mb-12">Last updated: April 2026</p>
 
-      <div className="prose prose-lg max-w-none space-y-8 text-axis-text2">
+      <div className="prose prose-base max-w-none space-y-8 text-axis-text2 sm:prose-lg">
         <section>
           <h2 className="text-xl font-bold text-axis-text1 mb-3">The short version</h2>
           <p>
-            AXIS is a productivity tool. We do our best to keep it running, secure, and useful.
+            lomoura is a productivity tool. We do our best to keep it running, secure, and useful.
             You're responsible for the content you put in it. Don't break the law with it.
             Either of us can end this relationship at any time.
           </p>
@@ -22,7 +24,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Your account</h2>
           <p>
-            You must be at least 16 years old to use AXIS. You're responsible for keeping your
+            You must be at least 16 years old to use lomoura. You're responsible for keeping your
             login credentials secure. One account per person.
           </p>
         </section>
@@ -33,7 +35,7 @@ export default function TermsPage() {
             <li>Free plan: 5 missions, 3 habits, 1 revenue stream, 2 goals. No expiration.</li>
             <li>Pro plan: $9/month, billed monthly via Stripe.</li>
             <li>Cancel anytime from Settings / Manage Subscription. No questions asked.</li>
-            <li>We offer a 14-day refund if AXIS doesn't work out. Email support@useaxis.com.</li>
+            <li>We offer a 14-day refund if lomoura doesn't work out. Email {SUPPORT_EMAIL}.</li>
           </ul>
         </section>
 
@@ -41,7 +43,7 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Acceptable use</h2>
           <p>Don't:</p>
           <ul className="list-disc pl-6 space-y-2 mt-3">
-            <li>Use AXIS to do anything illegal</li>
+            <li>Use lomoura to do anything illegal</li>
             <li>Try to break, scrape, or abuse the service</li>
             <li>Share your account with multiple people</li>
             <li>Upload illegal or harmful content</li>
@@ -59,7 +61,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Liability</h2>
           <p>
-            AXIS is provided "as is." We do our best but can't guarantee 100% uptime or
+            lomoura is provided "as is." We do our best but can't guarantee 100% uptime or
             that you'll hit your goals. Our total liability is capped at what you've paid us
             in the last 12 months.
           </p>
@@ -75,7 +77,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Contact</h2>
-          <p>Questions? <a href="mailto:support@useaxis.com" className="text-axis-accent2 hover:underline">support@useaxis.com</a></p>
+          <p>Questions? <a href={SUPPORT_MAILTO} className="text-axis-accent2 hover:underline">{SUPPORT_EMAIL}</a></p>
         </section>
       </div>
     </div>

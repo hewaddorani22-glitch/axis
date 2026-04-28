@@ -1,4 +1,4 @@
--- AXIS Database Schema
+-- lomoura Database Schema
 -- Run this against your Supabase PostgreSQL database
 
 -- Users

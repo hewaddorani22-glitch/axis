@@ -48,7 +48,7 @@ function SortableMissionItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group axis-card flex items-center gap-3 !p-3 ${isDragging ? "shadow-2xl scale-[1.02] border-axis-accent/50" : ""}`}
+      className={`group axis-card flex flex-wrap items-center gap-3 !p-3 ${isDragging ? "shadow-2xl scale-[1.02] border-axis-accent/50" : ""}`}
     >
       {/* Drag Handle */}
       <button
@@ -90,7 +90,7 @@ function SortableMissionItem({
           {mission.title}
         </p>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="ml-11 flex w-full flex-wrap items-center gap-2 sm:ml-0 sm:w-auto sm:flex-shrink-0">
         {isFocusable && mission.estimated_time ? (
           <Link
             href={`/missions/focus/${mission.id}`}
@@ -198,7 +198,7 @@ export default function MissionsPage() {
   const Skeleton = ({ className = "" }: { className?: string }) => <div className={`axis-skeleton ${className}`} />;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       {/* Stats */}
       <div className="flex flex-wrap items-center gap-4">
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
@@ -256,58 +256,62 @@ export default function MissionsPage() {
 
       {/* Add mission */}
       <div className="axis-card space-y-4 focus-within:border-axis-accent/50 focus-within:shadow-md transition-all">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-5 h-5 rounded-md border-2 border-dashed flex-shrink-0"
-            style={{ borderColor: "var(--border-secondary)" }}
-          />
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Add a new mission..."
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="flex-1 bg-transparent text-sm outline-none"
-            style={{ color: "var(--text-primary)" }}
-          />
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="text-[10px] font-mono px-3 py-2 rounded-lg transition-colors border"
-            style={{ 
-              backgroundColor: showAdvanced ? "var(--bg-accent-soft)" : "transparent",
-              color: showAdvanced ? "var(--text-primary)" : "var(--text-tertiary)",
-              borderColor: showAdvanced ? "rgba(205,255,79,0.3)" : "var(--border-primary)"
-            }}
-          >
-            {showAdvanced ? "Advanced" : "+ Details"}
-          </button>
-          <select
-            value={newPriority}
-            onChange={(e) => setNewPriority(e.target.value as Priority)}
-            className="text-xs font-mono rounded-lg px-2 py-2 outline-none"
-            style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
-          >
-            <option value="high">High</option>
-            <option value="med">Med</option>
-            <option value="low">Low</option>
-          </select>
-          <button
-            onClick={handleAdd}
-            className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg hover:bg-axis-accent/90 transition-all active:scale-[0.98]"
-          >
-            Add
-          </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div
+              className="w-5 h-5 rounded-md border-2 border-dashed flex-shrink-0"
+              style={{ borderColor: "var(--border-secondary)" }}
+            />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Add a new mission..."
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+              style={{ color: "var(--text-primary)" }}
+            />
+          </div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2 sm:flex sm:w-auto sm:items-center">
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-[10px] font-mono px-3 py-2 rounded-lg transition-colors border"
+              style={{ 
+                backgroundColor: showAdvanced ? "var(--bg-accent-soft)" : "transparent",
+                color: showAdvanced ? "var(--text-primary)" : "var(--text-tertiary)",
+                borderColor: showAdvanced ? "rgba(205,255,79,0.3)" : "var(--border-primary)"
+              }}
+            >
+              {showAdvanced ? "Advanced" : "+ Details"}
+            </button>
+            <select
+              value={newPriority}
+              onChange={(e) => setNewPriority(e.target.value as Priority)}
+              className="text-xs font-mono rounded-lg px-2 py-2 outline-none"
+              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
+            >
+              <option value="high">High</option>
+              <option value="med">Med</option>
+              <option value="low">Low</option>
+            </select>
+            <button
+              onClick={handleAdd}
+              className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg hover:bg-axis-accent/90 transition-all active:scale-[0.98]"
+            >
+              Add
+            </button>
+          </div>
         </div>
         
         {showAdvanced && (
-          <div className="flex flex-wrap items-center gap-3 pl-8 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2 duration-300 sm:flex sm:flex-wrap sm:items-center sm:pl-8">
             <input
               type="number"
               placeholder="Est. Minutes (e.g. 45)"
               value={newTime}
               onChange={(e) => setNewTime(e.target.value)}
-              className="w-40 text-xs rounded-lg px-3 py-2 outline-none"
+              className="w-full text-xs rounded-lg px-3 py-2 outline-none sm:w-40"
               style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
             />
             <div className="flex items-center gap-2">
@@ -326,7 +330,7 @@ export default function MissionsPage() {
             <select
               value={newObjectiveId}
               onChange={(e) => setNewObjectiveId(e.target.value)}
-              className="min-w-[170px] text-xs font-mono rounded-lg px-3 py-2 outline-none"
+              className="w-full text-xs font-mono rounded-lg px-3 py-2 outline-none sm:min-w-[170px] sm:w-auto"
               style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
             >
               <option value="">No theme</option>

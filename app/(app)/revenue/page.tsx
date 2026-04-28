@@ -107,7 +107,7 @@ export default function RevenuePage() {
   // Empty state: first time user, no streams yet
   if (streams.length === 0 && !showAddStream) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto w-full max-w-2xl">
         <div className="axis-card text-center py-12">
           <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
             <IconRevenue size={32} className="text-axis-accent" />
@@ -139,7 +139,7 @@ export default function RevenuePage() {
           <div className="max-w-sm mx-auto">
             <p className="text-xs font-mono mb-2" style={{ color: "var(--text-tertiary)" }}>Name your first income source</p>
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   ref={streamNameRef}
                   type="text"
@@ -147,14 +147,14 @@ export default function RevenuePage() {
                   value={newStreamName}
                   onChange={(e) => setNewStreamName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddStream()}
-                  className="flex-1 text-sm rounded-xl px-4 py-3 outline-none"
+                  className="min-w-0 flex-1 text-sm rounded-xl px-4 py-3 outline-none"
                   style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
                   autoFocus
                 />
                 <button
                   onClick={handleAddStream}
                   disabled={!newStreamName.trim()}
-                  className="bg-axis-accent text-axis-dark text-sm font-semibold px-5 py-3 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-40"
+                  className="w-full bg-axis-accent text-axis-dark text-sm font-semibold px-5 py-3 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-40 sm:w-auto"
                 >
                   Create
                 </button>
@@ -202,7 +202,7 @@ export default function RevenuePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-4xl space-y-6">
       {/* MRR + MTD Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* MTD Revenue */}
@@ -221,7 +221,7 @@ export default function RevenuePage() {
               </span>
             )}
           </div>
-          <span className="text-4xl font-bold">{formatCurrency(mtdTotal)}</span>
+          <span className="text-3xl font-bold sm:text-4xl">{formatCurrency(mtdTotal)}</span>
           
           {streams.length > 0 && (
             <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-primary)" }}>
@@ -258,7 +258,7 @@ export default function RevenuePage() {
               </span>
             </div>
           </div>
-          <span className="text-4xl font-bold text-blue-500">{formatCurrency(mrrTotal)}</span>
+          <span className="text-3xl font-bold text-blue-500 sm:text-4xl">{formatCurrency(mrrTotal)}</span>
           
           <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-primary)" }}>
              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Predictable income hitting your account this month.</p>
@@ -271,7 +271,7 @@ export default function RevenuePage() {
         <div className="axis-card !border-axis-accent/20">
           <h3 className="text-sm font-semibold mb-4">Log Income</h3>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Source</label>
                 <select
@@ -297,7 +297,7 @@ export default function RevenuePage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Date</label>
                 <input
@@ -321,17 +321,17 @@ export default function RevenuePage() {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 onClick={handleAddEntry}
                 disabled={!entryAmount || saving}
-                className="bg-axis-accent text-axis-dark text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-50"
+                className="w-full bg-axis-accent text-axis-dark text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-50 sm:w-auto"
               >
                 {saving ? "Saving..." : "Log Income"}
               </button>
               <button
                 onClick={() => setShowAddEntry(false)}
-                className="text-sm px-4 py-2.5 rounded-xl transition-colors"
+                className="w-full text-sm px-4 py-2.5 rounded-xl transition-colors sm:w-auto"
                 style={{ color: "var(--text-tertiary)" }}
               >
                 Cancel
@@ -381,7 +381,7 @@ export default function RevenuePage() {
 
       {/* Income Sources */}
       <div className="axis-card">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between gap-3 mb-4">
           <h3 className="text-sm font-semibold">Income Sources</h3>
           <button
             onClick={() => setShowAddStream(!showAddStream)}
@@ -392,7 +392,7 @@ export default function RevenuePage() {
         </div>
         {showAddStream && (
           <div className="mb-4 space-y-3 rounded-xl p-3" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 ref={streamNameRef}
                 type="text"
@@ -400,11 +400,11 @@ export default function RevenuePage() {
                 value={newStreamName}
                 onChange={(e) => setNewStreamName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddStream()}
-                className="flex-1 text-sm rounded-lg px-3 py-2 outline-none"
+                className="min-w-0 flex-1 text-sm rounded-lg px-3 py-2 outline-none"
                 style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
                 autoFocus
               />
-              <button onClick={handleAddStream} disabled={!newStreamName.trim()} className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-40">Add</button>
+              <button onClick={handleAddStream} disabled={!newStreamName.trim()} className="w-full bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-40 sm:w-auto">Add</button>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
               <select
@@ -441,12 +441,12 @@ export default function RevenuePage() {
               const pct = grandTotal > 0 ? Math.round((s.total / grandTotal) * 100) : 0;
               return (
                 <div key={s.id}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
-                      <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{s.name}</span>
+                      <span className="truncate text-sm" style={{ color: "var(--text-secondary)" }}>{s.name}</span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-3">
                       <span className="text-sm font-semibold">{formatCurrency(s.total)}</span>
                       {grandTotal > 0 && (
                         <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>{pct}%</span>
@@ -465,11 +465,11 @@ export default function RevenuePage() {
 
       {/* Recent Income */}
       <div className="axis-card">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between gap-3 mb-4">
           <h3 className="text-sm font-semibold">Recent Income</h3>
           <button
             onClick={openAddEntry}
-            className="text-xs font-semibold bg-axis-accent text-axis-dark px-4 py-2 rounded-lg hover:bg-axis-accent/90 transition-all flex items-center gap-1"
+            className="flex shrink-0 items-center gap-1 rounded-lg bg-axis-accent px-4 py-2 text-xs font-semibold text-axis-dark transition-all hover:bg-axis-accent/90"
           >
             <IconPlus size={12} /> Log Income
           </button>
@@ -486,22 +486,22 @@ export default function RevenuePage() {
               return (
                 <div
                   key={e.id}
-                  className="group flex items-center gap-4 py-3 px-3 rounded-xl transition-colors"
+                  className="group flex items-center gap-3 py-3 px-3 rounded-xl transition-colors sm:gap-4"
                   onMouseEnter={(ev) => (ev.currentTarget.style.backgroundColor = "var(--bg-hover)")}
                   onMouseLeave={(ev) => (ev.currentTarget.style.backgroundColor = "transparent")}
                 >
                   <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stream?.color || "#CDFF4F" }} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{e.note || stream?.name || "Income"}</p>
+                    <p className="truncate text-sm" style={{ color: "var(--text-secondary)" }}>{e.note || stream?.name || "Income"}</p>
                     <p className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
                       {stream?.name && e.note ? `${stream.name} / ` : ""}{e.date}
                     </p>
                   </div>
-                  <span className="text-sm font-semibold text-emerald-500">+{formatCurrency(Number(e.amount))}</span>
+                  <span className="shrink-0 text-sm font-semibold text-emerald-500">+{formatCurrency(Number(e.amount))}</span>
                   {deleteEntry && (
                     <button
                       onClick={() => deleteEntry(e.id)}
-                      className="opacity-0 group-hover:opacity-100 text-xs transition-opacity"
+                      className="text-xs opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                       style={{ color: "var(--text-tertiary)" }}
                       title="Delete"
                     >

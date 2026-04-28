@@ -49,7 +49,7 @@ function SortableHabitItem({
       style={style}
       className={`axis-card transition-all ${isDragging ? "shadow-2xl scale-[1.02] border-axis-accent/50" : ""}`}
     >
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4 sm:gap-4">
         {/* Drag Handle */}
         <button
           className="flex p-2 flex-col items-center justify-center gap-[3px] text-axis-text3 hover:text-axis-text2 cursor-grab active:cursor-grabbing opacity-30 hover:opacity-100 transition-opacity"
@@ -78,10 +78,10 @@ function SortableHabitItem({
             />
           )}
         </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
             <h3
-              className="text-base font-semibold transition-colors"
+              className="min-w-0 text-base font-semibold transition-colors"
               style={{ color: habit.todayDone || habit.todaySkipped ? "var(--text-tertiary)" : "var(--text-primary)", textDecoration: habit.todaySkipped ? "line-through" : "none" }}
             >
               {habit.name}
@@ -104,7 +104,7 @@ function SortableHabitItem({
             )}
           </div>
 
-          <div className="flex items-center gap-3 mt-0.5">
+          <div className="flex flex-wrap items-center gap-3 mt-0.5">
             <p className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
               {habit.streak} day streak
             </p>
@@ -148,7 +148,7 @@ function SortableHabitItem({
         </button>
       </div>
       {/* Weekly heatmap */}
-      <div className="flex items-center gap-2 pl-10">
+      <div className="grid grid-cols-7 gap-2 sm:flex sm:items-center sm:pl-10">
         {habit.weekLog.map((status, i) => (
           <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
             <div
@@ -259,7 +259,7 @@ export default function SystemsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       {/* Stats */}
       <div className="flex flex-wrap items-center gap-4">
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
@@ -282,8 +282,8 @@ export default function SystemsPage() {
 
       {/* Streak Freeze: Pro only */}
       <div className="axis-card bg-gradient-to-r from-[var(--bg-secondary)] to-axis-accent/5 transition-all">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <div className="mt-0.5"><IconFreeze size={18} className="text-blue-400" /></div>
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -360,13 +360,13 @@ export default function SystemsPage() {
 
       {/* Add habit */}
       <div className="axis-card space-y-4 !border-dashed focus-within:border-axis-accent/50 focus-within:shadow-md transition-all">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="text"
             placeholder="Icon"
             value={newIcon}
             onChange={(e) => setNewIcon(e.target.value)}
-            className="w-12 h-12 rounded-xl text-center text-xl outline-none"
+            className="h-12 w-full rounded-xl text-center text-xl outline-none sm:w-12"
             style={{ backgroundColor: "var(--bg-tertiary)" }}
             maxLength={2}
           />
@@ -377,36 +377,38 @@ export default function SystemsPage() {
             value={newHabit}
             onChange={(e) => setNewHabit(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="flex-1 bg-transparent text-sm outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
             style={{ color: "var(--text-primary)" }}
           />
-          <button
-            onClick={() => setShowQuantified(!showQuantified)}
-            className="text-[10px] font-mono px-3 py-2 rounded-lg transition-colors border"
-            style={{ 
-              backgroundColor: showQuantified ? "var(--bg-accent-soft)" : "transparent",
-              color: showQuantified ? "var(--text-primary)" : "var(--text-tertiary)",
-              borderColor: showQuantified ? "rgba(205,255,79,0.3)" : "var(--border-primary)"
-            }}
-          >
-            {showQuantified ? "Quantified" : "+ Target"}
-          </button>
-          <button
-            onClick={handleAdd}
-            className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-95"
-          >
-            Add
-          </button>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+            <button
+              onClick={() => setShowQuantified(!showQuantified)}
+              className="text-[10px] font-mono px-3 py-2 rounded-lg transition-colors border"
+              style={{ 
+                backgroundColor: showQuantified ? "var(--bg-accent-soft)" : "transparent",
+                color: showQuantified ? "var(--text-primary)" : "var(--text-tertiary)",
+                borderColor: showQuantified ? "rgba(205,255,79,0.3)" : "var(--border-primary)"
+              }}
+            >
+              {showQuantified ? "Quantified" : "+ Target"}
+            </button>
+            <button
+              onClick={handleAdd}
+              className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-95"
+            >
+              Add
+            </button>
+          </div>
         </div>
         
         {showQuantified && (
-          <div className="flex flex-wrap items-center gap-3 pl-14 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2 duration-300 sm:flex sm:flex-wrap sm:items-center sm:pl-14">
             <input
               type="number"
               placeholder="Target (e.g. 5)"
               value={newTarget}
               onChange={(e) => setNewTarget(e.target.value)}
-              className="w-32 text-xs rounded-lg px-3 py-2 outline-none"
+              className="w-full text-xs rounded-lg px-3 py-2 outline-none sm:w-32"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
             />
             <input
@@ -414,13 +416,13 @@ export default function SystemsPage() {
               placeholder="Unit (e.g. km, Liters)"
               value={newUnit}
               onChange={(e) => setNewUnit(e.target.value)}
-              className="w-48 text-xs rounded-lg px-3 py-2 outline-none"
+              className="w-full text-xs rounded-lg px-3 py-2 outline-none sm:w-48"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
             />
             <select
               value={newObjectiveId}
               onChange={(e) => setNewObjectiveId(e.target.value)}
-              className="min-w-[170px] text-xs font-mono rounded-lg px-3 py-2 outline-none"
+              className="w-full text-xs font-mono rounded-lg px-3 py-2 outline-none sm:min-w-[170px] sm:w-auto"
               style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
             >
               <option value="">No theme</option>

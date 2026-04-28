@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/support";
 
 const FAQS = [
   {
@@ -9,7 +10,7 @@ const FAQS = [
   },
   {
     q: "Why $9/month for Pro?",
-    a: "Because you replace 4-6 apps (task manager, habit tracker, revenue spreadsheet, goal planner, review doc). Most of those are $8-20/month on their own. AXIS Pro is unlimited everything: missions, habits, streams, goals, partners: plus Weekly Review, Streak Freeze, CSV export, and priority support.",
+    a: "Because you replace 4-6 apps (task manager, habit tracker, revenue spreadsheet, goal planner, review doc). Most of those are $8-20/month on their own. lomoura Pro is unlimited everything: missions, habits, streams, goals, partners: plus Weekly Review, Streak Freeze, CSV export, and priority support.",
   },
   {
     q: "Can I cancel anytime?",
@@ -24,16 +25,16 @@ const FAQS = [
     a: "Downgrade to Free: your data stays intact, you just lose access beyond free-plan limits. Delete account: everything is permanently erased within 24 hours: no backups, no recovery.",
   },
   {
-    q: "How is AXIS different from Notion or Todoist?",
-    a: "Notion is a blank canvas: you build the system yourself. Todoist is tasks only. AXIS is opinionated: it bundles daily missions, habits, revenue tracking, and goals with a built-in scoring system (Focus Score + Grade) so you know exactly where you stand every morning.",
+    q: "How is lomoura different from Notion or Todoist?",
+    a: "Notion is a blank canvas: you build the system yourself. Todoist is tasks only. lomoura is opinionated: it bundles daily missions, habits, revenue tracking, and goals with a built-in scoring system (Focus Score + Grade) so you know exactly where you stand every morning.",
   },
   {
-    q: "Does AXIS work on mobile?",
+    q: "Does lomoura work on mobile?",
     a: "Yes. The web app is fully responsive and works great on iOS / Android browsers. Native apps are on the roadmap for 2026.",
   },
   {
     q: "What's the accountability partner feature?",
-    a: "You can connect with 1 (Free) or unlimited (Pro) partners who also use AXIS. You see each other's daily grade, streak, and focus score: and can nudge them when they're slipping. It's the same principle as running with a gym partner: you show up more often.",
+    a: "You can connect with 1 (Free) or unlimited (Pro) partners who also use lomoura. You see each other's daily grade, streak, and focus score: and can nudge them when they're slipping. It's the same principle as running with a gym partner: you show up more often.",
   },
 ];
 
@@ -50,8 +51,8 @@ export function FAQ() {
           </h2>
           <p className="text-lg text-axis-text2">
             Still curious? Email{" "}
-            <a href="mailto:support@useaxis.com" className="text-axis-text1 underline underline-offset-2">
-              support@useaxis.com
+            <a href={SUPPORT_MAILTO} className="text-axis-text1 underline underline-offset-2">
+              {SUPPORT_EMAIL}
             </a>
             .
           </p>

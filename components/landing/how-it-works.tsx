@@ -5,7 +5,7 @@ export function HowItWorks() {
     {
       step: "01",
       title: "Set up in 90 seconds",
-      description: "Tell AXIS who you are, add your income stream, set 3 missions, pick 2 habits, and one goal. You're live.",
+      description: "Tell lomoura who you are, add your income stream, set 3 missions, pick 2 habits, and one goal. You're live.",
       visual: <IconCommand size={32} className="text-axis-text2" />,
     },
     {

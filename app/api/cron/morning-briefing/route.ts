@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateFocusScore } from "@/lib/scoring";
 import { resend, FROM_EMAIL } from "@/lib/resend";
+import { getAppUrl, getCronSecret } from "@/lib/env";
 
 /**
  * GET /api/cron/morning-briefing
@@ -16,10 +17,11 @@ import { resend, FROM_EMAIL } from "@/lib/resend";
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  const cronSecret = getCronSecret();
+  if (!cronSecret) {
+    return NextResponse.json({ error: "CRON_SECRET is not set" }, { status: 500 });
+  }
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -119,7 +121,7 @@ export async function GET(request: Request) {
     else streakMsg = "Start your streak today: complete one mission and one habit.";
 
     const name = user.name || "there";
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://useaxis.com";
+    const appUrl = getAppUrl();
 
     try {
       await resend.emails.send({
@@ -130,7 +132,7 @@ export async function GET(request: Request) {
           <div style="font-family: 'Outfit', -apple-system, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; background: #FAFAFA;">
             <!-- Header -->
             <div style="text-align: center; margin-bottom: 32px;">
-              <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.5px; color: #0B0B0F;">AXIS</span>
+              <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.5px; color: #0B0B0F;">lomoura</span>
             </div>
 
             <!-- Greeting -->
@@ -183,7 +185,7 @@ export async function GET(request: Request) {
 
             <!-- Footer -->
             <p style="text-align: center; font-size: 12px; color: #A1A1AA; margin: 0;">
-              AXIS | Your Business OS
+              lomoura | Missions, habits, revenue, goals
               <a href="${appUrl}/settings" style="color: #A1A1AA;">Manage preferences</a>
             </p>
           </div>

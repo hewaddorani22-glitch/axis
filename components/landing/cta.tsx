@@ -3,7 +3,7 @@ import Link from "next/link";
 export function CTA() {
   return (
     <section className="py-20 md:py-28 bg-axis-dark text-white border-t border-white/[0.04]">
-      <div className="max-w-3xl mx-auto px-6 text-center">
+      <div className="max-w-3xl mx-auto px-4 text-center sm:px-6">
         {/* Big number */}
         <div className="inline-flex items-center gap-3 mb-6">
           <span className="text-6xl md:text-7xl font-bold text-axis-accent font-mono">6</span>
@@ -15,14 +15,14 @@ export function CTA() {
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
           Your system is waiting.
         </h2>
-        <p className="text-lg text-white/50 max-w-xl mx-auto mb-10 leading-relaxed">
+        <p className="text-base text-white/50 max-w-xl mx-auto mb-10 leading-relaxed sm:text-lg">
           Stop switching between apps. Start every morning knowing exactly what to do.
-          AXIS is free: no credit card, no trial, no catch.
+          lomoura is free: no credit card, no trial, no catch.
         </p>
 
         <Link
           href="/signup"
-          className="inline-flex items-center text-base font-semibold bg-axis-accent text-axis-text1 px-10 py-4 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] shadow-lg shadow-axis-accent/20"
+          className="inline-flex w-full items-center justify-center text-base font-semibold bg-axis-accent text-axis-text1 px-10 py-4 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] shadow-lg shadow-axis-accent/20 sm:w-auto"
         >
           Get Started
           <svg className="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

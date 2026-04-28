@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-axis-bg/80 backdrop-blur-xl border-b border-axis-border">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="w-8 h-8 flex items-center justify-center">
@@ -13,7 +13,7 @@ export function Navbar() {
               <circle cx="20" cy="20" r="3.5" fill="#0B0B0F"/>
             </svg>
           </div>
-          <span className="text-lg font-bold tracking-tight">AXIS</span>
+          <span className="text-lg font-bold tracking-tight">lomoura</span>
         </Link>
 
         {/* Nav Links */}
@@ -25,7 +25,7 @@ export function Navbar() {
         </div>
 
         {/* CTA */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <Link
             href="/login"
             className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors hidden sm:block"
@@ -34,7 +34,7 @@ export function Navbar() {
           </Link>
           <Link
             href="/signup"
-            className="inline-flex items-center text-sm font-medium bg-axis-text1 text-white px-5 py-2.5 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98]"
+            className="inline-flex items-center text-sm font-medium bg-axis-text1 text-white px-4 py-2.5 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] sm:px-5"
           >
             Get Started
           </Link>

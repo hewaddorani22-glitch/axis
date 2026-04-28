@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCronSecret } from "@/lib/env";
 
 /**
  * GET /api/cron/check-achievements
@@ -13,10 +14,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  const cronSecret = getCronSecret();
+  if (!cronSecret) {
+    return NextResponse.json({ error: "CRON_SECRET is not set" }, { status: 500 });
+  }
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

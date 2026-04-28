@@ -1,6 +1,6 @@
 /**
- * AXIS Icon System
- * Geometric, minimal line icons matching the AXIS crosshair logo.
+ * lomoura Icon System
+ * Geometric, minimal line icons matching the lomoura crosshair logo.
  * All icons use currentColor and accept className for sizing/color.
  */
 
@@ -414,7 +414,7 @@ export function IconReview(props: IconProps) {
   );
 }
 
-// ── AXIS Logo ──
+// ── lomoura Logo ──
 
 export function AxisLogo({ size = 28, ...props }: IconProps) {
   return (

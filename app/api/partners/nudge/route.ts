@@ -2,22 +2,16 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendNudgeEmail } from "@/lib/resend";
-import { isRateLimited, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
  * POST /api/partners/nudge
  * Body: { toUserId: string }
  * Inserts a nudge record and sends a nudge email.
- * Rate limited to 5 nudges per user per hour.
  */
 export async function POST(request: Request) {
   const userClient = await createServerClient();
   const { data: { user } } = await userClient.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  if (isRateLimited(`nudge:${user.id}`, 5, 60 * 60 * 1000)) {
-    return rateLimitedResponse();
-  }
 
   const { toUserId } = await request.json();
   if (!toUserId) return NextResponse.json({ error: "Missing toUserId" }, { status: 400 });
@@ -38,7 +32,11 @@ export async function POST(request: Request) {
   const recipientName = recipientRes.data?.name || "there";
 
   if (recipientEmail) {
-    await sendNudgeEmail(recipientEmail, senderName);
+    try {
+      await sendNudgeEmail(recipientEmail, senderName);
+    } catch (error) {
+      console.warn("Nudge email failed:", error);
+    }
   }
 
   return NextResponse.json({ success: true, to: recipientName });

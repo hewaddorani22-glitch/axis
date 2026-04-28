@@ -21,14 +21,14 @@ function SettingsContent() {
     }
 
     if (user?.plan === "pro") {
-      setUpgradeMessage({ tone: "success", text: "Welcome to AXIS Pro. Your subscription is active." });
+      setUpgradeMessage({ tone: "success", text: "Welcome to lomoura Pro. Your subscription is active." });
       return;
     }
 
     if (!checkoutSessionId) {
       setUpgradeMessage({
         tone: "warning",
-        text: "Payment completed, but AXIS is still syncing your Pro access. Refresh in a moment.",
+        text: "Payment completed, but lomoura is still syncing your Pro access. Refresh in a moment.",
       });
       return;
     }
@@ -49,18 +49,18 @@ function SettingsContent() {
         if (!res.ok) {
           setUpgradeMessage({
             tone: "warning",
-            text: data.error || "Payment completed, but AXIS is still syncing your Pro access.",
+            text: data.error || "Payment completed, but lomoura is still syncing your Pro access.",
           });
           return;
         }
 
         await refetch();
-        setUpgradeMessage({ tone: "success", text: "Welcome to AXIS Pro. Your subscription is active." });
+        setUpgradeMessage({ tone: "success", text: "Welcome to lomoura Pro. Your subscription is active." });
       } catch {
         if (!cancelled) {
           setUpgradeMessage({
             tone: "warning",
-            text: "Payment completed, but AXIS could not verify it yet. Refresh in a moment.",
+            text: "Payment completed, but lomoura could not verify it yet. Refresh in a moment.",
           });
         }
       } finally {
@@ -79,6 +79,12 @@ function SettingsContent() {
 
   const handleSave = async (field: string) => {
     if (!fieldValue.trim()) return;
+    if (field === "name") {
+      const { createClient } = await import("@/lib/supabase/client");
+      await createClient().auth.updateUser({
+        data: { full_name: fieldValue.trim(), name: fieldValue.trim() },
+      });
+    }
     await updateProfile({ [field]: fieldValue.trim() });
     setEditingField(null);
     setFieldValue("");
@@ -120,7 +126,7 @@ function SettingsContent() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="mx-auto w-full max-w-2xl space-y-6">
         {[1, 2, 3].map((i) => (
           <div key={i} className="axis-skeleton h-40 w-full rounded-2xl" />
         ))}
@@ -129,7 +135,7 @@ function SettingsContent() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6">
       {/* Upgrade success/cancel message */}
       {upgradeMessage && (
         <div className={`text-sm rounded-xl px-4 py-3 ${
@@ -153,16 +159,16 @@ function SettingsContent() {
         <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Account</h3>
         <div className="space-y-4">
           {/* Name */}
-          <div className="flex items-center justify-between py-3" style={{ borderBottom: "1px solid var(--border-primary)" }}>
-            <div>
+          <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between" style={{ borderBottom: "1px solid var(--border-primary)" }}>
+            <div className="min-w-0">
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Name</p>
               {editingField === "name" ? (
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex flex-col gap-2 mt-1 sm:flex-row sm:items-center">
                   <input
                     type="text"
                     value={fieldValue}
                     onChange={(e) => setFieldValue(e.target.value)}
-                    className="text-sm rounded-lg px-3 py-1.5 outline-none"
+                    className="w-full text-sm rounded-lg px-3 py-2 outline-none sm:w-auto sm:py-1.5"
                     style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
                     autoFocus
                   />
@@ -170,7 +176,7 @@ function SettingsContent() {
                   <button onClick={() => setEditingField(null)} className="text-xs hover:underline" style={{ color: "var(--text-tertiary)" }}>Cancel</button>
                 </div>
               ) : (
-                <p className="text-xs font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>{user?.name || "Not set"}</p>
+                <p className="break-all text-xs font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>{user?.name || "Not set"}</p>
               )}
             </div>
             {editingField !== "name" && (
@@ -184,23 +190,23 @@ function SettingsContent() {
           </div>
 
           {/* Email */}
-          <div className="flex items-center justify-between py-3" style={{ borderBottom: "1px solid var(--border-primary)" }}>
-            <div>
+          <div className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between" style={{ borderBottom: "1px solid var(--border-primary)" }}>
+            <div className="min-w-0">
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Email</p>
-              <p className="text-xs font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>{user?.email}</p>
+              <p className="break-all text-xs font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>{user?.email}</p>
             </div>
           </div>
 
           {/* Timezone */}
-          <div className="flex items-center justify-between py-3">
-            <div>
+          <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Timezone</p>
               {editingField === "timezone" ? (
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex flex-col gap-2 mt-1 sm:flex-row sm:items-center">
                   <select
                     value={fieldValue}
                     onChange={(e) => setFieldValue(e.target.value)}
-                    className="text-sm rounded-lg px-3 py-1.5 outline-none"
+                    className="w-full text-sm rounded-lg px-3 py-2 outline-none sm:w-auto sm:py-1.5"
                     style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
                   >
                     <option value="UTC">UTC</option>
@@ -233,9 +239,9 @@ function SettingsContent() {
       {/* Plan */}
       <div className="axis-card">
         <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Plan</h3>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{user?.plan === "pro" ? "Pro Plan" : "Free Plan"}</p>
               <span className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded-md ${
                 user?.plan === "pro" ? "bg-axis-accent text-axis-dark" : ""
@@ -282,23 +288,23 @@ function SettingsContent() {
         <div className="space-y-4">
           <div>
             <label className="text-xs font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Username</label>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>axis.app/prove/</span>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <span className="break-all text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>lomoura.com/prove/</span>
               {editingField === "prove_it_username" ? (
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex flex-col gap-2 sm:flex-1 sm:flex-row sm:items-center">
                   <input
                     type="text"
                     value={fieldValue}
                     onChange={(e) => setFieldValue(e.target.value)}
-                    className="flex-1 text-sm rounded-lg px-3 py-2 outline-none font-mono"
+                    className="w-full flex-1 text-sm rounded-lg px-3 py-2 outline-none font-mono"
                     style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
                     autoFocus
                   />
                   <button onClick={() => handleSave("prove_it_username")} className="text-xs text-axis-accent font-semibold">Save</button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-sm font-mono" style={{ color: "var(--text-secondary)" }}>
+                <div className="flex min-w-0 items-center gap-2 sm:flex-1">
+                  <span className="min-w-0 break-all text-sm font-mono" style={{ color: "var(--text-secondary)" }}>
                     {user?.prove_it_username || "not-set"}
                   </span>
                   <button
@@ -314,20 +320,20 @@ function SettingsContent() {
           <div>
             <label className="text-xs font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Bio</label>
             {editingField === "prove_it_bio" ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   type="text"
                   value={fieldValue}
                   onChange={(e) => setFieldValue(e.target.value)}
-                  className="flex-1 text-sm rounded-lg px-3 py-2 outline-none"
+                  className="w-full flex-1 text-sm rounded-lg px-3 py-2 outline-none"
                   style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
                   autoFocus
                 />
                 <button onClick={() => handleSave("prove_it_bio")} className="text-xs text-axis-accent font-semibold">Save</button>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="break-words text-sm" style={{ color: "var(--text-secondary)" }}>
                   {user?.prove_it_bio || "No bio set"}
                 </span>
                 <button
@@ -355,7 +361,7 @@ function SettingsContent() {
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              a.download = `axis-export-${new Date().toISOString().split("T")[0]}.txt`;
+              a.download = `lomoura-export-${new Date().toISOString().split("T")[0]}.txt`;
               a.click();
               URL.revokeObjectURL(url);
             }}

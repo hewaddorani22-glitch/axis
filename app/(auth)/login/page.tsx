@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getBrowserAppUrl } from "@/lib/env";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -32,10 +33,14 @@ function LoginForm() {
   };
 
   const handleGoogleLogin = async () => {
+    const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
+    callbackUrl.searchParams.set("next", redirect);
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/callback?next=${redirect}`,
+        redirectTo: callbackUrl.toString(),
+        queryParams: { prompt: "select_account" },
       },
     });
   };
@@ -44,7 +49,7 @@ function LoginForm() {
     <>
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold tracking-tight mb-2">Welcome back</h1>
-        <p className="text-sm text-axis-text2">Log in to your AXIS account</p>
+        <p className="text-sm text-axis-text2">Log in to your lomoura account</p>
       </div>
 
       {error && (

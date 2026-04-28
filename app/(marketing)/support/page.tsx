@@ -1,19 +1,21 @@
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/support";
+
 export const metadata = {
-  title: "Support | AXIS",
-  description: "Get help with AXIS.",
+  title: "Support | lomoura",
+  description: "Get help with lomoura.",
 };
 
 export default function SupportPage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-32">
-      <h1 className="text-4xl font-bold tracking-tight mb-3">Support</h1>
-      <p className="text-lg text-axis-text2 mb-12">
+    <div className="max-w-3xl mx-auto px-4 py-28 sm:px-6 sm:py-32">
+      <h1 className="text-3xl font-bold tracking-tight mb-3 sm:text-4xl">Support</h1>
+      <p className="text-base text-axis-text2 mb-12 sm:text-lg">
         Running into something? We'll get back to you within 24 hours.
       </p>
 
       <div className="grid md:grid-cols-2 gap-6 mb-12">
         <a
-          href="mailto:support@useaxis.com"
+          href={SUPPORT_MAILTO}
           className="group bg-white border border-axis-border rounded-2xl p-6 hover:border-axis-text1 transition-all"
         >
           <div className="w-10 h-10 rounded-xl bg-axis-accent/20 flex items-center justify-center mb-4">
@@ -23,11 +25,11 @@ export default function SupportPage() {
           </div>
           <h3 className="text-lg font-semibold mb-1">Email support</h3>
           <p className="text-sm text-axis-text3 mb-3">Best for bugs, account issues, billing</p>
-          <span className="text-sm font-medium text-axis-text1 group-hover:underline">support@useaxis.com</span>
+          <span className="break-all text-sm font-medium text-axis-text1 group-hover:underline">{SUPPORT_EMAIL}</span>
         </a>
 
         <a
-          href="https://twitter.com/useaxis"
+          href="https://twitter.com/lomoura"
           target="_blank"
           rel="noopener noreferrer"
           className="group bg-white border border-axis-border rounded-2xl p-6 hover:border-axis-text1 transition-all"
@@ -39,11 +41,11 @@ export default function SupportPage() {
           </div>
           <h3 className="text-lg font-semibold mb-1">Twitter / X</h3>
           <p className="text-sm text-axis-text3 mb-3">For quick questions + feature requests</p>
-          <span className="text-sm font-medium text-axis-text1 group-hover:underline">@useaxis</span>
+          <span className="text-sm font-medium text-axis-text1 group-hover:underline">@lomoura</span>
         </a>
       </div>
 
-      <div className="bg-axis-dark text-white rounded-2xl p-8">
+      <div className="bg-axis-dark text-white rounded-2xl p-5 sm:p-8">
         <h2 className="text-xl font-bold mb-4">Common questions</h2>
         <div className="space-y-5">
           <div>
@@ -52,7 +54,7 @@ export default function SupportPage() {
           </div>
           <div>
             <h3 className="font-semibold mb-1">Can I get a refund?</h3>
-            <p className="text-sm text-white/60">Yes: within 14 days of your first Pro charge, no questions asked. Email support@useaxis.com.</p>
+            <p className="text-sm text-white/60">Yes: within 14 days of your first Pro charge, no questions asked. Email {SUPPORT_EMAIL}.</p>
           </div>
           <div>
             <h3 className="font-semibold mb-1">How do I export my data?</h3>

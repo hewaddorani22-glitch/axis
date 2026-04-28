@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServiceRoleKey, getSupabaseUrl } from "@/lib/env";
 
 /**
  * Supabase admin client using the service role key.
@@ -7,8 +8,8 @@ import { createClient } from "@supabase/supabase-js";
  */
 export function createAdminClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    getSupabaseUrl(),
+    getSupabaseServiceRoleKey(),
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }

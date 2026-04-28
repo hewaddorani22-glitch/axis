@@ -8,6 +8,7 @@ import { useMissions } from "@/hooks/useMissions";
 import { useHabits } from "@/hooks/useHabits";
 import { calculateFocusScore } from "@/lib/scoring";
 import { IconPartners, IconNudge, IconCheck, IconWarning, IconStreak } from "@/components/icons";
+import { getBrowserAppUrl } from "@/lib/env";
 
 interface PartnerStats {
   missionsCompleted: number;
@@ -102,7 +103,7 @@ export default function PartnersPage() {
 
   const handleCopyInvite = () => {
     if (!user) return;
-    const link = `${window.location.origin}/signup?invite=${user.id}`;
+    const link = `${getBrowserAppUrl()}/signup?invite=${user.id}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -126,7 +127,7 @@ export default function PartnersPage() {
   );
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       {/* Pending invites notice */}
       {pendingPartners.length > 0 && (
         <div className="rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5">
@@ -134,7 +135,7 @@ export default function PartnersPage() {
             {pendingPartners.length} pending invite{pendingPartners.length > 1 ? "s" : ""}
           </p>
           {pendingPartners.map((p) => (
-            <div key={p.id} className="flex items-center justify-between mt-2">
+            <div key={p.id} className="flex flex-col gap-2 mt-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                 {p.name} wants to partner with you
               </p>
@@ -175,7 +176,7 @@ export default function PartnersPage() {
                 className="axis-card cursor-pointer"
                 onClick={() => setSelectedPartnerId(isExpanded ? null : partner.id)}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-start gap-4 sm:items-center">
                   {/* Avatar */}
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: "var(--bg-accent-soft)" }}>
@@ -186,8 +187,8 @@ export default function PartnersPage() {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="min-w-0 text-base font-semibold" style={{ color: "var(--text-primary)" }}>
                         {partner.name}
                       </h3>
                       <span className={`flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-md ${status.bg} ${status.color}`}>
@@ -238,9 +239,9 @@ export default function PartnersPage() {
                     <div className="space-y-4">
                       {/* Missions */}
                       <div>
-                        <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex flex-col gap-1 mb-1.5 sm:flex-row sm:items-center sm:justify-between">
                           <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Missions Today</span>
-                          <div className="flex items-center gap-4">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                             <span className="text-xs font-mono text-axis-accent">
                               You: {myMissionsDone}/{myMissionsTotal}
                             </span>
@@ -266,9 +267,9 @@ export default function PartnersPage() {
 
                       {/* Habits */}
                       <div>
-                        <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex flex-col gap-1 mb-1.5 sm:flex-row sm:items-center sm:justify-between">
                           <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Habits Today</span>
-                          <div className="flex items-center gap-4">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                             <span className="text-xs font-mono text-axis-accent">
                               You: {myHabitsDone}/{myHabitsTotal}
                             </span>
@@ -294,9 +295,9 @@ export default function PartnersPage() {
 
                       {/* Focus Score */}
                       <div>
-                        <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex flex-col gap-1 mb-1.5 sm:flex-row sm:items-center sm:justify-between">
                           <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Focus Score</span>
-                          <div className="flex items-center gap-4">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                             <span className="text-xs font-mono text-axis-accent">You: {myScore.focusScore}</span>
                             <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
                               {partner.name.split(" ")[0]}: {stats?.focusScore ?? 0}
@@ -358,12 +359,12 @@ export default function PartnersPage() {
         </p>
 
         {user && (
-          <div className="max-w-sm mx-auto mb-4">
+        <div className="max-w-sm mx-auto mb-4">
             <div className="flex items-center gap-0 rounded-xl overflow-hidden border"
               style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-primary)" }}>
               <span className="text-[11px] font-mono px-3 py-2.5 flex-1 truncate text-left"
                 style={{ color: "var(--text-tertiary)" }}>
-                {typeof window !== "undefined" ? `${window.location.origin}/signup?invite=${user.id}` : "Loading..."}
+                {typeof window !== "undefined" ? `${getBrowserAppUrl()}/signup?invite=${user.id}` : "Loading..."}
               </span>
             </div>
           </div>

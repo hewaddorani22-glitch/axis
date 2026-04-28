@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import { IconPartners, IconCheck, IconPlus, IconCopy, IconStreak } from "@/components/icons";
 import { toast } from "sonner";
@@ -42,31 +41,33 @@ function HeatmapRow({ member }: { member: MemberHeatmap }) {
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex items-center gap-4 py-3 px-4 rounded-2xl transition-colors"
+      className="flex flex-col gap-3 rounded-2xl px-4 py-3 transition-colors sm:flex-row sm:items-center sm:gap-4"
       style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
     >
       {/* Avatar */}
-      <div
-        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: "var(--bg-accent-soft)" }}
-      >
-        <span className="text-xs font-bold font-mono text-axis-accent">{member.initials}</span>
-      </div>
+      <div className="flex w-full items-center gap-3 sm:w-auto">
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: "var(--bg-accent-soft)" }}
+        >
+          <span className="text-xs font-bold font-mono text-axis-accent">{member.initials}</span>
+        </div>
 
-      {/* Name + streak */}
-      <div className="w-28 flex-shrink-0">
-        <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-          {member.displayName}
-        </p>
-        {member.streak > 0 && (
-          <p className="text-[10px] font-mono flex items-center gap-1 text-orange-400">
-            <IconStreak size={10} /> {member.streak}d streak
+        {/* Name + streak */}
+        <div className="min-w-0 flex-1 sm:w-28 sm:flex-none">
+          <p className="truncate text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+            {member.displayName}
           </p>
-        )}
+          {member.streak > 0 && (
+            <p className="text-[10px] font-mono flex items-center gap-1 text-orange-400">
+              <IconStreak size={10} /> {member.streak}d streak
+            </p>
+          )}
+        </div>
       </div>
 
       {/* 7-day heatmap */}
-      <div className="flex items-center gap-1.5 flex-1">
+      <div className="grid w-full grid-cols-7 gap-1.5 sm:flex sm:flex-1 sm:items-center">
         {member.week.map((status, i) => (
           <div key={i} className="flex flex-col items-center gap-1">
             <div
@@ -91,7 +92,7 @@ function HeatmapRow({ member }: { member: MemberHeatmap }) {
       </div>
 
       {/* Today badge */}
-      <div className="flex-shrink-0">
+      <div className="w-full sm:w-auto sm:flex-shrink-0">
         {member.todayDone ? (
           <span className="flex items-center gap-1 text-[10px] font-mono bg-axis-accent/10 text-axis-accent px-2 py-1 rounded-lg border border-axis-accent/20">
             <IconCheck size={10} /> Done
@@ -113,7 +114,6 @@ function HeatmapRow({ member }: { member: MemberHeatmap }) {
 
 export default function NetworkPage() {
   const { user } = useUser();
-  const supabase = createClient();
 
   const [squads, setSquads] = useState<Squad[]>([]);
   const [members, setMembers] = useState<MemberHeatmap[]>([]);
@@ -134,26 +134,18 @@ export default function NetworkPage() {
     if (!user) return;
     setLoadingSquads(true);
 
-    const { data: memberships } = await supabase
-      .from("group_members")
-      .select("group_id")
-      .eq("user_id", user.id);
-
-    const groupIds = memberships?.map((m) => m.group_id) || [];
-    if (groupIds.length === 0) {
+    try {
+      const res = await fetch("/api/squads", { cache: "no-store" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to load squads");
+      setSquads(json.squads || []);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to load squads.");
       setSquads([]);
+    } finally {
       setLoadingSquads(false);
-      return;
     }
-
-    const { data } = await supabase
-      .from("groups")
-      .select("*")
-      .in("id", groupIds);
-
-    setSquads((data as Squad[]) || []);
-    setLoadingSquads(false);
-  }, [user, supabase]);
+  }, [user]);
 
   useEffect(() => {
     fetchSquads();
@@ -164,89 +156,19 @@ export default function NetworkPage() {
     async (squadId: string) => {
       setLoadingMembers(true);
 
-      // Get members + user info
-      const { data: memberRows } = await supabase
-        .from("group_members")
-        .select("user_id, joined_at, users(name, email)")
-        .eq("group_id", squadId);
-
-      if (!memberRows || memberRows.length === 0) {
+      try {
+        const res = await fetch(`/api/squads/${squadId}/heatmap`, { cache: "no-store" });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed to load squad grid");
+        setMembers(json.members || []);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to load squad grid.");
         setMembers([]);
+      } finally {
         setLoadingMembers(false);
-        return;
       }
-
-      const userIds = memberRows.map((m: any) => m.user_id);
-
-      // Last 7 days date range
-      const today = new Date();
-      const todayStr = today.toISOString().split("T")[0];
-      const weekAgo = new Date();
-      weekAgo.setDate(today.getDate() - 6);
-      const weekAgoStr = weekAgo.toISOString().split("T")[0];
-
-      // Get habit logs (only completion status, no revenue)
-      const { data: logs } = await supabase
-        .from("habit_logs")
-        .select("user_id, date, completed")
-        .in("user_id", userIds)
-        .gte("date", weekAgoStr)
-        .lte("date", todayStr)
-        .eq("completed", true);
-
-      // Build heatmap per member
-      const heatmapData: MemberHeatmap[] = memberRows.map((row: any) => {
-        const uid = row.user_id;
-        const userInfo = row.users as { name: string | null; email: string };
-        const displayName =
-          userInfo?.name || userInfo?.email?.split("@")[0] || "User";
-        const initials = displayName.charAt(0).toUpperCase();
-
-        const userLogs = logs?.filter((l) => l.user_id === uid) || [];
-        const logDates = new Set(userLogs.map((l) => l.date));
-
-        // Build 7-day week array (Mon-Sun aligned to last 7 days)
-        const week: ("done" | "missed")[] = [];
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date();
-          d.setDate(today.getDate() - i);
-          const ds = d.toISOString().split("T")[0];
-          week.push(logDates.has(ds) ? "done" : "missed");
-        }
-
-        // Streak: consecutive days up to today
-        let streak = 0;
-        for (let i = 0; i < 60; i++) {
-          const d = new Date();
-          d.setDate(today.getDate() - i);
-          const ds = d.toISOString().split("T")[0];
-          if (logDates.has(ds)) {
-            streak++;
-          } else {
-            break;
-          }
-        }
-
-        return {
-          userId: uid,
-          displayName,
-          initials,
-          week,
-          todayDone: logDates.has(todayStr),
-          streak,
-        };
-      });
-
-      // Sort: today-done first, then by streak
-      heatmapData.sort((a, b) => {
-        if (a.todayDone !== b.todayDone) return a.todayDone ? -1 : 1;
-        return b.streak - a.streak;
-      });
-
-      setMembers(heatmapData);
-      setLoadingMembers(false);
     },
-    [supabase]
+    []
   );
 
   useEffect(() => {
@@ -255,33 +177,36 @@ export default function NetworkPage() {
 
   // Auto-select first squad
   useEffect(() => {
-    if (squads.length > 0 && !activeSquad) {
+    if (squads.length > 0 && (!activeSquad || !squads.some((squad) => squad.id === activeSquad.id))) {
       setActiveSquad(squads[0]);
+    } else if (squads.length === 0 && activeSquad) {
+      setActiveSquad(null);
     }
-  }, [squads]);
+  }, [squads, activeSquad]);
 
   // ── Create squad ──────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!newName.trim() || !user) return;
     setCreating(true);
 
-    const { data, error } = await supabase
-      .from("groups")
-      .insert({ name: newName.trim(), created_by: user.id })
-      .select()
-      .single();
+    try {
+      const res = await fetch("/api/squads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to create squad");
 
-    if (error || !data) {
-      toast.error("Failed to create squad.");
+      toast.success(`Squad "${json.squad.name}" created!`);
+      setNewName("");
+      setActiveSquad(json.squad);
+      fetchSquads();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create squad.");
+    } finally {
       setCreating(false);
-      return;
     }
-
-    await supabase.from("group_members").insert({ group_id: data.id, user_id: user.id });
-    toast.success(`Squad "${data.name}" created!`);
-    setNewName("");
-    setCreating(false);
-    fetchSquads();
   };
 
   // ── Join squad ────────────────────────────────────────────────────────────
@@ -289,46 +214,45 @@ export default function NetworkPage() {
     if (!inviteCode.trim() || !user) return;
     setJoining(true);
 
-    const { data: group } = await supabase
-      .from("groups")
-      .select("*")
-      .eq("invite_code", inviteCode.trim().toUpperCase())
-      .single();
+    try {
+      const res = await fetch("/api/squads/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteCode }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to join squad");
 
-    if (!group) {
-      toast.error("Invalid invite code.");
-      setJoining(false);
-      return;
-    }
-
-    const { error } = await supabase
-      .from("group_members")
-      .insert({ group_id: group.id, user_id: user.id });
-
-    if (error?.code === "23505") {
-      toast.info("You're already in this squad.");
-    } else if (error) {
-      toast.error("Failed to join squad.");
-    } else {
-      toast.success(`Joined "${group.name}"!`);
+      if (json.already) {
+        toast.info("You're already in this squad.");
+      } else {
+        toast.success(`Joined "${json.squad.name}"!`);
+      }
       setInviteCode("");
       fetchSquads();
+      setActiveSquad(json.squad);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to join squad.");
+    } finally {
+      setJoining(false);
     }
-    setJoining(false);
   };
 
   // ── Leave squad ───────────────────────────────────────────────────────────
   const handleLeave = async (squadId: string) => {
     if (!user) return;
-    await supabase
-      .from("group_members")
-      .delete()
-      .eq("group_id", squadId)
-      .eq("user_id", user.id);
 
-    if (activeSquad?.id === squadId) setActiveSquad(null);
-    toast.success("Left the squad.");
-    fetchSquads();
+    try {
+      const res = await fetch(`/api/squads/${squadId}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to leave squad");
+
+      if (activeSquad?.id === squadId) setActiveSquad(null);
+      toast.success("Left the squad.");
+      fetchSquads();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to leave squad.");
+    }
   };
 
   const copyCode = (code: string) => {
@@ -339,9 +263,9 @@ export default function NetworkPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-4xl space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-4">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center"
           style={{ backgroundColor: "var(--bg-accent-soft)" }}
@@ -371,20 +295,20 @@ export default function NetworkPage() {
           >
             Create a Squad
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
               placeholder="Squad name..."
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              className="flex-1 bg-transparent text-sm outline-none"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
               style={{ color: "var(--text-primary)" }}
             />
             <button
               onClick={handleCreate}
               disabled={creating || !newName.trim()}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-axis-accent text-axis-dark px-4 py-2 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-axis-accent px-4 py-2 text-xs font-semibold text-axis-dark transition-all hover:bg-axis-accent/90 disabled:opacity-50 sm:w-auto"
             >
               <IconPlus size={12} /> Create
             </button>
@@ -399,7 +323,7 @@ export default function NetworkPage() {
           >
             Join via Invite Code
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
               placeholder="Enter 8-char code..."
@@ -407,13 +331,13 @@ export default function NetworkPage() {
               onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && handleJoin()}
               maxLength={8}
-              className="flex-1 bg-transparent text-sm font-mono outline-none tracking-widest"
+              className="min-w-0 flex-1 bg-transparent text-sm font-mono outline-none tracking-widest"
               style={{ color: "var(--text-primary)" }}
             />
             <button
               onClick={handleJoin}
               disabled={joining || inviteCode.length !== 8}
-              className="text-xs font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-50"
+              className="w-full rounded-xl px-4 py-2 text-xs font-semibold transition-all disabled:opacity-50 sm:w-auto"
               style={{
                 backgroundColor: "var(--bg-tertiary)",
                 border: "1px solid var(--border-primary)",
@@ -483,7 +407,7 @@ export default function NetworkPage() {
               >
                 {/* Squad meta */}
                 <div
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4"
+                  className="flex flex-col gap-3 rounded-2xl px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-5"
                   style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
                 >
                   <div>
@@ -497,9 +421,9 @@ export default function NetworkPage() {
                       {members.length} member{members.length !== 1 ? "s" : ""}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                     <div
-                      className="flex items-center gap-2 rounded-xl px-3 py-2"
+                      className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 sm:justify-start"
                       style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}
                     >
                       <span
@@ -517,7 +441,7 @@ export default function NetworkPage() {
                     </div>
                     <button
                       onClick={() => handleLeave(activeSquad.id)}
-                      className="text-xs font-mono px-3 py-2 rounded-xl transition-colors"
+                      className="w-full rounded-xl px-3 py-2 text-xs font-mono transition-colors sm:w-auto"
                       style={{
                         backgroundColor: "rgba(239,68,68,0.08)",
                         color: "rgb(248,113,113)",

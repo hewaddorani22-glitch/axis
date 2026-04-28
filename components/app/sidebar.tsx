@@ -9,11 +9,14 @@ import { useStreak } from "@/hooks/useStreak";
 import { useAxisScore } from "@/hooks/useAxisScore";
 import { AxisScoreWidget } from "@/components/app/axis-score-widget";
 import { primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
+import { SUPPORT_MAILTO } from "@/lib/support";
 import {
   AxisLogo,
   IconUpgrade,
   IconLogout,
   IconStreak,
+  IconSettings,
+  IconMail,
 } from "@/components/icons";
 
 export function Sidebar() {
@@ -25,8 +28,12 @@ export function Sidebar() {
   const displayName = user?.name || user?.email?.split("@")[0] || "User";
   const initials = displayName.charAt(0).toUpperCase();
   const [startingCheckout, setStartingCheckout] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const hasStreak = streak > 0;
+  const mobileMainItems = primaryNavItems.slice(0, 4);
+  const mobileMoreItems = primaryNavItems.slice(4);
+  const isMoreActive = [...mobileMoreItems, ...secondaryNavItems].some((item) => pathname === item.href);
 
   return (
     <>
@@ -36,7 +43,7 @@ export function Sidebar() {
         <div className="flex shrink-0 items-center justify-between px-6 h-16 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
             <AxisLogo size={28} />
-            <span className="text-base font-bold text-white tracking-tight">AXIS</span>
+            <span className="text-base font-bold text-white tracking-tight">lomoura</span>
           </div>
           {hasStreak && (
             <Link
@@ -167,10 +174,64 @@ export function Sidebar() {
         </div>
       </aside>
 
+      {/* Mobile More Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            className="absolute inset-0 bg-axis-dark/55 backdrop-blur-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="absolute inset-x-3 bottom-[calc(72px+env(safe-area-inset-bottom))] rounded-2xl border border-white/[0.08] bg-axis-dark p-3 shadow-2xl">
+            <div className="grid grid-cols-2 gap-2">
+              {[...mobileMoreItems, ...secondaryNavItems].map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all",
+                      isActive ? "bg-white/[0.08] text-axis-accent" : "text-white/55 hover:bg-white/[0.04] hover:text-white/85"
+                    )}
+                  >
+                    <Icon size={18} className="shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+              <a
+                href={SUPPORT_MAILTO}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/55 transition-all hover:bg-white/[0.04] hover:text-white/85"
+              >
+                <IconMail size={18} className="shrink-0" />
+                <span className="truncate">Support</span>
+              </a>
+              {user && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    signOut();
+                  }}
+                  className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-white/55 transition-all hover:bg-white/[0.04] hover:text-white/85"
+                >
+                  <IconLogout size={18} className="shrink-0" />
+                  <span className="truncate">Sign out</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Bottom Tabs: streak badge on Habits tab */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 axis-glass border-t-0 border-b-0 border-x-0 border-white/[0.06] rounded-none px-2 pb-[env(safe-area-inset-bottom)]" style={{ background: "rgba(11, 11, 15, 0.8)", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
         <div className="flex items-center justify-around h-16">
-          {primaryNavItems.map((item) => {
+          {mobileMainItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             const showStreakBadge = item.href === "/systems" && streak > 0;
@@ -195,6 +256,19 @@ export function Sidebar() {
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className={cn(
+              "relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all",
+              isMoreActive || mobileMenuOpen ? "text-axis-accent" : "text-white/40"
+            )}
+            aria-expanded={mobileMenuOpen}
+            aria-label="Open more navigation"
+          >
+            <IconSettings size={18} />
+            <span className="text-[10px] font-medium">More</span>
+          </button>
         </div>
       </nav>
     </>

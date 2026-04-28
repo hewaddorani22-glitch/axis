@@ -42,7 +42,7 @@ export function Testimonials() {
             One system. <span className="text-axis-accent">Every type of builder.</span>
           </h2>
           <p className="text-white/50 max-w-lg mx-auto">
-            Whether you freelance, run a store, or grow an audience: AXIS adapts to how you work.
+            Whether you freelance, run a store, or grow an audience: lomoura adapts to how you work.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export function Testimonials() {
                   <p className="text-sm text-white/50 leading-relaxed">{uc.problem}</p>
                 </div>
                 <div className="border-t border-white/[0.06] pt-3">
-                  <p className="text-[10px] font-mono text-axis-accent uppercase tracking-wider mb-1">With AXIS</p>
+                  <p className="text-[10px] font-mono text-axis-accent uppercase tracking-wider mb-1">With lomoura</p>
                   <p className="text-sm text-white/80 leading-relaxed">{uc.outcome}</p>
                 </div>
               </div>

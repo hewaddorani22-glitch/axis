@@ -307,13 +307,13 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
               className="fixed inset-0 z-[90] bg-black/55 backdrop-blur-sm"
             />
 
-            <div className="pointer-events-none fixed inset-0 z-[91] flex items-start justify-center px-4 pt-[12vh]">
+            <div className="pointer-events-none fixed inset-0 z-[91] flex items-start justify-center px-3 pt-[9vh] sm:px-4 sm:pt-[12vh]">
               <motion.div
                 initial={{ opacity: 0, scale: 0.96, y: -18 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: -14 }}
                 transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                className="pointer-events-auto w-full max-w-2xl overflow-hidden rounded-[28px]"
+                className="pointer-events-auto w-full max-w-2xl overflow-hidden rounded-3xl sm:rounded-[28px]"
                 style={{
                   backgroundColor: "var(--bg-secondary)",
                   border: "1px solid var(--border-primary)",
@@ -333,11 +333,11 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Jump, capture, or control the system..."
-                    className="flex-1 bg-transparent text-base outline-none placeholder:text-white/25"
+                    className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/25"
                     style={{ color: "var(--text-primary)" }}
                   />
                   <div
-                    className="rounded-xl px-3 py-2 text-[10px] font-mono uppercase"
+                    className="hidden rounded-xl px-3 py-2 text-[10px] font-mono uppercase sm:block"
                     style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }}
                   >
                     Esc
@@ -409,7 +409,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                                   </div>
                                   {command.shortcut ? (
                                     <span
-                                      className="rounded-lg px-2 py-1 text-[10px] font-mono uppercase"
+                                      className="hidden rounded-lg px-2 py-1 text-[10px] font-mono uppercase sm:inline"
                                       style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-tertiary)" }}
                                     >
                                       {command.shortcut}
