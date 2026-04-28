@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { EmptyState } from "@/components/app/empty-state";
 import { AxisScoreWidget } from "@/components/app/axis-score-widget";
@@ -23,6 +24,14 @@ import {
   IconTarget,
   IconWarning,
 } from "@/components/icons";
+
+interface Insight {
+  text: string;
+  type: "info" | "warning" | "success";
+  IconComponent: React.ComponentType<{ size?: number; className?: string }>;
+  href?: string;
+  cta?: string;
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -162,6 +171,107 @@ export default function DashboardPage() {
       cta: "Open Review",
     };
   })();
+
+  const insights = useMemo((): Insight[] => {
+    if (isLoading) return [];
+    const result: Insight[] = [];
+
+    const taskRate = missionsTotal > 0 ? completedCount / missionsTotal : null;
+    const allHabitsDone = habits.length > 0 && habitsCompleted === habits.length;
+    const allTasksDone = taskRate === 1 && missionsTotal > 0;
+
+    // Habits locked, revenue still behind
+    if (allHabitsDone && monthlyRevenueTarget > 0 && revenueDelta < 0) {
+      result.push({
+        text: `Habits are locked in. Revenue is ${formatCurrency(Math.abs(revenueDelta))} behind pace — that is the one open loop today.`,
+        type: "info",
+        IconComponent: IconRevenue,
+        href: "/revenue?quickAdd=entry",
+        cta: "Log Revenue",
+      });
+    }
+
+    // Strong streak but task completion lagging
+    if (streak >= 5 && taskRate !== null && taskRate < 0.5 && !allTasksDone) {
+      result.push({
+        text: `${streak}-day streak is running, but task completion is under 50%. Habits hold — let execution catch up.`,
+        type: "warning",
+        IconComponent: IconWarning,
+        href: "/missions",
+        cta: "Open Tasks",
+      });
+    }
+
+    // Theme(s) behind expected pace
+    const behindThemes = activeObjectives.filter(
+      (o) => o.progressPct < o.expectedPct - 10
+    );
+    if (behindThemes.length > 0 && result.length < 3) {
+      const t = behindThemes[0];
+      result.push({
+        text: `"${t.title}" is behind expected pace: ${t.progressPct}% complete vs ${t.expectedPct}% expected.`,
+        type: "warning",
+        IconComponent: IconWarning,
+        href: "/goals",
+        cta: "Review Themes",
+      });
+    }
+
+    // All themes on or ahead of pace
+    if (
+      activeObjectives.length > 0 &&
+      activeObjectives.every((o) => o.outcomePct >= 95) &&
+      result.length < 3
+    ) {
+      result.push({
+        text: `All ${activeObjectives.length} theme${activeObjectives.length !== 1 ? "s are" : " is"} on or ahead of target pace. Strong alignment.`,
+        type: "success",
+        IconComponent: IconCheck,
+        href: "/goals",
+        cta: "View Themes",
+      });
+    }
+
+    // Full system clear
+    if (
+      allHabitsDone &&
+      allTasksDone &&
+      (monthlyRevenueTarget === 0 || revenueDelta >= 0) &&
+      result.length === 0
+    ) {
+      result.push({
+        text: "Full system clear today. Missions, habits, and revenue are all in the green.",
+        type: "success",
+        IconComponent: IconCheck,
+        href: "/review",
+        cta: "Open Review",
+      });
+    }
+
+    // Tasks and habits running with no outcome layer
+    if (objectives.length === 0 && (missionsTotal >= 3 || habits.length >= 2) && result.length < 3) {
+      result.push({
+        text: "Tasks and habits are running with no outcome layer. Add a theme to connect daily execution to a goal.",
+        type: "info",
+        IconComponent: IconBriefing,
+        href: "/goals?quickAdd=1",
+        cta: "Create Theme",
+      });
+    }
+
+    return result.slice(0, 3);
+  }, [
+    isLoading,
+    completedCount,
+    missionsTotal,
+    habitsCompleted,
+    habits,
+    streak,
+    activeObjectives,
+    objectives,
+    monthlyRevenueTarget,
+    revenueDelta,
+  ]);
 
   const stats = [
     {
@@ -456,57 +566,70 @@ export default function DashboardPage() {
         ))}
       </motion.div>
 
-      {/* Briefing Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="axis-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <IconBriefing size={16} className="text-axis-accent" />
-              Briefing
-            </h3>
-          </div>
-          {isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-4/5" />
-            </div>
-          ) : (
-            <p className="text-sm leading-relaxed text-white/40">
-              {streak > 0 ? (
-                <>
-                  The streak is at <span className="font-semibold text-axis-accent">{streak} days</span>.
-                  {recoveryAvailable > 0 ? ` ${recoveryAvailable} free recovery window${recoveryAvailable !== 1 ? "s are" : " is"} still unused.` : " No recovery buffer is left."}
-                </>
-              ) : (
-                <>Start the system today by closing one task and one habit.</>
-              )}{" "}
-              {activeObjectives.length > 0
-                ? `${activeObjectives.filter((objective) => objective.outcomePct >= 100).length} theme${activeObjectives.filter((objective) => objective.outcomePct >= 100).length !== 1 ? "s are" : " is"} on pace.`
-                : "You have no active themes yet."}
-            </p>
-          )}
+      {/* Intelligence Panel — cross-module pattern signals */}
+      <div className="axis-card">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <IconBriefing size={16} className="text-axis-accent" />
+            Intelligence
+          </h3>
+          <span className="text-[10px] font-mono uppercase tracking-[0.18em]" style={{ color: "var(--text-tertiary)" }}>
+            Cross-module signals
+          </span>
         </div>
-
-        <div className="axis-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <IconRevenue size={16} className="text-emerald-500" />
-              Revenue Delta
-            </h3>
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
           </div>
-          {isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
+        ) : insights.length === 0 ? (
+          <div className="flex items-center gap-3 py-2 px-1">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-axis-accent/10 shrink-0">
+              <IconCheck size={14} className="text-axis-accent" />
             </div>
-          ) : (
-            <p className="text-sm leading-relaxed text-white/40">
-              {monthlyRevenueTarget > 0
-                ? `This month is ${revenueDelta >= 0 ? "ahead of" : "behind"} pace by ${formatCurrency(Math.abs(revenueDelta))} against a target track of ${formatCurrency(monthlyRevenueTarget)}.`
-                : "No revenue pace exists until at least one revenue theme is created and linked to a stream."}
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              All signals clear. Keep the execution rate.
             </p>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {insights.map((insight, i) => {
+              const iconColorClass =
+                insight.type === "warning"
+                  ? "text-amber-500"
+                  : insight.type === "success"
+                  ? "text-emerald-500"
+                  : "text-axis-accent";
+              const iconBgClass =
+                insight.type === "warning"
+                  ? "bg-amber-500/10"
+                  : insight.type === "success"
+                  ? "bg-emerald-500/10"
+                  : "bg-axis-accent/10";
+              return (
+                <div
+                  key={i}
+                  className="flex items-start gap-3 rounded-2xl p-4"
+                  style={{ backgroundColor: "var(--bg-tertiary)" }}
+                >
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-lg shrink-0 ${iconBgClass}`}>
+                    <insight.IconComponent size={13} className={iconColorClass} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm" style={{ color: "var(--text-primary)" }}>{insight.text}</p>
+                    {insight.href && (
+                      <Link
+                        href={insight.href}
+                        className="mt-1 inline-block text-xs font-semibold text-axis-accent hover:underline"
+                      >
+                        {insight.cta} →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

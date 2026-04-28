@@ -26,6 +26,23 @@ function formatObjectiveValue(objective: ObjectiveWithRollup, value: number) {
   return `${Math.round(value).toLocaleString()}${objective.unit ? ` ${objective.unit}` : ""}`;
 }
 
+function getPaceStatus(objective: ObjectiveWithRollup): { label: string; color: string; bg: string } {
+  if (objective.progressPct >= objective.expectedPct + 5) {
+    return { label: "Ahead", color: "text-emerald-500", bg: "bg-emerald-500/10" };
+  }
+  if (objective.progressPct < objective.expectedPct - 10) {
+    return { label: "Behind", color: "text-red-400", bg: "bg-red-400/10" };
+  }
+  return { label: "On Pace", color: "text-axis-accent", bg: "bg-axis-accent/10" };
+}
+
+function getDaysLeft(deadline: string | null): number | null {
+  if (!deadline) return null;
+  const end = new Date(deadline + "T23:59:59");
+  const diff = Math.ceil((end.getTime() - Date.now()) / 86_400_000);
+  return Math.max(0, diff);
+}
+
 export default function ThemesPage() {
   const { objectives, loading, addObjective, deleteObjective } = useObjectives();
   const [showAdd, setShowAdd] = useState(false);
@@ -189,15 +206,28 @@ export default function ThemesPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {objectives.map((objective) => (
+          {objectives.map((objective) => {
+            const pace = getPaceStatus(objective);
+            const daysLeft = getDaysLeft(objective.deadline);
+            return (
             <div key={objective.id} className="axis-card">
               <div className="mb-5 flex items-start justify-between gap-4">
-                <div>
-                  <div className="mb-2 flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex items-center gap-2 flex-wrap">
                     {objectiveIcon(objective.rollup_type)}
                     <span className="text-[10px] font-mono uppercase tracking-[0.22em]" style={{ color: "var(--text-tertiary)" }}>
                       {objective.rollup_type}
                     </span>
+                    {/* Pace status badge */}
+                    <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${pace.color} ${pace.bg}`}>
+                      {pace.label}
+                    </span>
+                    {/* Days remaining badge */}
+                    {daysLeft !== null && (
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${daysLeft <= 7 ? "text-amber-500 bg-amber-500/10" : "bg-opacity-10"}`} style={daysLeft > 7 ? { color: "var(--text-tertiary)", backgroundColor: "var(--bg-tertiary)" } : {}}>
+                        {daysLeft === 0 ? "Due today" : `${daysLeft}d left`}
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-xl font-semibold">{objective.title}</h3>
                   <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
@@ -210,7 +240,7 @@ export default function ThemesPage() {
                 </div>
                 <button
                   onClick={() => deleteObjective(objective.id)}
-                  className="rounded-xl p-2 transition-colors hover:bg-axis-hover"
+                  className="rounded-xl p-2 transition-colors hover:bg-axis-hover shrink-0"
                   title="Delete theme"
                 >
                   <IconTrash size={15} style={{ color: "var(--text-tertiary)" }} />
@@ -263,7 +293,8 @@ export default function ThemesPage() {
                 ) : null}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
