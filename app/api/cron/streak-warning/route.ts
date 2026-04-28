@@ -2,12 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendStreakWarning } from "@/lib/resend";
 
-// Service role for cron jobs
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   if (
@@ -16,6 +10,12 @@ export async function GET(request: Request) {
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Client created inside handler so env vars are read at runtime, not build time
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   try {
     const today = new Date().toISOString().split("T")[0];
