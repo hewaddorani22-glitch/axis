@@ -37,11 +37,18 @@ export function usePartners() {
   }, [fetchPartners]);
 
   const sendNudge = async (toUserId: string) => {
-    await fetch("/api/partners/nudge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ toUserId }),
-    });
+    try {
+      const res = await fetch("/api/partners/nudge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toUserId }),
+      });
+      if (!res.ok) {
+        console.error("Nudge failed:", await res.text());
+      }
+    } catch (error) {
+      console.error("Nudge error:", error);
+    }
   };
 
   return { partners, loading, sendNudge, refetch: fetchPartners };

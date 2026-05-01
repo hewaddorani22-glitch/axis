@@ -25,9 +25,13 @@ export function useMissions(date?: string) {
 
   const fetchMissions = useCallback(async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
     const { data } = await supabase
       .from("missions")
       .select("*")
+      .eq("user_id", user.id)
       .eq("date", targetDate)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });

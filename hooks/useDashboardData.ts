@@ -50,7 +50,7 @@ export function useDashboardData() {
         ...h,
         todayDone: log?.completed || false,
         todaySkipped: log?.skipped || false,
-        todayValue: log?.value || 0,
+        todayValue: log?.value ?? null,
         streak: 0,
         weekLog: Array(7).fill("missed") as ("done" | "skipped" | "missed")[],
       };

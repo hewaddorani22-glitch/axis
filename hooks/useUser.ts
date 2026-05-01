@@ -70,12 +70,16 @@ export function useUser() {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("users")
       .update(updates)
       .eq("id", user.id)
       .select()
       .single();
+    if (error) {
+      console.error("Profile update failed:", error.message);
+      return;
+    }
     if (data) setUser(data as UserProfile);
   };
 

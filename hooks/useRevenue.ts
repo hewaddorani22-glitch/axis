@@ -29,15 +29,19 @@ export function useRevenue() {
   const fetchData = useCallback(async () => {
     setLoading(true);
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     const sixMonthsAgoStr = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, "0")}-01`;
 
     const [streamsRes, entriesRes] = await Promise.all([
-      supabase.from("revenue_streams").select("*").order("created_at"),
+      supabase.from("revenue_streams").select("*").eq("user_id", user.id).order("created_at"),
       supabase
         .from("revenue_entries")
         .select("*")
+        .eq("user_id", user.id)
         .gte("date", sixMonthsAgoStr)
         .order("date", { ascending: false }),
     ]);

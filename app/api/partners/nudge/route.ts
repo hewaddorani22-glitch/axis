@@ -19,7 +19,8 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
 
   // Record the nudge
-  await admin.from("nudges").insert({ from_user: user.id, to_user: toUserId });
+  const { error: nudgeError } = await admin.from("nudges").insert({ from_user: user.id, to_user: toUserId });
+  if (nudgeError) return NextResponse.json({ error: nudgeError.message }, { status: 500 });
 
   // Get the sender's name and the recipient's email
   const [senderRes, recipientRes] = await Promise.all([
