@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n/provider";
+import { LanguageSwitch } from "@/components/landing/language-switch";
 
 export function Navbar() {
+  const { t } = useLocale();
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-axis-bg/80 backdrop-blur-xl border-b border-axis-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
@@ -18,25 +23,26 @@ export function Navbar() {
 
         {/* Nav Links */}
         <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">Features</a>
-          <a href="#how-it-works" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">How it works</a>
-          <a href="#pricing" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">Pricing</a>
-          <a href="#faq" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">FAQ</a>
+          <a href="#features" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">{t("nav.features")}</a>
+          <a href="#how-it-works" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">{t("nav.how")}</a>
+          <a href="#pricing" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">{t("nav.pricing")}</a>
+          <a href="#faq" className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors">{t("nav.faq")}</a>
         </div>
 
         {/* CTA */}
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <LanguageSwitch className="hidden sm:inline-flex" />
           <Link
             href="/login"
             className="text-sm text-axis-text2 hover:text-axis-text1 transition-colors hidden sm:block"
           >
-            Log in
+            {t("nav.login")}
           </Link>
           <Link
-            href="/signup"
+            href="/start"
             className="inline-flex items-center text-sm font-medium bg-axis-text1 text-white px-4 py-2.5 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] sm:px-5"
           >
-            Get Started
+            {t("nav.cta")}
           </Link>
         </div>
       </div>

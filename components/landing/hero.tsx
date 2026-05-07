@@ -1,14 +1,35 @@
+"use client";
+
 import Link from "next/link";
-import { IconUser, IconStreak } from "@/components/icons";
+import { useEffect, useState } from "react";
+import { useLocale } from "@/lib/i18n/provider";
 
 export function Hero() {
+  const { t } = useLocale();
+  const [personaIndex, setPersonaIndex] = useState(0);
+
+  const personas = [
+    { name: t("hero.persona.student"), line: t("hero.persona.student.line") },
+    { name: t("hero.persona.worker"), line: t("hero.persona.worker.line") },
+    { name: t("hero.persona.parent"), line: t("hero.persona.parent.line") },
+  ];
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setPersonaIndex((i) => (i + 1) % personas.length);
+    }, 3200);
+    return () => window.clearInterval(id);
+  }, [personas.length]);
+
+  const persona = personas[personaIndex];
+
   return (
-    <section className="relative overflow-hidden pb-16 pt-24 sm:pb-20 sm:pt-32 md:pt-40 md:pb-28">
-      {/* Subtle grid background */}
-      <div className="absolute inset-0 opacity-[0.03]"
+    <section className="relative overflow-hidden pb-16 pt-24 sm:pb-20 sm:pt-32 md:pt-40 md:pb-24">
+      <div
+        className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `linear-gradient(#0B0B0F 1px, transparent 1px), linear-gradient(90deg, #0B0B0F 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
+          backgroundSize: "60px 60px",
         }}
       />
 
@@ -16,38 +37,42 @@ export function Hero() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 bg-white border border-axis-border rounded-full px-4 py-1.5 mb-8 animate-fade-in">
           <span className="w-2 h-2 bg-axis-accent2 rounded-full animate-pulse-soft" />
-          <span className="text-xs font-mono font-medium text-axis-text2">Now in public beta</span>
+          <span className="text-xs font-mono font-medium text-axis-text2">{t("hero.badge")}</span>
         </div>
 
         {/* Headline */}
         <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6 animate-slide-up text-balance">
-          Track revenue, missions, and habits in{" "}
-          <span className="axis-highlight">one system</span>.
+          {t("hero.title.a")}{" "}
+          <span className="axis-highlight">{t("hero.title.b")}</span>
         </h1>
 
         {/* Subtext */}
-        <p className="text-base md:text-xl text-axis-text2 max-w-2xl mx-auto mb-10 leading-relaxed animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          Built for freelancers, founders, and creators who want to see exactly{" "}
-          <span className="text-axis-text1 font-medium">what they earned, what they shipped, and what's next</span>
-          {" "}every single day.
+        <p
+          className="text-base md:text-xl text-axis-text2 max-w-2xl mx-auto mb-8 leading-relaxed animate-slide-up"
+          style={{ animationDelay: "0.1s" }}
+        >
+          {t("hero.sub")}
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+        <div
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5 animate-slide-up"
+          style={{ animationDelay: "0.2s" }}
+        >
           <Link
-            href="/signup"
+            href="/start"
             className="inline-flex w-full items-center justify-center text-base font-semibold bg-axis-text1 text-white px-8 py-4 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] shadow-lg shadow-axis-text1/10 sm:w-auto"
           >
-            Get Started Free
+            {t("hero.cta")}
             <svg className="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </Link>
           <a
-            href="#features"
+            href="#how-it-works"
             className="inline-flex w-full items-center justify-center text-base font-medium text-axis-text2 hover:text-axis-text1 transition-colors px-6 py-4 sm:w-auto"
           >
-            See how it works
+            {t("hero.secondary")}
             <svg className="ml-1.5 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
@@ -55,74 +80,88 @@ export function Hero() {
         </div>
 
         {/* Trust line */}
-        <p className="text-sm font-mono text-axis-text3 mb-16 animate-slide-up" style={{ animationDelay: "0.25s" }}>
-          No credit card | 90-second setup | Free forever plan
+        <p className="text-sm font-mono text-axis-text3 mb-3 animate-slide-up" style={{ animationDelay: "0.25s" }}>
+          {t("hero.trust")}
         </p>
 
-        {/* App preview mockup */}
-        <div className="relative mx-auto max-w-4xl animate-slide-up" style={{ animationDelay: "0.3s" }}>
-          <div className="bg-axis-dark rounded-2xl border border-white/[0.08] shadow-2xl shadow-axis-text1/20 overflow-hidden">
-            {/* Window chrome */}
-            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06]">
-              <div className="w-3 h-3 rounded-full bg-red-500/70" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-              <div className="w-3 h-3 rounded-full bg-green-500/70" />
-              <div className="hidden flex-1 justify-center sm:flex">
-                <div className="bg-white/[0.06] rounded-lg px-4 py-1">
-                  <span className="text-[11px] font-mono text-white/30">lomoura.com/dashboard</span>
-                </div>
-              </div>
-            </div>
+        {/* Live persona ticker (social proof, broad audience) */}
+        <div
+          className="text-xs text-axis-text3 mb-12 animate-slide-up min-h-[1.5em]"
+          style={{ animationDelay: "0.28s" }}
+          aria-live="polite"
+        >
+          <span className="inline-flex items-center gap-2">
+            <span className="relative flex h-2 w-2" aria-hidden>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="font-medium text-axis-text2">{persona.name}</span>
+            <span>·</span>
+            <span>{persona.line}</span>
+          </span>
+        </div>
 
-            {/* Mock dashboard content */}
-            <div className="p-4 sm:p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-full bg-axis-accent/20 flex items-center justify-center">
-                  <IconUser size={20} className="text-axis-accent" />
-                </div>
-                <div>
-                  <p className="text-white/50 text-xs font-mono">COMMAND CENTER</p>
-                  <h3 className="text-white text-lg font-semibold">Good morning</h3>
-                </div>
-              </div>
+        {/* Mobile-first phone mockup */}
+        <div className="relative mx-auto max-w-[340px] sm:max-w-md animate-slide-up" style={{ animationDelay: "0.3s" }}>
+          <div className="relative mx-auto rounded-[2.6rem] border-[10px] border-axis-text1 bg-axis-text1 shadow-2xl shadow-axis-text1/30">
+            {/* Notch */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-28 h-6 bg-axis-text1 rounded-b-2xl" />
+            <div className="rounded-[1.9rem] overflow-hidden bg-axis-dark text-white">
+              <div className="px-5 pt-8 pb-5">
+                <p className="text-[10px] font-mono uppercase text-white/40 tracking-wider">
+                  {t("preview.briefing")}
+                </p>
+                <h3 className="text-base font-semibold text-white">{t("preview.morning")}</h3>
 
-              {/* Mock stat cards */}
-              <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-2 md:grid-cols-4">
-                {[
-                  { label: "MTD Revenue", value: "$12,840", change: "+18%", color: "text-axis-accent" },
-                  { label: "Missions Done", value: "24/28", change: "86%", color: "text-emerald-400" },
-                  { label: "Streak", value: "17 days", change: <span className="flex items-center gap-1"><IconStreak size={12} className="text-orange-400" /> Best</span>, color: "text-orange-400" },
-                  { label: "Focus Score", value: "87", change: "A", color: "text-axis-accent" },
-                ].map((stat) => (
-                  <div key={stat.label} className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 sm:p-4">
-                    <p className="text-[10px] font-mono text-white/40 uppercase mb-1">{stat.label}</p>
-                    <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
-                    <p className="text-xs font-mono text-white/30 mt-1">{stat.change}</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="bg-white/[0.05] border border-white/[0.06] rounded-lg p-2.5">
+                    <p className="text-[9px] font-mono text-white/40 uppercase">{t("preview.streak")}</p>
+                    <p className="text-base font-bold text-orange-400">17 {t("preview.streak.units")}</p>
                   </div>
-                ))}
-              </div>
+                  <div className="bg-white/[0.05] border border-white/[0.06] rounded-lg p-2.5">
+                    <p className="text-[9px] font-mono text-white/40 uppercase">{t("preview.completion")}</p>
+                    <p className="text-base font-bold text-emerald-400">3/4</p>
+                  </div>
+                </div>
 
-              {/* Mock mission list */}
-              <div className="bg-white/[0.03] border border-white/[0.04] rounded-xl p-4">
-                <p className="text-[10px] font-mono text-white/40 uppercase mb-3">TODAY&apos;S MISSIONS</p>
-                {[
-                  { title: "Review Q2 strategy deck", done: true, priority: "high" },
-                  { title: "Record TikTok batch content", done: true, priority: "med" },
-                  { title: "Ship landing page v2", done: false, priority: "high" },
-                ].map((m) => (
-                  <div key={m.title} className="flex items-center gap-3 py-2">
-                    <div className={`w-4.5 h-4.5 rounded border ${m.done ? 'bg-axis-accent border-axis-accent' : 'border-white/20'} flex items-center justify-center`}>
-                      {m.done && <svg className="w-3 h-3 text-axis-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                <div className="mt-3 bg-white/[0.04] border border-white/[0.05] rounded-lg p-3">
+                  <p className="text-[9px] font-mono text-white/40 uppercase mb-2">
+                    {t("preview.mission.today")}
+                  </p>
+                  {[
+                    { title: persona.line, done: false, hi: true },
+                    { title: "30 min focus", done: true, hi: false },
+                    { title: "Workout 20 min", done: true, hi: false },
+                  ].map((m, idx) => (
+                    <div key={idx} className="flex items-center gap-2 py-1.5">
+                      <div
+                        className={`w-3.5 h-3.5 rounded border ${
+                          m.done ? "bg-axis-accent border-axis-accent" : "border-white/25"
+                        } flex items-center justify-center shrink-0`}
+                      >
+                        {m.done && (
+                          <svg className="w-2.5 h-2.5 text-axis-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className={`text-xs flex-1 truncate ${m.done ? "text-white/30 line-through" : "text-white/85"}`}>
+                        {m.title}
+                      </span>
+                      {m.hi && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-red-500/15 text-red-400">
+                          {t("preview.mission.priority.high")}
+                        </span>
+                      )}
                     </div>
-                    <span className={`min-w-0 flex-1 truncate text-sm ${m.done ? 'text-white/30 line-through' : 'text-white/80'}`}>{m.title}</span>
-                    <span className={`ml-auto shrink-0 text-[10px] font-mono px-2 py-0.5 rounded ${m.priority === 'high' ? 'bg-red-500/10 text-red-400' : 'bg-white/[0.06] text-white/30'}`}>
-                      {m.priority}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Bottom proof line */}
+          <p className="mt-6 text-xs text-axis-text3">{t("hero.proof")}</p>
         </div>
       </div>
     </section>

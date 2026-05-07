@@ -5,9 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getBrowserAppUrl } from "@/lib/env";
+import { useLocale } from "@/lib/i18n/provider";
 
 function LoginForm() {
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [stage, setStage] = useState<"email" | "code" | "password">("email");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,20 +20,54 @@ function LoginForm() {
   const redirect = searchParams.get("redirect") || "/dashboard";
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
+    callbackUrl.searchParams.set("next", redirect);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true, emailRedirectTo: callbackUrl.toString() },
+    });
+    setLoading(false);
+    if (error) {
+      setError(error.message || t("auth.error.generic"));
+    } else {
+      setStage("code");
+    }
+  };
 
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: otp.trim(),
+      type: "email",
+    });
+    if (error) {
+      setError(t("auth.error.invalid"));
+      setLoading(false);
+      return;
+    }
+    router.push(redirect);
+    router.refresh();
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
-      router.push(redirect);
-      router.refresh();
+      return;
     }
+    router.push(redirect);
+    router.refresh();
   };
 
   const handleGoogleLogin = async () => {
@@ -48,8 +86,8 @@ function LoginForm() {
   return (
     <>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Welcome back</h1>
-        <p className="text-sm text-axis-text2">Log in to your lomoura account</p>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">{t("auth.welcome.back")}</h1>
+        <p className="text-sm text-axis-text2">{t("auth.welcome.sub")}</p>
       </div>
 
       {error && (
@@ -58,7 +96,6 @@ function LoginForm() {
         </div>
       )}
 
-      {/* Google OAuth */}
       <button
         onClick={handleGoogleLogin}
         className="w-full flex items-center justify-center gap-3 bg-white border border-axis-border rounded-xl px-6 py-3 text-sm font-medium hover:border-axis-border2 hover:shadow-sm transition-all mb-6"
@@ -72,61 +109,154 @@ function LoginForm() {
         Continue with Google
       </button>
 
-      {/* Divider */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 h-px bg-axis-border" />
-        <span className="text-xs font-mono text-axis-text3">OR</span>
+        <span className="text-xs font-mono text-axis-text3">{t("preview.save.or")}</span>
         <div className="flex-1 h-px bg-axis-border" />
       </div>
 
-      {/* Email/Password form */}
-      <form onSubmit={handleLogin} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-xs font-medium text-axis-text2 mb-1.5">Email</label>
-          <input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-            required
-          />
-        </div>
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="password" className="text-xs font-medium text-axis-text2">Password</label>
-            <Link href="/forgot-password" className="text-xs text-axis-text3 hover:text-axis-text1 transition-colors">Forgot?</Link>
+      {stage === "email" && (
+        <form onSubmit={handleSendCode} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-xs font-medium text-axis-text2 mb-1.5">
+              {t("auth.email.label")}
+            </label>
+            <input
+              id="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder={t("auth.email.placeholder")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+            />
           </div>
-          <input
-            id="password"
-            type="password"
-            placeholder="********"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-            required
-          />
-        </div>
+          <button
+            type="submit"
+            disabled={loading || !email}
+            className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? t("auth.email.sending") : t("auth.email.cta")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setStage("password")}
+            className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
+          >
+            Use password instead
+          </button>
+        </form>
+      )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            "Log in"
-          )}
-        </button>
-      </form>
+      {stage === "code" && (
+        <form onSubmit={handleVerifyCode} className="space-y-4">
+          <div>
+            <h2 className="text-base font-semibold mb-1">{t("auth.code.title")}</h2>
+            <p className="text-sm text-axis-text2 mb-3">
+              {t("auth.code.sub", { email })}
+            </p>
+            <input
+              autoFocus
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={6}
+              placeholder={t("auth.code.placeholder")}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              required
+              className="w-full rounded-xl px-4 py-4 text-center text-2xl tracking-[0.4em] font-mono bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3/40 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || otp.length !== 6}
+            className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {loading ? t("auth.code.verifying") : t("auth.code.cta")}
+          </button>
+          <div className="flex items-center justify-between text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setStage("email");
+                setOtp("");
+              }}
+              className="text-axis-text3 hover:text-axis-text1 transition-colors"
+            >
+              {t("auth.code.change")}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStage("email");
+                setOtp("");
+              }}
+              className="text-axis-text3 hover:text-axis-text1 transition-colors"
+            >
+              {t("auth.code.resend")}
+            </button>
+          </div>
+        </form>
+      )}
 
-      {/* Sign up link */}
+      {stage === "password" && (
+        <form onSubmit={handlePasswordLogin} className="space-y-4">
+          <div>
+            <label htmlFor="email-pw" className="block text-xs font-medium text-axis-text2 mb-1.5">
+              {t("auth.email.label")}
+            </label>
+            <input
+              id="email-pw"
+              type="email"
+              autoComplete="email"
+              placeholder={t("auth.email.placeholder")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+            />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="password" className="text-xs font-medium text-axis-text2">Password</label>
+              <Link href="/forgot-password" className="text-xs text-axis-text3 hover:text-axis-text1 transition-colors">Forgot?</Link>
+            </div>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="********"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {loading ? "..." : "Log in"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setStage("email")}
+            className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
+          >
+            ← Use email code instead
+          </button>
+        </form>
+      )}
+
       <p className="text-center text-sm text-axis-text3 mt-6">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-axis-text1 font-medium hover:underline">
-          Sign up free
+        {t("auth.no.account")}{" "}
+        <Link href="/start" className="text-axis-text1 font-medium hover:underline">
+          {t("auth.signup.link")}
         </Link>
       </p>
     </>
