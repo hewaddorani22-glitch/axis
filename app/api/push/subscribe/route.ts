@@ -1,12 +1,31 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getVapidPrivateKey, getVapidPublicKey } from "@/lib/env";
 
 type SubscribeBody = {
   endpoint?: string;
   keys?: { p256dh?: string; auth?: string };
   user_agent?: string;
 };
+
+export async function GET() {
+  if (!getVapidPublicKey() || !getVapidPrivateKey()) {
+    return NextResponse.json({ ready: false });
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("push_subscriptions")
+    .select("id")
+    .limit(1);
+
+  if (error) {
+    return NextResponse.json({ ready: false });
+  }
+
+  return NextResponse.json({ ready: true });
+}
 
 export async function POST(request: Request) {
   const supabase = await createServerClient();

@@ -13,6 +13,7 @@ CREATE TABLE users (
   stripe_customer_id TEXT,
   prove_it_username TEXT UNIQUE,
   prove_it_bio TEXT,
+  streak_restored_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -167,6 +168,30 @@ CREATE TABLE streak_freezes (
   UNIQUE(user_id, month)
 );
 
+-- Streak Restores (Pro)
+CREATE TABLE streak_restores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  restored_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  bridge_from_date DATE NOT NULL,
+  bridge_to_date DATE NOT NULL,
+  peak_streak INTEGER NOT NULL CHECK (peak_streak >= 1 AND peak_streak <= 365),
+  CONSTRAINT bridge_range_valid CHECK (bridge_from_date <= bridge_to_date),
+  CONSTRAINT one_restore_per_user UNIQUE (user_id)
+);
+
+-- Web Push Subscriptions
+CREATE TABLE push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE objectives ENABLE ROW LEVEL SECURITY;
@@ -182,6 +207,8 @@ ALTER TABLE nudges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streak_freezes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE streak_restores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: Users can only access their own data
 CREATE POLICY "Users read own data" ON users FOR SELECT USING (auth.uid() = id);
@@ -198,6 +225,8 @@ CREATE POLICY "Weekly Reviews: own data" ON weekly_reviews FOR ALL USING (auth.u
 CREATE POLICY "Achievements: own data" ON achievements FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Daily Scores: own data" ON daily_scores FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Streak Freezes: own data" ON streak_freezes FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Streak Restores: own data" ON streak_restores FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Push Subscriptions: own data" ON push_subscriptions FOR ALL USING (auth.uid() = user_id);
 
 -- Partnerships: both users can read
 CREATE POLICY "Partnerships: read own" ON partnerships FOR SELECT USING (auth.uid() = user_a OR auth.uid() = user_b);

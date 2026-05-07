@@ -44,16 +44,41 @@ export function PushSubscribePrompt({ vapidPublicKey }: { vapidPublicKey: string
   const { status, subscribe, busy } = usePushSubscription();
   const { completedCount } = useMissions();
   const [open, setOpen] = useState(false);
+  const [backendReady, setBackendReady] = useState(false);
+
+  useEffect(() => {
+    if (!user || !vapidPublicKey) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/push/subscribe", { method: "GET" });
+        const data = await res.json();
+        if (!cancelled) {
+          setBackendReady(Boolean(data?.ready));
+        }
+      } catch {
+        if (!cancelled) {
+          setBackendReady(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, vapidPublicKey]);
 
   useEffect(() => {
     if (!user) return;
     if (!vapidPublicKey) return;
+    if (!backendReady) return;
     if (status !== "default") return; // unsupported / denied / already subscribed
     if (completedCount < 1) return; // wait for first aha-moment
     if (Date.now() < dismissedUntil()) return;
     const timer = window.setTimeout(() => setOpen(true), 1200);
     return () => window.clearTimeout(timer);
-  }, [user, vapidPublicKey, status, completedCount]);
+  }, [user, vapidPublicKey, backendReady, status, completedCount]);
 
   const handleEnable = async () => {
     const ok = await subscribe(vapidPublicKey);
@@ -70,7 +95,7 @@ export function PushSubscribePrompt({ vapidPublicKey }: { vapidPublicKey: string
     setOpen(false);
   };
 
-  if (status !== "default" || !vapidPublicKey) return null;
+  if (status !== "default" || !vapidPublicKey || !backendReady) return null;
 
   return (
     <AnimatePresence>

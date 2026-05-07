@@ -24,6 +24,9 @@ Copy `.env.local.example` to `.env.local` and fill in:
 - `SUPABASE_SERVICE_ROLE_KEY` | Server-only Supabase key for secure API routes and Stripe sync
 - `SUPABASE_DB_PASSWORD` or `SUPABASE_DB_URL` | Optional, only needed for local schema scripts
 - `RESEND_API_KEY` | Resend API key (for emails)
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Public Web Push VAPID key
+- `VAPID_PRIVATE_KEY` | Private Web Push VAPID key
+- `VAPID_SUBJECT` | Mailto/contact for Web Push (for example `mailto:you@domain.com`)
 
 ## Database
 
@@ -32,6 +35,9 @@ Run the schema against Supabase:
 ```bash
 node scripts/run-schema.mjs
 ```
+
+For existing databases, also apply the incremental SQL files in `scripts/`,
+especially `scripts/005-streak-restore.sql` and `scripts/006-push-subscriptions.sql`.
 
 ## Deploy
 
@@ -45,4 +51,5 @@ npx vercel
 - **Auth & Database:** Supabase (PostgreSQL + RLS)
 - **Payments:** Stripe
 - **Email:** Resend
+- **Push:** Web Push API
 - **Hosting:** Vercel
