@@ -307,6 +307,17 @@ const de: Dict = {
   "restore.skip": "Lieber neu anfangen",
   "restore.fineprint": "Einmalig pro Account.",
 
+  // Push subscribe prompt
+  "push.badge": "1 Sache noch",
+  "push.title": "Lass dich morgens wecken.",
+  "push.sub": "Eine kurze Push am Morgen, eine kurze am Abend. Damit dein Streak nicht aus Versehen reißt.",
+  "push.bullet.morning": "Morgens 08:00 — was zählt heute",
+  "push.bullet.streak": "Bei Streak-Risiko — bevor's zu spät ist",
+  "push.bullet.evening": "Abends 21:00 — kurzer Habit-Check",
+  "push.cta": "Push aktivieren",
+  "push.loading": "Aktiviere...",
+  "push.later": "Vielleicht später",
+
   // Mobile bottom tab bar
   "tab.today": "Heute",
   "tab.missions": "Missions",
@@ -612,6 +623,16 @@ const en: Dict = {
   "restore.loading": "Restoring...",
   "restore.skip": "Start fresh",
   "restore.fineprint": "Once per account.",
+
+  "push.badge": "One more thing",
+  "push.title": "Let us wake you up.",
+  "push.sub": "One short push in the morning, one in the evening. So your streak doesn't break by accident.",
+  "push.bullet.morning": "8 AM — what matters today",
+  "push.bullet.streak": "When the streak is at risk — before it's too late",
+  "push.bullet.evening": "9 PM — quick habit check",
+  "push.cta": "Enable push",
+  "push.loading": "Enabling...",
+  "push.later": "Maybe later",
 
   "tab.today": "Today",
   "tab.missions": "Missions",
