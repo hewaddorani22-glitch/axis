@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/app/sidebar";
 import { Topbar } from "@/components/app/topbar";
 import { Celebrations } from "@/components/app/celebrations";
 import { PwaInstallPrompt } from "@/components/app/pwa-install-prompt";
+import { StreakRecoveryModal } from "@/components/app/streak-recovery-modal";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -24,6 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
       <Celebrations />
       <PwaInstallPrompt />
+      <StreakRecoveryModal />
       <Sidebar />
       <div className="min-w-0 lg:pl-[260px]">
         <Topbar />

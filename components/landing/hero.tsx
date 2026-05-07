@@ -9,9 +9,10 @@ export function Hero() {
   const [personaIndex, setPersonaIndex] = useState(0);
 
   const personas = [
-    { name: t("hero.persona.student"), line: t("hero.persona.student.line") },
-    { name: t("hero.persona.worker"), line: t("hero.persona.worker.line") },
-    { name: t("hero.persona.parent"), line: t("hero.persona.parent.line") },
+    { name: t("hero.persona.hustler"), line: t("hero.persona.hustler.line") },
+    { name: t("hero.persona.climber"), line: t("hero.persona.climber.line") },
+    { name: t("hero.persona.creator"), line: t("hero.persona.creator.line") },
+    { name: t("hero.persona.builder"), line: t("hero.persona.builder.line") },
   ];
 
   useEffect(() => {

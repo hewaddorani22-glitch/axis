@@ -354,8 +354,8 @@ export default function MissionsPage() {
       ) : missions.length === 0 ? (
         <EmptyState
           icon={<IconTarget size={24} className="text-axis-accent" />}
-          title="No missions for this day"
-          description="Type in the input above to set your daily priorities."
+          title="What are you doing today?"
+          description="Type 1–3 things that matter today. Use the input above. Starting small is fine."
         />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
