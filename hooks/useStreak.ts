@@ -14,6 +14,15 @@ function getDateInTimezone(tz: string, offsetDays = 0): string {
   }
 }
 
+type RestoreRange = { from: string; to: string };
+
+function isInRestore(date: string, restores: RestoreRange[]): boolean {
+  for (const r of restores) {
+    if (date >= r.from && date <= r.to) return true;
+  }
+  return false;
+}
+
 export function useStreak() {
   const [streak, setStreak] = useState(0);
   const [recoveredMisses, setRecoveredMisses] = useState(0);
@@ -35,7 +44,7 @@ export function useStreak() {
 
     const yearAgoStr = getDateInTimezone(tz, 365);
 
-    const [missionsRes, habitsRes, freezesRes] = await Promise.all([
+    const [missionsRes, habitsRes, freezesRes, restoresRes] = await Promise.all([
       supabase
         .from("missions")
         .select("date")
@@ -52,11 +61,19 @@ export function useStreak() {
         .from("streak_freezes")
         .select("used_on")
         .eq("user_id", user.id),
+      supabase
+        .from("streak_restores")
+        .select("bridge_from_date, bridge_to_date")
+        .eq("user_id", user.id),
     ]);
 
     const missionDates = new Set(missionsRes.data?.map((m) => m.date) || []);
     const habitDates = new Set(habitsRes.data?.map((h) => h.date) || []);
     const frozenDates = new Set(freezesRes.data?.map((f) => f.used_on) || []);
+    const restoreRanges: RestoreRange[] = (restoresRes.data ?? []).map((r) => ({
+      from: r.bridge_from_date,
+      to: r.bridge_to_date,
+    }));
 
     let currentStreak = 0;
     let recovered = 0;
@@ -66,6 +83,8 @@ export function useStreak() {
       if (missionDates.has(dateStr) && habitDates.has(dateStr)) {
         currentStreak++;
       } else if (frozenDates.has(dateStr)) {
+        currentStreak++;
+      } else if (isInRestore(dateStr, restoreRanges)) {
         currentStreak++;
       } else {
         const allowedRecoveries = Math.floor(currentStreak / 7);

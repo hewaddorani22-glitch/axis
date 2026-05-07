@@ -165,9 +165,9 @@ export default function DashboardPage() {
           ) : missions.length === 0 ? (
             <EmptyState
               icon={<IconTarget size={20} className="text-axis-accent" />}
-              title="No missions set"
-              description="Start your day by defining today's top priorities."
-              actions={[{ label: "Add Mission", href: "/missions?quickAdd=1" }]}
+              title="What are you doing today?"
+              description="Type 1–3 things that matter today. Starting small is fine."
+              actions={[{ label: "First mission", href: "/missions?quickAdd=1" }]}
               compact
             />
           ) : (
@@ -210,9 +210,9 @@ export default function DashboardPage() {
           ) : habits.length === 0 ? (
             <EmptyState
               icon={<IconHabits size={20} className="text-axis-accent" />}
-              title="No systems active"
-              description="Build consistency by tracking your daily habits."
-              actions={[{ label: "Add Habit", href: "/systems?quickAdd=1" }]}
+              title="Which routine do you want to lock in?"
+              description="One is enough to start. Workout, study block, no phone after 10pm — your call."
+              actions={[{ label: "Add habit", href: "/systems?quickAdd=1" }]}
               compact
             />
           ) : (

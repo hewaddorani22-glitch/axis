@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateFocusScore } from "@/lib/scoring";
 import { resend, FROM_EMAIL } from "@/lib/resend";
 import { getAppUrl, getCronSecret } from "@/lib/env";
+import { sendPushToUser } from "@/lib/push";
 
 /**
  * GET /api/cron/morning-briefing
@@ -194,6 +195,22 @@ export async function GET(request: Request) {
       sent++;
     } catch {
       // Non-fatal per user
+    }
+
+    // Push: short, punchy, separate from email so silent users still see it.
+    try {
+      const pushBody =
+        streak > 0
+          ? `Tag ${streak} 🔥 — was zählt heute?`
+          : "Setz heute deinen ersten Streak.";
+      await sendPushToUser(uid, {
+        title: `Guten Morgen, ${name}`,
+        body: pushBody,
+        url: "/dashboard",
+        tag: "morning-briefing",
+      });
+    } catch {
+      // Non-fatal — email is still the primary channel
     }
   }
 

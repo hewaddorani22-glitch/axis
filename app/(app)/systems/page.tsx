@@ -343,8 +343,8 @@ export default function SystemsPage() {
       ) : habits.length === 0 ? (
         <EmptyState
           icon={<IconHabits size={24} className="text-axis-accent" />}
-          title="No habits set up yet"
-          description="Build your daily systems by adding a habit below."
+          title="Which routine do you want to lock in?"
+          description="One is enough to start. Workout, study block, no phone after 10pm — your call. Add it below."
         />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

@@ -1,60 +1,63 @@
+"use client";
+
 import { IconCommand, IconTarget, IconRevenue, IconHabits, IconGoals, IconPartners } from "@/components/icons";
+import { useLocale } from "@/lib/i18n/provider";
 
 export function Features() {
+  const { t } = useLocale();
+
   const features = [
     {
       icon: <IconCommand size={24} />,
-      title: "Command Center",
-      description: "Your morning briefing. See what matters today: revenue, missions, streaks, and focus score in one glance.",
-      badge: "Dashboard",
+      title: t("feat.cmd.title"),
+      description: t("feat.cmd.desc"),
+      badge: t("feat.cmd.badge"),
     },
     {
       icon: <IconTarget size={24} />,
-      title: "Mission Control",
-      description: "Daily missions with priorities and categories. Not a to-do list: a system that tells you what to focus on.",
-      badge: "Tasks",
+      title: t("feat.miss.title"),
+      description: t("feat.miss.desc"),
+      badge: t("feat.miss.badge"),
     },
     {
       icon: <IconRevenue size={24} />,
-      title: "Revenue Tracker",
-      description: "Track every income stream. See your MTD revenue, monthly trends, and stream breakdown at a glance.",
-      badge: "Money",
+      title: t("feat.rev.title"),
+      description: t("feat.rev.desc"),
+      badge: t("feat.rev.badge"),
     },
     {
       icon: <IconHabits size={24} />,
-      title: "Daily Systems",
-      description: "Build habits that stick. Streak counters, weekly heatmaps, and one-tap logging make it effortless.",
-      badge: "Habits",
+      title: t("feat.hab.title"),
+      description: t("feat.hab.desc"),
+      badge: t("feat.hab.badge"),
     },
     {
       icon: <IconGoals size={24} />,
-      title: "Goals",
-      description: "Set targets with deadlines. Progress bars auto-update and warn you when you're falling behind.",
-      badge: "Goals",
+      title: t("feat.goal.title"),
+      description: t("feat.goal.desc"),
+      badge: t("feat.goal.badge"),
     },
     {
       icon: <IconPartners size={24} />,
-      title: "Accountability",
-      description: "Invite partners, compare progress, send nudges. Social pressure that actually works.",
-      badge: "Social",
+      title: t("feat.acc.title"),
+      description: t("feat.acc.desc"),
+      badge: t("feat.acc.badge"),
     },
   ];
 
   return (
     <section id="features" className="py-20 md:py-28">
       <div className="max-w-6xl mx-auto px-6">
-        {/* Section header */}
         <div className="text-center mb-16">
-          <span className="inline-block text-xs font-mono font-semibold text-axis-text3 uppercase tracking-wider mb-3">Features</span>
+          <span className="inline-block text-xs font-mono font-semibold text-axis-text3 uppercase tracking-wider mb-3">
+            {t("feat.tag")}
+          </span>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-            Six modules. <span className="axis-highlight">Zero clutter.</span>
+            {t("feat.title.a")} <span className="axis-highlight">{t("feat.title.b")}</span>
           </h2>
-          <p className="text-lg text-axis-text2 max-w-xl mx-auto">
-            Everything you need to run your life. Nothing you don't.
-          </p>
+          <p className="text-lg text-axis-text2 max-w-xl mx-auto">{t("feat.sub")}</p>
         </div>
 
-        {/* Feature grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((feature) => (
             <div

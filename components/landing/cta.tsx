@@ -11,7 +11,7 @@ export function CTA() {
         <div className="inline-flex items-center gap-3 mb-6">
           <span className="text-6xl md:text-7xl font-bold text-axis-accent font-mono">6</span>
           <span className="text-left text-sm text-white/50 leading-tight">
-            apps replaced<br/>by one system
+            {t("cta.anchor.line")}
           </span>
         </div>
 

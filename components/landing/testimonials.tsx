@@ -1,59 +1,65 @@
-import { IconEdit, IconFocus, IconRevenue } from "@/components/icons";
+"use client";
+
+import { IconRevenue, IconFocus, IconEdit, IconTarget } from "@/components/icons";
+import { useLocale } from "@/lib/i18n/provider";
 
 /**
- * Use Cases section: replaces fake testimonials.
- * Shows real personas and what they track, without fabricated quotes.
- * Swap this out for real testimonials once you have beta users.
+ * Use Cases section reframed for the 4 target segments:
+ * Hustler / Climber / Creator / Builder.
  */
 export function Testimonials() {
+  const { t } = useLocale();
+
   const useCases = [
     {
-      role: "Freelance Designer",
-      avatar: <IconEdit size={24} className="text-axis-accent" />,
-      problem: "Tracking clients in DMs, revenue in Notes, tasks in Notion.",
-      outcome: "One system for revenue, missions, and habits. Less switching, more doing.",
-      stats: ["Revenue tracking", "Daily missions", "Habit streaks"],
+      role: t("uc.hustler.role"),
+      avatar: <IconRevenue size={24} className="text-axis-accent" />,
+      problem: t("uc.hustler.before"),
+      outcome: t("uc.hustler.after"),
+      stats: [t("uc.hustler.tag1"), t("uc.hustler.tag2"), t("uc.hustler.tag3")],
     },
     {
-      role: "E-Commerce Founder",
-      avatar: <IconRevenue size={24} className="text-emerald-400" />,
-      problem: "Sales spreadsheets, a task app, and a separate goal tracker: none connected.",
-      outcome: "MTD revenue visible at a glance. Partner accountability every morning.",
-      stats: ["Multiple streams", "Goal deadlines", "Partner nudges"],
+      role: t("uc.climber.role"),
+      avatar: <IconTarget size={24} className="text-emerald-400" />,
+      problem: t("uc.climber.before"),
+      outcome: t("uc.climber.after"),
+      stats: [t("uc.climber.tag1"), t("uc.climber.tag2"), t("uc.climber.tag3")],
     },
     {
-      role: "Content Creator",
+      role: t("uc.creator.role"),
       avatar: <IconFocus size={24} className="text-violet-400" />,
-      problem: "No system for posting consistency, collab tracking, or income visibility.",
-      outcome: "Daily posting habit tracked. Prove It Mode shared on TikTok every morning.",
-      stats: ["Habit streaks", "Prove It profile", "Focus Score"],
+      problem: t("uc.creator.before"),
+      outcome: t("uc.creator.after"),
+      stats: [t("uc.creator.tag1"), t("uc.creator.tag2"), t("uc.creator.tag3")],
+    },
+    {
+      role: t("uc.builder.role"),
+      avatar: <IconEdit size={24} className="text-sky-400" />,
+      problem: t("uc.builder.before"),
+      outcome: t("uc.builder.after"),
+      stats: [t("uc.builder.tag1"), t("uc.builder.tag2"), t("uc.builder.tag3")],
     },
   ];
 
   return (
     <section className="py-20 md:py-28 bg-axis-dark text-white">
       <div className="max-w-6xl mx-auto px-6">
-        {/* Section header */}
         <div className="text-center mb-16">
           <span className="inline-block text-xs font-mono font-semibold text-white/40 uppercase tracking-wider mb-3">
-            Built for
+            {t("uc.tag")}
           </span>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-            One system. <span className="text-axis-accent">Every type of builder.</span>
+            {t("uc.title.a")} <span className="text-axis-accent">{t("uc.title.b")}</span>
           </h2>
-          <p className="text-white/50 max-w-lg mx-auto">
-            Whether you freelance, run a store, or grow an audience: lomoura adapts to how you work.
-          </p>
+          <p className="text-white/50 max-w-lg mx-auto">{t("uc.sub")}</p>
         </div>
 
-        {/* Use case cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {useCases.map((uc) => (
             <div
               key={uc.role}
               className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-6 hover:border-white/[0.12] transition-all duration-200"
             >
-              {/* Header */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
                   {uc.avatar}
@@ -61,19 +67,17 @@ export function Testimonials() {
                 <p className="text-sm font-semibold text-white">{uc.role}</p>
               </div>
 
-              {/* Problem / Outcome */}
               <div className="space-y-3 mb-5">
                 <div>
-                  <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-1">Before</p>
+                  <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-1">{t("uc.before")}</p>
                   <p className="text-sm text-white/50 leading-relaxed">{uc.problem}</p>
                 </div>
                 <div className="border-t border-white/[0.06] pt-3">
-                  <p className="text-[10px] font-mono text-axis-accent uppercase tracking-wider mb-1">With lomoura</p>
+                  <p className="text-[10px] font-mono text-axis-accent uppercase tracking-wider mb-1">{t("uc.with")}</p>
                   <p className="text-sm text-white/80 leading-relaxed">{uc.outcome}</p>
                 </div>
               </div>
 
-              {/* Feature tags */}
               <div className="flex flex-wrap gap-2">
                 {uc.stats.map((tag) => (
                   <span key={tag} className="text-[10px] font-mono text-white/40 bg-white/[0.04] border border-white/[0.06] px-2.5 py-1 rounded-lg">
@@ -85,14 +89,13 @@ export function Testimonials() {
           ))}
         </div>
 
-        {/* CTA */}
         <div className="text-center mt-12">
-          <p className="text-sm text-white/40 mb-4">Public beta: free to join, no credit card needed.</p>
+          <p className="text-sm text-white/40 mb-4">{t("uc.cta.line")}</p>
           <a
-            href="/signup"
+            href="/start"
             className="inline-flex items-center text-sm font-semibold bg-axis-accent text-axis-dark px-8 py-3 rounded-xl hover:bg-axis-accent/90 transition-all"
           >
-            Start Free
+            {t("uc.cta.button")}
           </a>
         </div>
       </div>

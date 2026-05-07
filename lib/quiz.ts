@@ -28,18 +28,23 @@ const GOAL_TO_USER_TYPE: Record<QuizGoal, "entrepreneur" | "student" | "creator"
   start: "creator",
 };
 
+// Per segment (mapped via GOAL_TO_USER_TYPE):
+//   money → Hustler (entrepreneur)
+//   discipline → Climber (employed + ambitious)
+//   start → Creator
+//   grades → Builder (student)
 const FIRST_MISSION_DE: Record<QuizGoal, string> = {
-  money: "Eine Sache machen, die heute Geld bringt",
-  grades: "30 Minuten fokussiert lernen",
-  discipline: "Nach Plan starten — eine Sache, jetzt",
-  start: "Eine kleine Sache anfangen — egal welche",
+  money: "Eine Sache, die heute Umsatz bringt",
+  grades: "60 Min fokussiert lernen — ohne Handy",
+  discipline: "30 Min am Side-Project — heute",
+  start: "Einen Post oder ein Stück Content fertig machen",
 };
 
 const FIRST_MISSION_EN: Record<QuizGoal, string> = {
   money: "Do one thing that earns money today",
-  grades: "Study focused for 30 minutes",
-  discipline: "Start on plan — one thing, now",
-  start: "Begin one small thing — any thing",
+  grades: "60 min focused study — phone away",
+  discipline: "30 min on the side project — today",
+  start: "Ship one post or piece of content",
 };
 
 export function suggestUserType(goal: QuizGoal) {

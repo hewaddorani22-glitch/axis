@@ -110,56 +110,13 @@ export default function ReviewPage() {
   };
 
   const isPro = user?.plan === "pro";
-
-  if (!userLoading && !isPro) {
-    return (
-      <div className="mx-auto w-full max-w-2xl relative group">
-        {/* Fake blurred content */}
-        <div className="pointer-events-none opacity-40 blur-sm scale-[0.98] transition-all duration-500 group-hover:blur-md select-none space-y-6">
-          <div className="axis-card">
-            <h2 className="text-base font-semibold mb-1" style={{ color: "var(--text-primary)" }}>This Week&apos;s Review</h2>
-            <div className="grid grid-cols-1 gap-3 my-5 sm:grid-cols-3">
-              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-axis-accent">S</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>WEEKLY GRADE</p></div>
-              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-axis-text1">$1,4k</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>MTD REVENUE</p></div>
-              <div className="rounded-xl p-3 text-center" style={{ backgroundColor: "var(--bg-tertiary)" }}><p className="text-xl font-bold text-orange-500">14</p><p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>DAY STREAK</p></div>
-            </div>
-            <div className="space-y-4">
-              <div className="w-full h-24 rounded-xl" style={{ backgroundColor: "var(--bg-tertiary)" }}></div>
-              <div className="w-full h-24 rounded-xl" style={{ backgroundColor: "var(--bg-tertiary)" }}></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Premium Lock Overlay */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-axis-dark flex items-center justify-center mb-6 shadow-2xl border border-axis-border/10">
-            <span className="text-3xl relative">
-              🔒
-              <span className="absolute -top-1 -right-2 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded pl-1 bg-axis-accent text-axis-dark">PRO</span>
-            </span>
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight mb-3" style={{ color: "var(--text-primary)" }}>
-            Unlock Focus Reviews
-          </h2>
-          <p className="text-sm max-w-sm mx-auto mb-8" style={{ color: "var(--text-secondary)" }}>
-            Tracking your tasks is basic. Reflecting on them is how you win. Deep weekly insights, win tracking, and focus scores are available for Pro users.
-          </p>
-          <Link
-            href="/settings"
-            className="flex items-center gap-2 text-sm font-semibold bg-axis-accent text-axis-dark px-8 py-3.5 rounded-xl hover:bg-axis-accent/90 transition-all hover:scale-105 hover:shadow-xl active:scale-95"
-          >
-            Upgrade to Pro
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-               <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const FREE_HISTORY_WEEKS = 4;
 
   const thisWeekReview = reviews.find((r) => r.week_start === thisWeek);
-  const pastReviews = reviews.filter((r) => r.week_start !== thisWeek);
+  const allPastReviews = reviews.filter((r) => r.week_start !== thisWeek);
+  const pastReviews = isPro ? allPastReviews : allPastReviews.slice(0, FREE_HISTORY_WEEKS);
+  const hiddenPastCount = isPro ? 0 : Math.max(0, allPastReviews.length - FREE_HISTORY_WEEKS);
+  void userLoading;
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6">
@@ -326,6 +283,25 @@ export default function ReviewPage() {
         <p className="text-center text-sm py-4" style={{ color: "var(--text-tertiary)" }}>
           Complete your first weekly review above. Come back every Sunday.
         </p>
+      )}
+
+      {!isPro && hiddenPastCount > 0 && (
+        <Link
+          href="/settings"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-axis-accent/25 bg-axis-accent/5 px-4 py-3 transition-all hover:bg-axis-accent/10"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              + {hiddenPastCount} earlier {hiddenPastCount === 1 ? "review" : "reviews"} in your archive
+            </p>
+            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+              Pro unlocks full history.
+            </p>
+          </div>
+          <span className="shrink-0 text-xs font-mono font-bold rounded-md bg-axis-accent text-axis-dark px-2.5 py-1">
+            UPGRADE
+          </span>
+        </Link>
       )}
     </div>
   );

@@ -76,3 +76,15 @@ export function buildAppUrl(path: string, fallbackOrigin?: string | null): strin
   const base = getAppUrl(fallbackOrigin);
   return new URL(path, `${base}/`).toString();
 }
+
+export function getVapidPublicKey(): string {
+  return cleanEnvValue(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+}
+
+export function getVapidPrivateKey(): string {
+  return cleanEnvValue(process.env.VAPID_PRIVATE_KEY);
+}
+
+export function getVapidSubject(): string {
+  return cleanEnvValue(process.env.VAPID_SUBJECT) || "mailto:noreply@lomoura.com";
+}
