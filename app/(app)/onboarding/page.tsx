@@ -3,6 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useLocale } from "@/lib/i18n/provider";
+import {
+  loadQuizAnswers,
+  clearQuizAnswers,
+  suggestUserType,
+  suggestFirstMission,
+} from "@/lib/quiz";
 import {
   AxisLogo,
   IconUser,
@@ -56,12 +63,27 @@ const suggestedHabits = [
 export default function OnboardingPage() {
   const router = useRouter();
   const supabaseCheck = createClient();
+  const { locale } = useLocale();
 
   useEffect(() => {
     supabaseCheck.from("users").select("onboarding_done").single().then(({ data }) => {
       if (data?.onboarding_done) router.replace("/dashboard");
     });
   }, []); // eslint-disable-line
+
+  // Quiz pre-fill: if the user came from /start, seed userType + first mission
+  useEffect(() => {
+    const quiz = loadQuizAnswers();
+    if (!quiz) return;
+    setUserType(suggestUserType(quiz.goal));
+    const firstMission = suggestFirstMission(quiz.goal, locale);
+    setMissions((prev) => {
+      const next = [...prev];
+      next[0] = { title: firstMission, priority: "high" };
+      return next;
+    });
+    // Keep quiz answers around until onboarding completes; clearQuizAnswers is called in handleComplete.
+  }, [locale]);
 
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
@@ -176,6 +198,7 @@ export default function OnboardingPage() {
       });
     } catch {}
 
+    clearQuizAnswers();
     router.push("/dashboard");
     router.refresh();
   };

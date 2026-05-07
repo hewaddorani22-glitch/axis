@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import { cookies, headers } from "next/headers";
 import "@/styles/globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CommandPaletteProvider } from "@/components/app/command-palette";
 import { Toaster } from "sonner";
+import { LocaleProvider } from "@/lib/i18n/provider";
+import { detectLocaleFromHeader, isLocale, LOCALE_COOKIE, type Locale } from "@/lib/i18n/dict";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lomoura.com"),
@@ -91,18 +94,29 @@ export const viewport: Viewport = {
   themeColor: "#0B0B0F",
 };
 
+function resolveInitialLocale(): Locale {
+  const cookieStore = cookies();
+  const fromCookie = cookieStore.get(LOCALE_COOKIE)?.value;
+  if (isLocale(fromCookie)) return fromCookie;
+  const accept = headers().get("accept-language");
+  return detectLocaleFromHeader(accept);
+}
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const initialLocale = resolveInitialLocale();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={initialLocale} suppressHydrationWarning>
       <body className="font-display antialiased">
-        <ThemeProvider>
-          <CommandPaletteProvider>{children}</CommandPaletteProvider>
-          <Toaster position="bottom-right" theme="system" />
-        </ThemeProvider>
+        <LocaleProvider initialLocale={initialLocale}>
+          <ThemeProvider>
+            <CommandPaletteProvider>{children}</CommandPaletteProvider>
+            <Toaster position="bottom-right" theme="system" />
+          </ThemeProvider>
+        </LocaleProvider>
       </body>
     </html>
   );
