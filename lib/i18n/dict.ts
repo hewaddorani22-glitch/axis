@@ -298,6 +298,15 @@ const de: Dict = {
   "recover.dismiss": "Nochmal von vorn starten",
   "recover.fineprint": "14 Tage Geld zurück. Jederzeit kündbar.",
 
+  // Streak Restore Prompt (post-Pro: actually do the restore)
+  "restore.badge": "Pro · einmaliger Restore",
+  "restore.title": "Hol dir deine {n} Tage zurück.",
+  "restore.sub": "Du bist jetzt Pro. Wir können deinen {n}-Tage-Streak einmalig wiederherstellen — das ist die einzige Chance.",
+  "restore.cta": "Streak wiederherstellen ({n} Tage)",
+  "restore.loading": "Stelle wieder her...",
+  "restore.skip": "Lieber neu anfangen",
+  "restore.fineprint": "Einmalig pro Account.",
+
   // Mobile bottom tab bar
   "tab.today": "Heute",
   "tab.missions": "Missions",
@@ -595,6 +604,14 @@ const en: Dict = {
   "recover.cta": "Save my streak — $9/month",
   "recover.dismiss": "Start fresh from day 1",
   "recover.fineprint": "14-day money-back. Cancel anytime.",
+
+  "restore.badge": "Pro · one-time restore",
+  "restore.title": "Get your {n} days back.",
+  "restore.sub": "You're Pro now. We can restore your {n}-day streak once — this is the only chance.",
+  "restore.cta": "Restore my streak ({n} days)",
+  "restore.loading": "Restoring...",
+  "restore.skip": "Start fresh",
+  "restore.fineprint": "Once per account.",
 
   "tab.today": "Today",
   "tab.missions": "Missions",
