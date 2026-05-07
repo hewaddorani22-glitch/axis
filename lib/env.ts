@@ -42,7 +42,7 @@ export function getResendApiKey(): string {
 }
 
 export function getFromEmail(): string {
-  return cleanEnvValue(process.env.RESEND_FROM_EMAIL) || "lomoura <noreply@lomoura.com>";
+  return cleanEnvValue(process.env.RESEND_FROM_EMAIL) || "lomoura <noreply@send.lomoura.com>";
 }
 
 export function getAppUrl(fallbackOrigin?: string | null): string {
