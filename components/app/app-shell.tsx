@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/app/sidebar";
 import { Topbar } from "@/components/app/topbar";
 import { Celebrations } from "@/components/app/celebrations";
+import { PwaInstallPrompt } from "@/components/app/pwa-install-prompt";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -22,6 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
       <Celebrations />
+      <PwaInstallPrompt />
       <Sidebar />
       <div className="min-w-0 lg:pl-[260px]">
         <Topbar />

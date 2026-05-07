@@ -17,6 +17,7 @@ import { useAxisScore } from "@/hooks/useAxisScore";
 import { motion, AnimatePresence } from "framer-motion";
 import { WelcomeCeremony } from "@/components/app/welcome-ceremony";
 import { UpgradeModal } from "@/components/app/upgrade-modal";
+import { StreakShare } from "@/components/app/streak-share";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -48,9 +49,9 @@ export default function DashboardPage() {
   const isLoading = userLoading || missionsLoading || habitsLoading || revenueLoading || streakLoading || axisScore.loading;
 
   const stats = [
-    { label: "MTD Revenue", value: formatCurrency(mtdTotal), change: mtdTotal > 0 ? "This month" : "No entries yet", changeColor: "text-emerald-500", icon: <IconRevenue size={18} className="text-emerald-500" /> },
-    { label: "Missions Done", value: `${completedCount}/${missionsTotal}`, change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add missions", changeColor: "text-emerald-500", icon: <IconTarget size={18} className="text-axis-accent" /> },
-    { label: "Streak", value: `${streak} day${streak !== 1 ? "s" : ""}`, change: streak >= 7 ? "On fire!" : streak > 0 ? "Keep going!" : "Start today", changeColor: "text-orange-500", icon: <IconStreak size={18} className="text-orange-500" /> },
+    { label: "MTD Revenue", value: formatCurrency(mtdTotal), change: mtdTotal > 0 ? "This month" : "No entries yet", changeColor: "text-emerald-500", icon: <IconRevenue size={18} className="text-emerald-500" />, extra: null },
+    { label: "Missions Done", value: `${completedCount}/${missionsTotal}`, change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add missions", changeColor: "text-emerald-500", icon: <IconTarget size={18} className="text-axis-accent" />, extra: null },
+    { label: "Streak", value: `${streak} day${streak !== 1 ? "s" : ""}`, change: streak >= 7 ? "On fire!" : streak > 0 ? "Keep going!" : "Start today", changeColor: "text-orange-500", icon: <IconStreak size={18} className="text-orange-500" />, extra: <StreakShare streak={streak} name={displayName} score={axisScore.score} /> },
   ];
 
   const Skeleton = ({ className = "" }: { className?: string }) => (
@@ -136,7 +137,10 @@ export default function DashboardPage() {
               {stat.icon}
             </div>
             {isLoading ? <Skeleton className="h-8 w-20 mb-2" /> : <p className="text-2xl font-bold mb-1">{stat.value}</p>}
-            <p className={`text-xs font-mono ${stat.changeColor}`}>{stat.change}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className={`text-xs font-mono ${stat.changeColor}`}>{stat.change}</p>
+              {!isLoading && stat.extra}
+            </div>
           </motion.div>
         ))}
       </motion.div>

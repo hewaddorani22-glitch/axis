@@ -116,6 +116,22 @@ const de: Dict = {
   "cta.button": "Quiz starten",
   "cta.fineprint": "Keine Kreditkarte nötig",
 
+  // PWA install prompt
+  "pwa.title": "lomoura zum Homescreen",
+  "pwa.sub": "Öffne es wie eine App — kein App Store nötig.",
+  "pwa.install": "Zum Homescreen hinzufügen",
+  "pwa.later": "Vielleicht später",
+  "pwa.ios.step1": "Tippe auf Teilen in deinem Browser",
+  "pwa.ios.step2": "Wähle: Zum Home-Bildschirm",
+  "pwa.ios.step3": "Fertig — lomoura ist jetzt eine App!",
+
+  // Streak share
+  "share.cta": "Teilen",
+  "share.tooltip": "Streak teilen",
+  "share.success": "Geteilt!",
+  "share.copied": "Link kopiert!",
+  "share.error": "Teilen fehlgeschlagen.",
+
   // Upgrade modal (Day-7 soft paywall)
   "upgrade.badge": "Tag 7 · Pro freischalten",
   "upgrade.title": "Du bist eine Woche dabei.",
@@ -234,6 +250,20 @@ const en: Dict = {
   "cta.sub": "Stop switching between apps. Start every morning knowing exactly what to do. Lomoura is free: no credit card, no trial, no catch.",
   "cta.button": "Start the quiz",
   "cta.fineprint": "No credit card required",
+
+  "pwa.title": "lomoura to your Home Screen",
+  "pwa.sub": "Open it like an app — no App Store needed.",
+  "pwa.install": "Add to Home Screen",
+  "pwa.later": "Maybe later",
+  "pwa.ios.step1": "Tap the Share button in your browser",
+  "pwa.ios.step2": "Select: Add to Home Screen",
+  "pwa.ios.step3": "Done — lomoura is now an app!",
+
+  "share.cta": "Share",
+  "share.tooltip": "Share your streak",
+  "share.success": "Shared!",
+  "share.copied": "Link copied!",
+  "share.error": "Couldn't share.",
 
   "upgrade.badge": "Day 7 · Unlock Pro",
   "upgrade.title": "You've made it a week.",
