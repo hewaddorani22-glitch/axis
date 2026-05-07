@@ -133,6 +133,67 @@ export async function sendWeeklyDigest(
   });
 }
 
+type ReengagementVariant = "day1" | "day3" | "day7";
+
+const REENGAGEMENT_COPY: Record<
+  ReengagementVariant,
+  { subject: string; heading: (name: string) => string; body: string; cta: string }
+> = {
+  day1: {
+    subject: "Dein System wartet auf dich",
+    heading: (name) => `${name}, deine Streak hängt an einem Mission-Klick.`,
+    body: "Du hast gestern angefangen — heute reicht eine erledigte Mission, um deinen Streak auf 2 zu ziehen. 60 Sekunden, mehr nicht.",
+    cta: "Mission abhaken",
+  },
+  day3: {
+    subject: "3 Tage rein. Jetzt wird's interessant.",
+    heading: (name) => `${name}, ab Tag 3 wird's automatisch.`,
+    body: "Studien sagen: 21 Tage zur Gewohnheit. Du bist bei Tag 3. Die nächsten 4 Missions sind die, die alles drehen — fang heute eine an.",
+    cta: "Jetzt weitermachen",
+  },
+  day7: {
+    subject: "Eine Woche. Stolz auf dich.",
+    heading: (name) => `Eine Woche, ${name}. Wirklich.`,
+    body: "Die meisten geben in der ersten Woche auf. Du nicht. Schau, was du in den nächsten 7 Tagen aufbauen kannst, wenn du dranbleibst.",
+    cta: "Dashboard öffnen",
+  },
+};
+
+/**
+ * Send a Day 1/3/7 re-engagement email to a user who has signed up but has
+ * been quiet. Loss-aversion + identity reinforcement copy.
+ */
+export async function sendReengagementEmail(
+  to: string,
+  name: string,
+  variant: ReengagementVariant
+) {
+  if (!resend) return;
+  const copy = REENGAGEMENT_COPY[variant];
+  const display = (name && name.trim()) || "Champion";
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: copy.subject,
+    html: `
+      <div style="font-family: 'Outfit', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <strong style="font-size: 18px;">lomoura</strong>
+        </div>
+        <h1 style="font-size: 24px; margin-bottom: 16px; line-height: 1.25;">${copy.heading(display)}</h1>
+        <p style="color: #52525B; line-height: 1.6; margin-bottom: 24px;">${copy.body}</p>
+        <a href="${APP_URL}/dashboard" style="display: inline-block; background: #0B0B0F; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 14px;">
+          ${copy.cta}
+        </a>
+        <p style="margin-top: 32px; font-size: 11px; color: #A1A1AA;">
+          Wenn du das nicht mehr willst, antworte einfach mit "Stop".
+        </p>
+      </div>
+    `,
+  });
+}
+
 /**
  * Send nudge email from partner
  */

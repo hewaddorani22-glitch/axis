@@ -81,15 +81,24 @@ export function useMissions(date?: string) {
     if (!mission) return;
 
     const newStatus = mission.status === "done" ? "active" : "done";
-    
+
     // Optimistic update for zero-latency UI
     setMissions((prev) =>
       prev.map((m) => (m.id === id ? { ...m, status: newStatus } : m))
     );
 
+    // Variable reward: fire celebration only when transitioning to done
+    if (newStatus === "done" && typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("lomoura:mission-completed", {
+          detail: { id, title: mission.title },
+        })
+      );
+    }
+
     // Background sync
     const { error } = await supabase.from("missions").update({ status: newStatus }).eq("id", id);
-    
+
     if (error) {
       // Rollback on failure
       setMissions((prev) =>
