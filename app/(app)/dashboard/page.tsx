@@ -16,6 +16,7 @@ import { AxisScoreWidget } from "@/components/app/axis-score-widget";
 import { useAxisScore } from "@/hooks/useAxisScore";
 import { motion, AnimatePresence } from "framer-motion";
 import { WelcomeCeremony } from "@/components/app/welcome-ceremony";
+import { UpgradeModal } from "@/components/app/upgrade-modal";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -59,6 +60,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       <WelcomeCeremony name={user?.name || ""} />
+      <UpgradeModal />
       {/* Greeting */}
       <div className="flex items-start gap-4 sm:items-center">
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "var(--bg-accent-soft)" }}>

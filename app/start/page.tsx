@@ -1,14 +1,18 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { getBrowserAppUrl } from "@/lib/env";
 import { useLocale } from "@/lib/i18n/provider";
 import { LanguageSwitch } from "@/components/landing/language-switch";
+import { TikTokPixel } from "@/components/tracking/tiktok-pixel";
+import { trackTikTokEvent } from "@/lib/tiktok";
 import {
+  isQuizGoal,
+  isQuizTimeWaster,
   type QuizGoal,
   type QuizTimeWaster,
   saveQuizAnswers,
@@ -28,13 +32,36 @@ function formatCountdown(seconds: number): string {
 
 function StartFunnel() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t, locale } = useLocale();
   const supabase = useMemo(() => createClient(), []);
 
-  const [stage, setStage] = useState<Stage>("intro");
-  const [goal, setGoal] = useState<QuizGoal | null>(null);
-  const [age, setAge] = useState<number>(22);
-  const [timeWaster, setTimeWaster] = useState<QuizTimeWaster | null>(null);
+  const presetApplied = useRef(false);
+  const initialPreset = useMemo(() => {
+    const goalParam = searchParams?.get("goal") ?? null;
+    const ageParam = searchParams?.get("age") ?? null;
+    const twParam = searchParams?.get("tw") ?? null;
+    const stageParam = searchParams?.get("stage") ?? null;
+    const slugParam = searchParams?.get("slug") ?? null;
+    const fromParam = searchParams?.get("from") ?? null;
+    const parsedAge = ageParam ? parseInt(ageParam, 10) : NaN;
+    return {
+      goal: isQuizGoal(goalParam) ? goalParam : null,
+      age: Number.isFinite(parsedAge) && parsedAge >= 13 && parsedAge <= 65 ? parsedAge : null,
+      timeWaster: isQuizTimeWaster(twParam) ? twParam : null,
+      stage:
+        stageParam === "q1" || stageParam === "q2" || stageParam === "q3" || stageParam === "preview"
+          ? (stageParam as Stage)
+          : null,
+      slug: slugParam,
+      fromTikTok: fromParam === "tt",
+    };
+  }, [searchParams]);
+
+  const [stage, setStage] = useState<Stage>(initialPreset.stage ?? "intro");
+  const [goal, setGoal] = useState<QuizGoal | null>(initialPreset.goal);
+  const [age, setAge] = useState<number>(initialPreset.age ?? 22);
+  const [timeWaster, setTimeWaster] = useState<QuizTimeWaster | null>(initialPreset.timeWaster);
 
   // Save modal state
   const [showSave, setShowSave] = useState(false);
@@ -47,6 +74,26 @@ function StartFunnel() {
   // Loss-aversion countdown
   const startTimeRef = useRef<number | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(SAVE_WINDOW_SECONDS);
+
+  // Fire pixel ViewContent on mount
+  useEffect(() => {
+    if (presetApplied.current) return;
+    presetApplied.current = true;
+    trackTikTokEvent("ViewContent", {
+      content_id: initialPreset.slug || "start-funnel",
+      content_type: "product",
+      content_name: initialPreset.fromTikTok ? `tt:${initialPreset.slug}` : "organic",
+    });
+  }, [initialPreset]);
+
+  // Fire pixel on stage transitions (funnel progression)
+  useEffect(() => {
+    if (stage === "preview") {
+      trackTikTokEvent("AddToCart", { content_id: initialPreset.slug || "start-funnel" });
+    } else if (stage === "building") {
+      trackTikTokEvent("InitiateCheckout", { content_id: initialPreset.slug || "start-funnel" });
+    }
+  }, [stage, initialPreset.slug]);
 
   useEffect(() => {
     if (stage !== "preview") return;
@@ -97,6 +144,10 @@ function StartFunnel() {
   const handleGoogleSave = async () => {
     setAuthError("");
     setAuthLoading(true);
+    trackTikTokEvent("ClickButton", {
+      content_id: initialPreset.slug || "start-funnel",
+      method: "google",
+    });
     const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
     callbackUrl.searchParams.set("next", "/onboarding");
     const { error } = await supabase.auth.signInWithOAuth({
@@ -159,12 +210,17 @@ function StartFunnel() {
         // non-fatal
       }
     }
+    trackTikTokEvent("CompleteRegistration", {
+      content_id: initialPreset.slug || "start-funnel",
+      method: "email_otp",
+    });
     router.push("/onboarding");
     router.refresh();
   };
 
   return (
     <div className="min-h-screen flex flex-col">
+      <TikTokPixel />
       {/* Top bar */}
       <div className="px-4 sm:px-6 pt-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">

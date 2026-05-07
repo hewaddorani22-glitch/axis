@@ -115,6 +115,20 @@ const de: Dict = {
   "cta.sub": "Hör auf, zwischen Apps zu springen. Starte jeden Morgen mit Klarheit. Lomoura ist kostenlos: keine Kreditkarte, kein Trial, kein Haken.",
   "cta.button": "Quiz starten",
   "cta.fineprint": "Keine Kreditkarte nötig",
+
+  // Upgrade modal (Day-7 soft paywall)
+  "upgrade.badge": "Tag 7 · Pro freischalten",
+  "upgrade.title": "Du bist eine Woche dabei.",
+  "upgrade.sub": "Hol dir alles raus — unbegrenzte Missionen, Streak-Schutz und Partner-Features.",
+  "upgrade.bullet.unlimited": "Unbegrenzte Missionen, Habits & Goals",
+  "upgrade.bullet.streak": "Streak-Freeze: 1 Tag Pause pro Woche",
+  "upgrade.bullet.partners": "Accountability-Partner & Squads",
+  "upgrade.bullet.early": "Früher Zugriff auf neue Features",
+  "upgrade.permonth": "/ Monat",
+  "upgrade.cancel": "Jederzeit kündbar",
+  "upgrade.cta": "Pro freischalten",
+  "upgrade.loading": "Weiterleitung...",
+  "upgrade.later": "Später",
 };
 
 const en: Dict = {
@@ -220,6 +234,19 @@ const en: Dict = {
   "cta.sub": "Stop switching between apps. Start every morning knowing exactly what to do. Lomoura is free: no credit card, no trial, no catch.",
   "cta.button": "Start the quiz",
   "cta.fineprint": "No credit card required",
+
+  "upgrade.badge": "Day 7 · Unlock Pro",
+  "upgrade.title": "You've made it a week.",
+  "upgrade.sub": "Now get the full system — unlimited missions, streak protection, and partner features.",
+  "upgrade.bullet.unlimited": "Unlimited missions, habits & goals",
+  "upgrade.bullet.streak": "Streak Freeze: one rest day per week",
+  "upgrade.bullet.partners": "Accountability partners & squads",
+  "upgrade.bullet.early": "Early access to new features",
+  "upgrade.permonth": "/ month",
+  "upgrade.cancel": "Cancel anytime",
+  "upgrade.cta": "Unlock Pro",
+  "upgrade.loading": "Redirecting...",
+  "upgrade.later": "Maybe later",
 };
 
 export const dictionaries: Record<Locale, Dict> = { de, en };

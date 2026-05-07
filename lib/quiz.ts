@@ -1,6 +1,17 @@
 export type QuizGoal = "money" | "grades" | "discipline" | "start";
 export type QuizTimeWaster = "phone" | "procrast" | "chaos" | "motivation";
 
+const QUIZ_GOALS: QuizGoal[] = ["money", "grades", "discipline", "start"];
+const QUIZ_TIME_WASTERS: QuizTimeWaster[] = ["phone", "procrast", "chaos", "motivation"];
+
+export function isQuizGoal(value: unknown): value is QuizGoal {
+  return typeof value === "string" && (QUIZ_GOALS as string[]).includes(value);
+}
+
+export function isQuizTimeWaster(value: unknown): value is QuizTimeWaster {
+  return typeof value === "string" && (QUIZ_TIME_WASTERS as string[]).includes(value);
+}
+
 export type QuizAnswers = {
   goal: QuizGoal;
   age: number;
