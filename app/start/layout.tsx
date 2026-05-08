@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Start — lomoura",
-  description: "Build your personal lomoura system in 15 seconds.",
+  description: "Answer 2 quick questions and preview your lomoura dashboard in under 30 seconds.",
   robots: { index: false, follow: false },
 };
 

@@ -20,7 +20,7 @@ import {
   suggestFirstMission,
 } from "@/lib/quiz";
 
-type Stage = "intro" | "q1" | "q2" | "q3" | "building" | "preview";
+type Stage = "intro" | "q1" | "q2" | "building" | "preview";
 
 const SAVE_WINDOW_SECONDS = 10 * 60;
 
@@ -51,7 +51,7 @@ function StartFunnel() {
       age: Number.isFinite(parsedAge) && parsedAge >= 13 && parsedAge <= 65 ? parsedAge : null,
       timeWaster: isQuizTimeWaster(twParam) ? twParam : null,
       stage:
-        stageParam === "q1" || stageParam === "q2" || stageParam === "q3" || stageParam === "preview"
+        stageParam === "q1" || stageParam === "q2" || stageParam === "preview"
           ? (stageParam as Stage)
           : null,
       slug: slugParam,
@@ -126,21 +126,13 @@ function StartFunnel() {
 
   const expired = stage === "preview" && secondsLeft <= 0;
 
-  const goNext = () => {
-    if (stage === "intro") setStage("q1");
-    else if (stage === "q1" && goal) setStage("q2");
-    else if (stage === "q2") setStage("q3");
-    else if (stage === "q3" && timeWaster) setStage("building");
-  };
-
   const goBack = () => {
     if (stage === "q1") setStage("intro");
     else if (stage === "q2") setStage("q1");
-    else if (stage === "q3") setStage("q2");
   };
 
-  const stepNumber = stage === "q1" ? 1 : stage === "q2" ? 2 : stage === "q3" ? 3 : 0;
-  const progress = stepNumber === 0 ? (stage === "preview" || stage === "building" ? 100 : 0) : (stepNumber / 3) * 100;
+  const stepNumber = stage === "q1" ? 1 : stage === "q2" ? 2 : 0;
+  const progress = stepNumber === 0 ? (stage === "preview" || stage === "building" ? 100 : 0) : (stepNumber / 2) * 100;
 
   const handleGoogleSave = async () => {
     setAuthError("");
@@ -250,7 +242,7 @@ function StartFunnel() {
         </div>
         {stepNumber > 0 && (
           <p className="mt-2 text-[11px] font-mono text-axis-text3">
-            {t("quiz.step")} {stepNumber} {t("quiz.of")} 3
+            {t("quiz.step")} {stepNumber} {t("quiz.of")} 2
           </p>
         )}
       </div>
@@ -346,50 +338,6 @@ function StartFunnel() {
             {stage === "q2" && (
               <motion.div
                 key="q2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25 }}
-              >
-                <h2 className="text-2xl font-bold tracking-tight mb-2">{t("quiz.q2.title")}</h2>
-                <p className="text-sm text-axis-text2 mb-8">{t("quiz.q2.sub")}</p>
-                <div className="bg-white border border-axis-border rounded-2xl p-6">
-                  <div className="text-center mb-6">
-                    <span className="text-6xl font-bold tracking-tight">{age}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={13}
-                    max={65}
-                    value={age}
-                    onChange={(e) => setAge(parseInt(e.target.value, 10))}
-                    className="w-full accent-axis-text1"
-                  />
-                  <div className="mt-2 flex justify-between text-[11px] font-mono text-axis-text3">
-                    <span>13</span>
-                    <span>65+</span>
-                  </div>
-                </div>
-                <div className="mt-6 flex items-center justify-between gap-3">
-                  <button
-                    onClick={goBack}
-                    className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors px-4 py-3"
-                  >
-                    ← {t("quiz.back")}
-                  </button>
-                  <button
-                    onClick={() => setStage("q3")}
-                    className="flex-1 inline-flex items-center justify-center text-base font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 active:scale-[0.98] transition-all"
-                  >
-                    {t("quiz.next")}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {stage === "q3" && (
-              <motion.div
-                key="q3"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
