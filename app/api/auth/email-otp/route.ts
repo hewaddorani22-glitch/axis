@@ -83,7 +83,14 @@ export async function POST(request: Request) {
       );
     }
 
-    await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
+    try {
+      await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
+    } catch {
+      return NextResponse.json(
+        { error: "Der Code konnte gerade nicht per E-Mail gesendet werden." },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({
       ok: true,

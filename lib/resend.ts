@@ -20,7 +20,9 @@ export async function sendEmailOtpEmail(
     mode?: "login" | "signup" | "auto";
   }
 ) {
-  if (!resend) return;
+  if (!resend) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
 
   const mode = options?.mode ?? "auto";
   const heading =
@@ -32,7 +34,7 @@ export async function sendEmailOtpEmail(
       ? "Gib diesen 6-stelligen Code in Lomoura ein, um dich anzumelden."
       : "Gib diesen 6-stelligen Code in Lomoura ein, um dein Konto zu bestaetigen und weiterzumachen.";
 
-  await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: FROM_EMAIL,
     to,
     subject: `${heading}: ${code}`,
@@ -58,6 +60,12 @@ export async function sendEmailOtpEmail(
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(error.message || "OTP email delivery failed");
+  }
+
+  return data;
 }
 
 /**
