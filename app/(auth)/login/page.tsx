@@ -10,7 +10,7 @@ import { trackEvent } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/provider";
 
 function LoginForm() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"email" | "code">("email");
@@ -29,7 +29,7 @@ function LoginForm() {
     const response = await fetch("/api/auth/email-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, mode: "login" }),
+      body: JSON.stringify({ email, mode: "login", locale }),
     });
     const data = await response.json().catch(() => null);
     setLoading(false);

@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     const monthlyPriceId = getStripePriceId();
     const yearlyPriceId = getStripeYearlyPriceId();
     const useYearly = intervalParam === "yearly";
-    const priceId = useYearly ? yearlyPriceId || monthlyPriceId : monthlyPriceId;
+    const priceId = useYearly ? yearlyPriceId : monthlyPriceId;
 
     const lineItems = priceId
       ? [{ price: priceId, quantity: 1 }]
@@ -99,6 +99,7 @@ export async function POST(request: Request) {
       path: "/api/stripe/checkout",
       props: {
         hasPriceId: Boolean(priceId),
+        interval: useYearly ? "yearly" : "monthly",
         plan: "pro",
       },
     });

@@ -23,7 +23,7 @@ export function Pricing() {
         body: JSON.stringify({ interval: yearly ? "yearly" : "monthly" }),
       });
       if (res.status === 401) {
-        router.push("/signup?next=upgrade");
+        router.push(`/signup?next=upgrade&interval=${yearly ? "yearly" : "monthly"}`);
         return;
       }
       const data = await res.json().catch(() => null);
@@ -31,9 +31,9 @@ export function Pricing() {
         window.location.href = data.url;
         return;
       }
-      router.push("/signup?next=upgrade");
+      router.push(`/signup?next=upgrade&interval=${yearly ? "yearly" : "monthly"}`);
     } catch {
-      router.push("/signup?next=upgrade");
+      router.push(`/signup?next=upgrade&interval=${yearly ? "yearly" : "monthly"}`);
     } finally {
       setProLoading(false);
     }

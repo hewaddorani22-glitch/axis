@@ -18,6 +18,7 @@ export async function sendEmailOtpEmail(
   code: string,
   options?: {
     mode?: "login" | "signup" | "auto";
+    locale?: "de" | "en";
   }
 ) {
   if (!resend) {
@@ -25,41 +26,55 @@ export async function sendEmailOtpEmail(
   }
 
   const mode = options?.mode ?? "auto";
-  const heading =
-    mode === "login"
-      ? "Dein Lomoura Login-Code"
-      : "Dein Lomoura Code";
-  const body =
-    mode === "login"
-      ? "Gib diesen Code in Lomoura ein, um dich anzumelden."
-      : "Gib diesen Code in Lomoura ein, um dein Konto zu bestaetigen und weiterzumachen.";
+  const locale = options?.locale === "en" ? "en" : "de";
+  const copy = {
+    de: {
+      heading: mode === "login" ? "Dein Lomoura Login-Code" : "Dein Lomoura Code",
+      body:
+        mode === "login"
+          ? "Gib diesen Code in Lomoura ein, um dich anzumelden."
+          : "Gib diesen Code in Lomoura ein, um dein Konto zu bestaetigen und weiterzumachen.",
+      label: "DEIN CODE",
+      ignore: "Wenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.",
+    },
+    en: {
+      heading: mode === "login" ? "Your Lomoura login code" : "Your Lomoura code",
+      body:
+        mode === "login"
+          ? "Enter this code in Lomoura to sign in."
+          : "Enter this code in Lomoura to confirm your account and continue.",
+      label: "YOUR CODE",
+      ignore: "If you did not request this, you can safely ignore this email.",
+    },
+  }[locale];
 
   const { data, error } = await resend.emails.send({
     from: FROM_EMAIL,
     to,
-    subject: `${heading}: ${code}`,
+    subject: `${copy.heading}: ${code}`,
     tags: [
       { name: "category", value: "auth_otp" },
       { name: "mode", value: mode },
+      { name: "locale", value: locale },
     ],
-    text: `${heading}\n\n${body}\n\n${code}\n\nWenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.`,
+    text: `${copy.heading}\n\n${copy.body}\n\n${code}\n\n${copy.ignore}`,
     html: `
       <div style="font-family: 'Outfit', sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px;">
         <div style="text-align: center; margin-bottom: 32px;">
           <strong style="font-size: 18px;">lomoura</strong>
         </div>
-        <h1 style="font-size: 24px; margin-bottom: 12px;">${heading}</h1>
+        <h1 style="font-size: 24px; margin-bottom: 12px;">${copy.heading}</h1>
         <p style="color: #52525B; line-height: 1.6; margin-bottom: 24px;">
-          ${body}
+          ${copy.body}
         </p>
         <div style="margin: 0 0 24px; padding: 20px; border-radius: 16px; border: 1px solid #E4E4E7; background: #FAFAFA; text-align: center;">
-          <div style="font-size: 13px; letter-spacing: 0.12em; color: #71717A; margin-bottom: 10px;">DEIN CODE</div>
+          <div style="font-size: 13px; letter-spacing: 0.12em; color: #71717A; margin-bottom: 10px;">${copy.label}</div>
           <div style="font-size: 36px; line-height: 1; font-weight: 800; letter-spacing: 0.24em; color: #0B0B0F; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
             ${code}
           </div>
         </div>
         <p style="color: #71717A; line-height: 1.6; font-size: 13px; margin-bottom: 0;">
-          Wenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.
+          ${copy.ignore}
         </p>
       </div>
     `,

@@ -175,6 +175,12 @@ export async function GET(request: Request) {
   if (!profile || !profile.onboarding_done) {
     const onboardingUrl = new URL("/onboarding", `${appUrl}/`);
     if (inviteId) onboardingUrl.searchParams.set("invite", inviteId);
+    if (next.includes("next=upgrade") || next.includes("upgrade=1")) {
+      onboardingUrl.searchParams.set("next", "upgrade");
+      if (next.includes("interval=yearly")) {
+        onboardingUrl.searchParams.set("interval", "yearly");
+      }
+    }
     response.headers.set("Location", onboardingUrl.toString());
   }
 

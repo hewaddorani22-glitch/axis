@@ -16,23 +16,36 @@ export async function GET() {
     .from("users")
     .select("plan, name, email")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (profile?.plan !== "pro") {
+  if (!profile) {
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  if (profile.plan !== "pro") {
     return NextResponse.json({ error: "Pro plan required" }, { status: 403 });
   }
 
   // Fetch all user data in parallel
   const [missionsRes, habitsRes, habitLogsRes, streamsRes, entriesRes, goalsRes, objectivesRes, reviewsRes] =
     await Promise.all([
-      supabase.from("missions").select("*").order("date", { ascending: false }),
-      supabase.from("habits").select("*").eq("archived", false),
-      supabase.from("habit_logs").select("*").eq("completed", true).order("date", { ascending: false }),
-      supabase.from("revenue_streams").select("*"),
-      supabase.from("revenue_entries").select("*, revenue_streams(name)").order("date", { ascending: false }),
-      supabase.from("goals").select("*"),
-      supabase.from("objectives").select("*"),
-      supabase.from("weekly_reviews").select("*").order("week_start", { ascending: false }),
+      supabase.from("missions").select("*").eq("user_id", user.id).order("date", { ascending: false }),
+      supabase.from("habits").select("*").eq("user_id", user.id).eq("archived", false),
+      supabase
+        .from("habit_logs")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("completed", true)
+        .order("date", { ascending: false }),
+      supabase.from("revenue_streams").select("*").eq("user_id", user.id),
+      supabase
+        .from("revenue_entries")
+        .select("*, revenue_streams(name)")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false }),
+      supabase.from("goals").select("*").eq("user_id", user.id),
+      supabase.from("objectives").select("*").eq("user_id", user.id),
+      supabase.from("weekly_reviews").select("*").eq("user_id", user.id).order("week_start", { ascending: false }),
     ]);
 
   const missions = missionsRes.data || [];

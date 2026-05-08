@@ -167,7 +167,7 @@ function StartFunnel() {
     const response = await fetch("/api/auth/email-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, mode: "auto" }),
+      body: JSON.stringify({ email, mode: "auto", locale }),
     });
     const data = await response.json().catch(() => null);
     setAuthLoading(false);
@@ -644,7 +644,7 @@ function DashboardPreview({
   const { t } = useLocale();
   const mission = suggestFirstMission(goal, locale);
   const stats = [
-    { label: locale === "de" ? "MTD UMSATZ" : "MTD REVENUE", value: "$0", change: "—", color: "text-axis-accent" },
+    { label: locale === "de" ? "MTD UMSATZ" : "MTD REVENUE", value: "0 €", change: "—", color: "text-axis-accent" },
     { label: locale === "de" ? "MISSIONEN" : "MISSIONS", value: "0/1", change: "0%", color: "text-emerald-500" },
     { label: t("preview.streak"), value: `1 ${t("preview.streak.unit")}`, change: locale === "de" ? "Neu!" : "New!", color: "text-orange-500" },
     { label: t("preview.focus"), value: "—", change: locale === "de" ? "Bald" : "Soon", color: "text-axis-text2" },

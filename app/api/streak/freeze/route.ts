@@ -10,9 +10,13 @@ export async function POST() {
     .from("users")
     .select("plan")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (profile?.plan !== "pro") {
+  if (!profile) {
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  if (profile.plan !== "pro") {
     return NextResponse.json({ error: "Pro plan required" }, { status: 403 });
   }
 
@@ -25,7 +29,7 @@ export async function POST() {
     .select("id")
     .eq("user_id", user.id)
     .eq("month", month)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     return NextResponse.json({ error: "Already used this month" }, { status: 409 });

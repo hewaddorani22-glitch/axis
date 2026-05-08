@@ -41,9 +41,13 @@ export async function POST(request: Request) {
 
   // Get the sender's name and the recipient's email
   const [senderRes, recipientRes] = await Promise.all([
-    admin.from("users").select("name, email").eq("id", user.id).single(),
-    admin.from("users").select("name, email").eq("id", toUserId).single(),
+    admin.from("users").select("name, email").eq("id", user.id).maybeSingle(),
+    admin.from("users").select("name, email").eq("id", toUserId).maybeSingle(),
   ]);
+
+  if (!senderRes.data || !recipientRes.data) {
+    return NextResponse.json({ error: "User profile not found" }, { status: 404 });
+  }
 
   const senderName = senderRes.data?.name || senderRes.data?.email?.split("@")[0] || "Your partner";
   const recipientEmail = recipientRes.data?.email;

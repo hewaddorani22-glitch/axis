@@ -1,7 +1,46 @@
+"use client";
+
 import Link from "next/link";
 import { SUPPORT_MAILTO } from "@/lib/support";
+import { useLocale } from "@/lib/i18n/provider";
+
+const COPY = {
+  de: {
+    body: "Plane deinen Tag mit Aufgaben, Habits, Zielen und Umsatz an einem Ort.",
+    product: "Produkt",
+    features: "Features",
+    pricing: "Preise",
+    login: "Anmelden",
+    signup: "Registrieren",
+    resources: "Ressourcen",
+    support: "Support",
+    contact: "Kontakt",
+    legal: "Rechtliches",
+    privacy: "Datenschutz",
+    terms: "AGB",
+    rights: "Alle Rechte vorbehalten.",
+  },
+  en: {
+    body: "Plan your day with tasks, habits, goals, and revenue in one place.",
+    product: "Product",
+    features: "Features",
+    pricing: "Pricing",
+    login: "Log in",
+    signup: "Sign up",
+    resources: "Resources",
+    support: "Support",
+    contact: "Contact",
+    legal: "Legal",
+    privacy: "Privacy",
+    terms: "Terms",
+    rights: "All rights reserved.",
+  },
+};
 
 export function Footer() {
+  const { locale } = useLocale();
+  const copy = COPY[locale === "en" ? "en" : "de"];
+
   return (
     <footer className="bg-axis-bg border-t border-axis-border">
       <div className="max-w-7xl mx-auto px-4 py-14 sm:px-6 sm:py-16">
@@ -17,44 +56,44 @@ export function Footer() {
               <span className="text-base font-bold tracking-tight">lomoura</span>
             </div>
             <p className="text-sm text-axis-text3 leading-relaxed max-w-sm md:max-w-[240px]">
-              Plan your day with tasks, habits, goals, and revenue in one place.
+              {copy.body}
             </p>
           </div>
 
           {/* Product */}
           <div>
-            <h4 className="text-sm font-semibold mb-4">Product</h4>
+            <h4 className="text-sm font-semibold mb-4">{copy.product}</h4>
             <ul className="space-y-3">
-              <li><a href="#features" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Features</a></li>
-              <li><a href="#pricing" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Pricing</a></li>
-              <li><Link href="/login" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Log in</Link></li>
-              <li><Link href="/start" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Sign up</Link></li>
+              <li><a href="#features" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">{copy.features}</a></li>
+              <li><a href="#pricing" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">{copy.pricing}</a></li>
+              <li><Link href="/login" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">{copy.login}</Link></li>
+              <li><Link href="/start" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">{copy.signup}</Link></li>
             </ul>
           </div>
 
           {/* Resources */}
           <div>
-            <h4 className="text-sm font-semibold mb-4">Resources</h4>
+            <h4 className="text-sm font-semibold mb-4">{copy.resources}</h4>
             <ul className="space-y-3">
-              <li><Link href="/support" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Support</Link></li>
-              <li><a href={SUPPORT_MAILTO} className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Contact</a></li>
+              <li><Link href="/support" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">{copy.support}</Link></li>
+              <li><a href={SUPPORT_MAILTO} className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">{copy.contact}</a></li>
               <li><a href="#faq" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">FAQ</a></li>
             </ul>
           </div>
 
           {/* Legal */}
           <div>
-            <h4 className="text-sm font-semibold mb-4">Legal</h4>
+            <h4 className="text-sm font-semibold mb-4">{copy.legal}</h4>
             <ul className="space-y-3">
-              <li><Link href="/privacy" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Privacy</Link></li>
-              <li><Link href="/terms" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Terms</Link></li>
+              <li><Link href="/privacy" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">{copy.privacy}</Link></li>
+              <li><Link href="/terms" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">{copy.terms}</Link></li>
             </ul>
           </div>
         </div>
 
         {/* Bottom */}
         <div className="pt-8 border-t border-axis-border flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-axis-text3">© 2026 lomoura. All rights reserved.</p>
+          <p className="text-xs text-axis-text3">© 2026 lomoura. {copy.rights}</p>
           <div className="flex items-center gap-5">
             <a href="https://twitter.com/lomoura" target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="text-axis-text3 hover:text-axis-text1 transition-colors">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>

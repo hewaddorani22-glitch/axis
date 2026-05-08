@@ -68,7 +68,7 @@ export function WelcomeCeremony({ name }: { name: string }) {
               exit={{ y: 12, scale: 0.98, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-md rounded-3xl bg-axis-bg p-8 text-center shadow-2xl border border-axis-border"
+              className="relative w-full max-w-md rounded-3xl bg-white p-8 text-center text-axis-text1 shadow-2xl border border-axis-border"
             >
               <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-axis-accent/30 px-3 py-1 text-[11px] font-mono font-medium text-axis-text1">
                 <span className="relative flex h-2 w-2">
@@ -77,7 +77,7 @@ export function WelcomeCeremony({ name }: { name: string }) {
                 </span>
                 {copy.badge}
               </div>
-              <h2 className="text-2xl font-bold tracking-tight mb-3 text-balance">
+              <h2 className="text-2xl font-bold tracking-tight mb-3 text-balance text-axis-text1 break-words [overflow-wrap:anywhere]">
                 {copy.title(displayName)}
               </h2>
               <p className="text-sm text-axis-text2 leading-relaxed mb-6">{copy.sub}</p>

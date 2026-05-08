@@ -5,8 +5,38 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { IconMail } from "@/components/icons";
 import { getBrowserAppUrl } from "@/lib/env";
+import { useLocale } from "@/lib/i18n/provider";
+
+const COPY = {
+  de: {
+    check: "Prüfe deine E-Mails",
+    sent: (email: string) => `Wir haben einen Passwort-Reset-Link an ${email} geschickt. Prüfe deinen Posteingang.`,
+    back: "← Zurück zum Login",
+    title: "Passwort zurücksetzen",
+    sub: "Gib deine E-Mail ein und wir senden dir einen Reset-Link.",
+    email: "E-Mail",
+    placeholder: "du@beispiel.de",
+    send: "Reset-Link senden",
+    remember: "Wieder eingefallen?",
+    login: "Anmelden",
+  },
+  en: {
+    check: "Check your email",
+    sent: (email: string) => `We sent a password reset link to ${email}. Check your inbox.`,
+    back: "← Back to login",
+    title: "Reset your password",
+    sub: "Enter your email and we'll send you a reset link.",
+    email: "Email",
+    placeholder: "you@example.com",
+    send: "Send Reset Link",
+    remember: "Remember it?",
+    login: "Log in",
+  },
+};
 
 export default function ForgotPasswordPage() {
+  const { locale } = useLocale();
+  const copy = COPY[locale === "en" ? "en" : "de"];
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -37,14 +67,12 @@ export default function ForgotPasswordPage() {
         <div className="w-16 h-16 bg-axis-accent/10 border border-axis-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <IconMail size={24} className="text-axis-accent" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Check your email</h1>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">{copy.check}</h1>
         <p className="text-sm text-axis-text2 max-w-xs mx-auto mb-6">
-          We sent a password reset link to{" "}
-          <span className="font-medium text-axis-text1">{email}</span>.
-          Check your inbox.
+          {copy.sent(email)}
         </p>
         <Link href="/login" className="text-sm text-axis-text1 font-medium hover:underline">
-          ← Back to login
+          {copy.back}
         </Link>
       </div>
     );
@@ -53,9 +81,9 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Reset your password</h1>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">{copy.title}</h1>
         <p className="text-sm text-axis-text2">
-          Enter your email and we&apos;ll send you a reset link.
+          {copy.sub}
         </p>
       </div>
 
@@ -68,12 +96,12 @@ export default function ForgotPasswordPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-xs font-medium text-axis-text2 mb-1.5">
-            Email
+            {copy.email}
           </label>
           <input
             id="email"
             type="email"
-            placeholder="you@example.com"
+            placeholder={copy.placeholder}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
@@ -90,15 +118,15 @@ export default function ForgotPasswordPage() {
           {loading ? (
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            "Send Reset Link"
+            copy.send
           )}
         </button>
       </form>
 
       <p className="text-center text-sm text-axis-text3 mt-6">
-        Remember it?{" "}
+        {copy.remember}{" "}
         <Link href="/login" className="text-axis-text1 font-medium hover:underline">
-          Log in
+          {copy.login}
         </Link>
       </p>
     </>

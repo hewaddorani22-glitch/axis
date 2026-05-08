@@ -323,7 +323,10 @@ export default function OnboardingPage() {
       });
 
       clearQuizAnswers();
-      router.push("/dashboard");
+      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const next = params?.get("next");
+      const interval = params?.get("interval") === "yearly" ? "yearly" : "monthly";
+      router.push(next === "upgrade" ? `/settings?upgrade=start&interval=${interval}` : "/dashboard");
       router.refresh();
     } catch (error: any) {
       setSaveError(error?.message || t("onb.error.save"));

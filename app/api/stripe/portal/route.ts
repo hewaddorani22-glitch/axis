@@ -17,9 +17,13 @@ export async function POST() {
       .from("users")
       .select("stripe_customer_id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (!profile?.stripe_customer_id) {
+    if (!profile) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    if (!profile.stripe_customer_id) {
       return NextResponse.json({ error: "No Stripe customer found" }, { status: 400 });
     }
 

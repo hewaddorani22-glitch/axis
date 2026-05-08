@@ -3,15 +3,106 @@
 import { useEffect, useRef, useState } from "react";
 import { useRevenue } from "@/hooks/useRevenue";
 import { useObjectives } from "@/hooks/useObjectives";
+import { useUser } from "@/hooks/useUser";
 import { formatCurrency } from "@/lib/utils";
 import { IconRevenue, IconPlus, IconSync } from "@/components/icons";
 import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { useLocale } from "@/lib/i18n/provider";
 
 const QUICK_AMOUNTS = [50, 100, 250, 500, 1000];
+const STREAM_SUGGESTIONS = ["Freelance", "Shopify", "YouTube", "Consulting", "SaaS"];
+
+const COPY = {
+  de: {
+    emptyTitle: "Tracke dein Einkommen",
+    emptyBody:
+      "Logge jeden Euro, den du verdienst: Freelance, Produkte, Abos, alles. So siehst du deine Trends und weißt, woher dein Geld kommt.",
+    how: "So funktioniert's",
+    step1: 'Erstelle eine Einnahmequelle, z. B. "Freelance", "Shopify" oder "YouTube"',
+    step2: "Logge Einkommen, sobald Geld reinkommt. Dauert 5 Sekunden.",
+    step3: "Sieh, wie dein Monatschart wächst und welche Einnahmequellen tragen.",
+    firstSource: "Name deiner ersten Einnahmequelle",
+    sourcePlaceholder: 'z. B. "Freelance Design"',
+    create: "Erstellen",
+    noTheme: "Kein Thema",
+    recurring: "Wiederkehrend",
+    monthTotal: "Monat gesamt",
+    vsLast: "vs. letzter Monat",
+    predictable: "Planbares Einkommen, das diesen Monat reinkommt.",
+    logIncome: "Einnahme loggen",
+    source: "Quelle",
+    amount: "Betrag (€)",
+    date: "Datum",
+    note: "Notiz",
+    optional: "optional",
+    notePlaceholder: "z. B. Logo-Projekt für Kunde",
+    saving: "Speichert...",
+    cancel: "Abbrechen",
+    monthlyTrend: "Monatlicher Trend",
+    income: "Einnahmen",
+    sources: "Einnahmequellen",
+    addSource: "Quelle hinzufügen",
+    sourcePlaceholderList: 'z. B. "Freelance", "Shopify", "Consulting"',
+    add: "Hinzufügen",
+    noSources: "Noch keine Einnahmequellen",
+    recent: "Letzte Einnahmen",
+    noEntries: "Noch keine Einnahmen geloggt",
+    noEntriesHint: 'Nutze Quick-Log oder klicke auf "Einnahme loggen".',
+    incomeFallback: "Einnahme",
+    delete: "Löschen",
+    freeLimit: "Free: 1 Einnahmequelle. Pro schaltet unbegrenzt viele Quellen frei.",
+    upgrade: "Upgrade auf Pro",
+    custom: "Eigener Betrag",
+  },
+  en: {
+    emptyTitle: "Track your income",
+    emptyBody:
+      "Log every euro you earn: freelance gigs, product sales, subscriptions, anything. See your monthly trends and know exactly where your money comes from.",
+    how: "How it works",
+    step1: 'Create an income source, e.g. "Freelance", "Shopify", or "YouTube"',
+    step2: "Log income whenever you get paid. It takes 5 seconds.",
+    step3: "Watch your monthly chart grow and see which streams carry you.",
+    firstSource: "Name your first income source",
+    sourcePlaceholder: 'e.g. "Freelance Design"',
+    create: "Create",
+    noTheme: "No theme",
+    recurring: "Recurring",
+    monthTotal: "Month total",
+    vsLast: "vs last",
+    predictable: "Predictable income hitting your account this month.",
+    logIncome: "Log Income",
+    source: "Source",
+    amount: "Amount (€)",
+    date: "Date",
+    note: "Note",
+    optional: "optional",
+    notePlaceholder: "e.g. Logo project for client",
+    saving: "Saving...",
+    cancel: "Cancel",
+    monthlyTrend: "Monthly Trend",
+    income: "Income",
+    sources: "Income Sources",
+    addSource: "Add Source",
+    sourcePlaceholderList: 'e.g. "Freelance", "Shopify", "Consulting"',
+    add: "Add",
+    noSources: "No income sources yet",
+    recent: "Recent Income",
+    noEntries: "No income logged yet",
+    noEntriesHint: 'Use Quick Log above or click "Log Income" to add your first entry.',
+    incomeFallback: "Income",
+    delete: "Delete",
+    freeLimit: "Free: 1 income source. Pro unlocks unlimited streams.",
+    upgrade: "Upgrade to Pro",
+    custom: "Custom",
+  },
+};
 
 export default function RevenuePage() {
   const { streams, entries, loading, addStream, addEntry, mtdTotal, mrrTotal, streamTotals, monthlyTotals, deleteEntry } = useRevenue();
+  const { user } = useUser();
+  const { locale } = useLocale();
+  const copy = COPY[locale === "en" ? "en" : "de"];
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [showAddStream, setShowAddStream] = useState(false);
   const [entryStreamId, setEntryStreamId] = useState("");
@@ -89,6 +180,7 @@ export default function RevenuePage() {
   const grandTotal = streamTotals.reduce((sum, s) => sum + s.total, 0);
   const lastMonth = monthlyTotals.length >= 2 ? monthlyTotals[monthlyTotals.length - 2].total : 0;
   const growthPct = lastMonth > 0 ? Math.round(((mtdTotal - lastMonth) / lastMonth) * 100) : 0;
+  const isFreeAtStreamLimit = Boolean(user) && user?.plan !== "pro" && streams.length >= 1;
 
   const Skeleton = ({ className = "" }: { className?: string }) => (
     <div className={`axis-skeleton ${className}`} />
@@ -113,37 +205,36 @@ export default function RevenuePage() {
             <IconRevenue size={32} className="text-axis-accent" />
           </div>
           <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-            Track Your Income
+            {copy.emptyTitle}
           </h2>
           <p className="text-sm mb-6 max-w-md mx-auto" style={{ color: "var(--text-tertiary)" }}>
-            Log every dollar you earn: freelance gigs, product sales, subscriptions, anything.
-            See your monthly trends and know exactly where your money comes from.
+            {copy.emptyBody}
           </p>
 
           <div className="max-w-sm mx-auto space-y-3 mb-8 text-left">
-            <p className="text-xs font-mono uppercase tracking-wider mb-3" style={{ color: "var(--text-tertiary)" }}>How it works</p>
+            <p className="text-xs font-mono uppercase tracking-wider mb-3" style={{ color: "var(--text-tertiary)" }}>{copy.how}</p>
             <div className="flex items-start gap-3">
               <span className="text-xs font-bold bg-axis-accent text-axis-dark w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Create an income source (e.g. "Freelance", "Shopify", "YouTube")</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{copy.step1}</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xs font-bold bg-axis-accent text-axis-dark w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Log income whenever you get paid: takes 5 seconds</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{copy.step2}</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-xs font-bold bg-axis-accent text-axis-dark w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Watch your monthly chart grow and pace against your revenue themes</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{copy.step3}</p>
             </div>
           </div>
 
           <div className="max-w-sm mx-auto">
-            <p className="text-xs font-mono mb-2" style={{ color: "var(--text-tertiary)" }}>Name your first income source</p>
+            <p className="text-xs font-mono mb-2" style={{ color: "var(--text-tertiary)" }}>{copy.firstSource}</p>
             <div className="space-y-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   ref={streamNameRef}
                   type="text"
-                  placeholder='e.g. "Freelance Design"'
+                  placeholder={copy.sourcePlaceholder}
                   value={newStreamName}
                   onChange={(e) => setNewStreamName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddStream()}
@@ -156,7 +247,7 @@ export default function RevenuePage() {
                   disabled={!newStreamName.trim()}
                   className="w-full bg-axis-accent text-axis-dark text-sm font-semibold px-5 py-3 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-40 sm:w-auto"
                 >
-                  Create
+                  {copy.create}
                 </button>
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -166,7 +257,7 @@ export default function RevenuePage() {
                   className="w-full text-xs font-mono rounded-xl px-3 py-2.5 outline-none"
                   style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
                 >
-                  <option value="">No theme</option>
+                  <option value="">{copy.noTheme}</option>
                   {objectives.map((objective) => (
                     <option key={objective.id} value={objective.id}>
                       {objective.title}
@@ -179,12 +270,12 @@ export default function RevenuePage() {
                     checked={isNewStreamRecurring}
                     onChange={(e) => setIsNewStreamRecurring(e.target.checked)}
                   />
-                  Recurring
+                  {copy.recurring}
                 </label>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
-              {["Freelance", "Shopify", "YouTube", "Consulting", "SaaS"].map((s) => (
+              {STREAM_SUGGESTIONS.map((s) => (
                 <button
                   key={s}
                   onClick={() => setNewStreamName(s)}
@@ -211,13 +302,13 @@ export default function RevenuePage() {
             <div className="flex items-center gap-2">
               <IconRevenue size={16} className="text-emerald-500" />
               <span className="text-[10px] font-mono font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
-                {new Date().toLocaleString("en", { month: "long" })} Total
+                {new Date().toLocaleString(locale === "de" ? "de-DE" : "en", { month: "long" })} {copy.monthTotal}
               </span>
             </div>
             {lastMonth > 0 && (
               <span className={`text-xs font-mono font-medium px-2 py-0.5 rounded-md ${growthPct >= 0 ? "text-emerald-500" : "text-red-400"}`}
                 style={{ backgroundColor: growthPct >= 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)" }}>
-                {growthPct >= 0 ? "+" : ""}{growthPct}% vs last
+                {growthPct >= 0 ? "+" : ""}{growthPct}% {copy.vsLast}
               </span>
             )}
           </div>
@@ -234,14 +325,14 @@ export default function RevenuePage() {
                     className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all hover:ring-1 hover:ring-axis-accent/30 disabled:opacity-50"
                     style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
                   >
-                    +${amt}
+                    +{formatCurrency(amt)}
                   </button>
                 ))}
                 <button
                   onClick={openAddEntry}
                   className="text-xs font-semibold text-axis-accent px-3 py-1.5 rounded-lg transition-all hover:underline flex items-center gap-1"
                 >
-                  <IconPlus size={12} /> Custom
+                  <IconPlus size={12} /> {copy.custom}
                 </button>
               </div>
             </div>
@@ -254,14 +345,14 @@ export default function RevenuePage() {
             <div className="flex items-center gap-2">
               <span className="text-blue-500"><IconSync size={18} /></span>
               <span className="text-[10px] font-mono font-medium uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
-                MRR (Monthly Recurring)
+                MRR
               </span>
             </div>
           </div>
           <span className="text-3xl font-bold text-blue-500 sm:text-4xl">{formatCurrency(mrrTotal)}</span>
           
           <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border-primary)" }}>
-             <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Predictable income hitting your account this month.</p>
+             <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{copy.predictable}</p>
           </div>
         </div>
       </div>
@@ -269,11 +360,11 @@ export default function RevenuePage() {
       {/* Add Entry Form */}
       {showAddEntry && streams.length > 0 && (
         <div className="axis-card !border-axis-accent/20">
-          <h3 className="text-sm font-semibold mb-4">Log Income</h3>
+          <h3 className="text-sm font-semibold mb-4">{copy.logIncome}</h3>
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Source</label>
+                <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>{copy.source}</label>
                 <select
                   value={entryStreamId}
                   onChange={(e) => setEntryStreamId(e.target.value)}
@@ -284,7 +375,7 @@ export default function RevenuePage() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Amount ($)</label>
+                <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>{copy.amount}</label>
                 <input
                   ref={entryAmountRef}
                   type="number"
@@ -299,7 +390,7 @@ export default function RevenuePage() {
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Date</label>
+                <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>{copy.date}</label>
                 <input
                   type="date"
                   value={entryDate}
@@ -309,10 +400,10 @@ export default function RevenuePage() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>Note <span style={{ color: "var(--text-tertiary)" }}>(optional)</span></label>
+                <label className="text-[10px] font-mono block mb-1.5" style={{ color: "var(--text-tertiary)" }}>{copy.note} <span style={{ color: "var(--text-tertiary)" }}>({copy.optional})</span></label>
                 <input
                   type="text"
-                  placeholder="e.g. Logo project for client"
+                  placeholder={copy.notePlaceholder}
                   value={entryNote}
                   onChange={(e) => setEntryNote(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddEntry()}
@@ -327,14 +418,14 @@ export default function RevenuePage() {
                 disabled={!entryAmount || saving}
                 className="w-full bg-axis-accent text-axis-dark text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-50 sm:w-auto"
               >
-                {saving ? "Saving..." : "Log Income"}
+                {saving ? copy.saving : copy.logIncome}
               </button>
               <button
                 onClick={() => setShowAddEntry(false)}
                 className="w-full text-sm px-4 py-2.5 rounded-xl transition-colors sm:w-auto"
                 style={{ color: "var(--text-tertiary)" }}
               >
-                Cancel
+                {copy.cancel}
               </button>
             </div>
           </div>
@@ -344,7 +435,7 @@ export default function RevenuePage() {
       {/* Monthly Chart */}
       {entries.length > 0 && (
         <div className="axis-card">
-          <h3 className="text-sm font-semibold mb-4">Monthly Trend</h3>
+          <h3 className="text-sm font-semibold mb-4">{copy.monthlyTrend}</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyTotals} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -358,7 +449,7 @@ export default function RevenuePage() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 10, fontFamily: "monospace", fill: "var(--text-tertiary)" }}
-                  tickFormatter={(v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
+                  tickFormatter={(v: number) => v >= 1000 ? `€${(v / 1000).toFixed(0)}k` : `€${v}`}
                 />
                 <Tooltip
                   cursor={{ fill: "var(--bg-hover)", radius: 8 }}
@@ -369,7 +460,7 @@ export default function RevenuePage() {
                     fontSize: 13,
                     color: "var(--text-primary)",
                   }}
-                  formatter={(value: number) => [formatCurrency(value), "Income"]}
+                  formatter={(value: number) => [formatCurrency(value), copy.income]}
                   labelStyle={{ color: "var(--text-tertiary)", fontSize: 11, fontFamily: "monospace" }}
                 />
                 <Bar dataKey="total" fill="#CDFF4F" radius={[6, 6, 0, 0]} maxBarSize={40} />
@@ -382,21 +473,32 @@ export default function RevenuePage() {
       {/* Income Sources */}
       <div className="axis-card">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-sm font-semibold">Income Sources</h3>
+          <h3 className="text-sm font-semibold">{copy.sources}</h3>
           <button
             onClick={() => setShowAddStream(!showAddStream)}
+            disabled={isFreeAtStreamLimit && !showAddStream}
             className="text-xs font-semibold text-axis-accent hover:underline flex items-center gap-1"
           >
-            <IconPlus size={12} /> Add Source
+            <IconPlus size={12} /> {copy.addSource}
           </button>
         </div>
+        {isFreeAtStreamLimit && (
+          <div className="mb-4 rounded-xl border border-axis-accent/25 bg-axis-accent/5 px-3 py-2">
+            <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              {copy.freeLimit}{" "}
+              <Link href="/settings" className="font-semibold text-axis-accent hover:underline">
+                {copy.upgrade}
+              </Link>
+            </p>
+          </div>
+        )}
         {showAddStream && (
           <div className="mb-4 space-y-3 rounded-xl p-3" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 ref={streamNameRef}
                 type="text"
-                placeholder='e.g. "Freelance", "Shopify", "Consulting"'
+                placeholder={copy.sourcePlaceholderList}
                 value={newStreamName}
                 onChange={(e) => setNewStreamName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddStream()}
@@ -404,7 +506,7 @@ export default function RevenuePage() {
                 style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
                 autoFocus
               />
-              <button onClick={handleAddStream} disabled={!newStreamName.trim()} className="w-full bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-40 sm:w-auto">Add</button>
+              <button onClick={handleAddStream} disabled={!newStreamName.trim() || isFreeAtStreamLimit} className="w-full bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-40 sm:w-auto">{copy.add}</button>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
               <select
@@ -413,7 +515,7 @@ export default function RevenuePage() {
                 className="w-full text-xs font-mono rounded-lg px-3 py-2 outline-none"
                 style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
               >
-                <option value="">No theme</option>
+                <option value="">{copy.noTheme}</option>
                 {objectives.map((objective) => (
                   <option key={objective.id} value={objective.id}>
                     {objective.title}
@@ -426,14 +528,14 @@ export default function RevenuePage() {
                   checked={isNewStreamRecurring}
                   onChange={(e) => setIsNewStreamRecurring(e.target.checked)}
                 />
-                Recurring
+                {copy.recurring}
               </label>
             </div>
           </div>
         )}
         {streams.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>No income sources yet</p>
+            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{copy.noSources}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -466,18 +568,18 @@ export default function RevenuePage() {
       {/* Recent Income */}
       <div className="axis-card">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-sm font-semibold">Recent Income</h3>
+          <h3 className="text-sm font-semibold">{copy.recent}</h3>
           <button
             onClick={openAddEntry}
             className="flex shrink-0 items-center gap-1 rounded-lg bg-axis-accent px-4 py-2 text-xs font-semibold text-axis-dark transition-all hover:bg-axis-accent/90"
           >
-            <IconPlus size={12} /> Log Income
+            <IconPlus size={12} /> {copy.logIncome}
           </button>
         </div>
         {entries.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm mb-1" style={{ color: "var(--text-tertiary)" }}>No income logged yet</p>
-            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Use Quick Log above or click "Log Income" to add your first entry</p>
+            <p className="text-sm mb-1" style={{ color: "var(--text-tertiary)" }}>{copy.noEntries}</p>
+            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{copy.noEntriesHint}</p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -492,7 +594,7 @@ export default function RevenuePage() {
                 >
                   <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: stream?.color || "#CDFF4F" }} />
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm" style={{ color: "var(--text-secondary)" }}>{e.note || stream?.name || "Income"}</p>
+                    <p className="truncate text-sm" style={{ color: "var(--text-secondary)" }}>{e.note || stream?.name || copy.incomeFallback}</p>
                     <p className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
                       {stream?.name && e.note ? `${stream.name} / ` : ""}{e.date}
                     </p>
@@ -503,7 +605,7 @@ export default function RevenuePage() {
                       onClick={() => deleteEntry(e.id)}
                       className="text-xs opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                       style={{ color: "var(--text-tertiary)" }}
-                      title="Delete"
+                      title={copy.delete}
                     >
                       x
                     </button>
@@ -517,7 +619,7 @@ export default function RevenuePage() {
 
       <div className="rounded-xl p-4 text-center" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}>
         <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-          {streams.length}/1 income source / <Link href="/settings" className="text-axis-accent hover:underline">Upgrade to Pro</Link> for unlimited
+          {streams.length}/1 {copy.sources.toLowerCase()} / <Link href="/settings" className="text-axis-accent hover:underline">{copy.upgrade}</Link>
         </p>
       </div>
     </div>

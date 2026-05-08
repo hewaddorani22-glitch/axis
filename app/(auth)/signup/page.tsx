@@ -10,7 +10,7 @@ import { trackEvent } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/provider";
 
 function SignupForm() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -20,6 +20,8 @@ function SignupForm() {
   const [error, setError] = useState("");
   const searchParams = useSearchParams();
   const inviteId = searchParams.get("invite"); // Partner invite
+  const nextParam = searchParams.get("next");
+  const intervalParam = searchParams.get("interval") === "yearly" ? "yearly" : "monthly";
   const supabase = createClient();
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -35,6 +37,7 @@ function SignupForm() {
         email,
         name,
         mode: "signup",
+        locale,
       }),
     });
     const data = await response.json().catch(() => null);
@@ -72,7 +75,10 @@ function SignupForm() {
     }
 
     const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
-    callbackUrl.searchParams.set("next", "/onboarding");
+    callbackUrl.searchParams.set(
+      "next",
+      nextParam === "upgrade" ? `/onboarding?next=upgrade&interval=${intervalParam}` : "/onboarding"
+    );
     if (inviteId) callbackUrl.searchParams.set("invite", inviteId);
     window.location.assign(callbackUrl.toString());
   };
@@ -80,7 +86,10 @@ function SignupForm() {
   const handleGoogleSignup = async () => {
     trackEvent("signup_started", { method: "google", source: "signup_page" });
     const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
-    callbackUrl.searchParams.set("next", "/onboarding");
+    callbackUrl.searchParams.set(
+      "next",
+      nextParam === "upgrade" ? `/onboarding?next=upgrade&interval=${intervalParam}` : "/onboarding"
+    );
     if (inviteId) callbackUrl.searchParams.set("invite", inviteId);
 
     await supabase.auth.signInWithOAuth({

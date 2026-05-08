@@ -123,7 +123,7 @@ export function useHabits() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).maybeSingle();
     if (profile?.plan === "free" && habits.length >= 3) {
       const isDe = typeof document !== "undefined" && document.documentElement.lang === "de";
       toast.error(

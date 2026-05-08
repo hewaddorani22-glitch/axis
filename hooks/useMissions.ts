@@ -53,9 +53,14 @@ export function useMissions(date?: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).maybeSingle();
     if (profile?.plan === "free" && missions.length >= 5) {
-      toast.error("Free plan limit reached", { description: "5 daily missions maximum. Upgrade to Pro in Settings to unlock unlimited missions." });
+      const isDe = typeof document !== "undefined" && document.documentElement.lang === "de";
+      toast.error(isDe ? "Free-Plan-Limit erreicht" : "Free plan limit reached", {
+        description: isDe
+          ? "Maximal 5 Missionen pro Tag. Upgrade auf Pro in den Einstellungen fuer unbegrenzte Missionen."
+          : "5 daily missions maximum. Upgrade to Pro in Settings to unlock unlimited missions.",
+      });
       openUpgradePrompt({ source: "mission_limit" });
       return;
     }

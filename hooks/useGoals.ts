@@ -41,7 +41,7 @@ export function useGoals() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).maybeSingle();
     if (profile?.plan === "free" && goals.length >= 2) {
       alert("Free plan limit reached: 2 goals maximum. Upgrade to Pro in Settings to unlock unlimited goals.");
       return;

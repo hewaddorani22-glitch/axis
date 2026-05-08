@@ -9,6 +9,7 @@ import { useHabits } from "@/hooks/useHabits";
 import { calculateFocusScore } from "@/lib/scoring";
 import { IconPartners, IconNudge, IconCheck, IconWarning, IconStreak } from "@/components/icons";
 import { getBrowserAppUrl } from "@/lib/env";
+import { useLocale } from "@/lib/i18n/provider";
 
 interface PartnerStats {
   missionsCompleted: number;
@@ -30,38 +31,92 @@ function getStatusFromStats(stats: PartnerStats | undefined, lastActive: string 
   return "solid";
 }
 
-function getLastActiveLabel(lastActive: string | null): string {
-  if (!lastActive) return "Never";
+function getLastActiveLabel(lastActive: string | null, locale: "de" | "en"): string {
+  if (!lastActive) return locale === "de" ? "Nie" : "Never";
   const today = new Date().toISOString().split("T")[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-  if (lastActive === today) return "Today";
-  if (lastActive === yesterday) return "Yesterday";
+  if (lastActive === today) return locale === "de" ? "Heute" : "Today";
+  if (lastActive === yesterday) return locale === "de" ? "Gestern" : "Yesterday";
   const daysSince = Math.floor((Date.now() - new Date(lastActive).getTime()) / 86400000);
-  return `${daysSince} days ago`;
+  return locale === "de" ? `vor ${daysSince} Tagen` : `${daysSince} days ago`;
 }
 
-const statusConfig = {
+function getStatusConfig(locale: "de" | "en") {
+  return {
   onfire: {
-    label: "On fire",
+    label: locale === "de" ? "On fire" : "On fire",
     color: "text-orange-500",
     bg: "bg-orange-500/10",
     icon: <IconStreak size={12} className="text-orange-500" />,
   },
   solid: {
-    label: "Solid",
+    label: locale === "de" ? "Stabil" : "Solid",
     color: "text-emerald-500",
     bg: "bg-emerald-500/10",
     icon: <IconCheck size={12} className="text-emerald-500" />,
   },
   falling: {
-    label: "Falling off",
+    label: locale === "de" ? "Rutscht ab" : "Falling off",
     color: "text-red-500",
     bg: "bg-red-500/10",
     icon: <IconWarning size={12} className="text-red-500" />,
   },
+  };
+}
+
+const COPY = {
+  de: {
+    pending: (n: number) => `${n} offene Einladung${n > 1 ? "en" : ""}`,
+    wantsPartner: (name: string) => `${name} will dein Accountability-Partner werden`,
+    accept: "Annehmen",
+    lastActive: "Zuletzt aktiv",
+    grade: "GRADE",
+    streak: "STREAK",
+    focus: "FOKUS",
+    youVs: (name: string) => `Du vs. ${name}`,
+    missionsToday: "Missionen heute",
+    habitsToday: "Habits heute",
+    focusScore: "Fokus-Score",
+    you: "Du",
+    nudgeSent: "Nudge gesendet!",
+    sending: "Sendet...",
+    sendNudge: "Nudge senden",
+    inviteTitle: "Partner einladen",
+    inviteBody: "Teile deinen Einladungslink. Nach der Registrierung seid ihr automatisch verbunden.",
+    loading: "Lädt...",
+    copied: "Kopiert!",
+    copy: "Einladungslink kopieren",
+    empty: "Noch keine Partner. Teile deinen Einladungslink, um zu starten.",
+  },
+  en: {
+    pending: (n: number) => `${n} pending invite${n > 1 ? "s" : ""}`,
+    wantsPartner: (name: string) => `${name} wants to partner with you`,
+    accept: "Accept",
+    lastActive: "Last active",
+    grade: "GRADE",
+    streak: "STREAK",
+    focus: "FOCUS",
+    youVs: (name: string) => `You vs ${name}`,
+    missionsToday: "Missions Today",
+    habitsToday: "Habits Today",
+    focusScore: "Focus Score",
+    you: "You",
+    nudgeSent: "Nudge sent!",
+    sending: "Sending...",
+    sendNudge: "Send Nudge",
+    inviteTitle: "Invite a Partner",
+    inviteBody: "Share your invite link. When they sign up, you're automatically connected.",
+    loading: "Loading...",
+    copied: "Copied!",
+    copy: "Copy Invite Link",
+    empty: "No partners yet. Share your invite link to get started.",
+  },
 };
 
 export default function PartnersPage() {
+  const { locale } = useLocale();
+  const copy = COPY[locale === "en" ? "en" : "de"];
+  const statusConfig = getStatusConfig(locale);
   const { user } = useUser();
   const { partners, loading, sendNudge, refetch } = usePartners();
   const { streak: myStreak } = useStreak();
@@ -132,12 +187,12 @@ export default function PartnersPage() {
       {pendingPartners.length > 0 && (
         <div className="rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5">
           <p className="text-sm font-semibold text-amber-500 mb-1">
-            {pendingPartners.length} pending invite{pendingPartners.length > 1 ? "s" : ""}
+            {copy.pending(pendingPartners.length)}
           </p>
           {pendingPartners.map((p) => (
             <div key={p.id} className="flex flex-col gap-2 mt-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                {p.name} wants to partner with you
+                {copy.wantsPartner(p.name)}
               </p>
               <button
                 onClick={async () => {
@@ -151,7 +206,7 @@ export default function PartnersPage() {
                 }}
                 className="text-xs font-semibold text-axis-accent hover:underline"
               >
-                Accept
+                {copy.accept}
               </button>
             </div>
           ))}
@@ -196,7 +251,7 @@ export default function PartnersPage() {
                       </span>
                     </div>
                     <p className="text-xs font-mono mt-0.5" style={{ color: "var(--text-tertiary)" }}>
-                      Last active {statsLoading ? "..." : getLastActiveLabel(stats?.lastActive ?? null)}
+                      {copy.lastActive} {statsLoading ? "..." : getLastActiveLabel(stats?.lastActive ?? null, locale)}
                     </p>
                   </div>
 
@@ -214,15 +269,15 @@ export default function PartnersPage() {
                           <p className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
                             {stats?.grade ?? ""}
                           </p>
-                          <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>GRADE</p>
+                          <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>{copy.grade}</p>
                         </div>
                         <div className="text-center">
                           <p className="text-lg font-bold text-orange-500">{stats?.streak ?? 0}</p>
-                          <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>STREAK</p>
+                          <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>{copy.streak}</p>
                         </div>
                         <div className="text-center">
                           <p className="text-lg font-bold text-axis-accent">{stats?.focusScore ?? 0}</p>
-                          <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>FOCUS</p>
+                          <p className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>{copy.focus}</p>
                         </div>
                       </>
                     )}
@@ -233,17 +288,17 @@ export default function PartnersPage() {
                 {isExpanded && (
                   <div className="mt-5 pt-5" style={{ borderTop: "1px solid var(--border-primary)" }}>
                     <p className="text-xs font-mono mb-4 uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
-                      You vs {partner.name.split(" ")[0]}
+                      {copy.youVs(partner.name.split(" ")[0])}
                     </p>
 
                     <div className="space-y-4">
                       {/* Missions */}
                       <div>
                         <div className="flex flex-col gap-1 mb-1.5 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Missions Today</span>
+                          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{copy.missionsToday}</span>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                             <span className="text-xs font-mono text-axis-accent">
-                              You: {myMissionsDone}/{myMissionsTotal}
+                              {copy.you}: {myMissionsDone}/{myMissionsTotal}
                             </span>
                             <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
                               {partner.name.split(" ")[0]}: {stats?.missionsCompleted ?? 0}/{stats?.missionsTotal ?? 0}
@@ -268,10 +323,10 @@ export default function PartnersPage() {
                       {/* Habits */}
                       <div>
                         <div className="flex flex-col gap-1 mb-1.5 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Habits Today</span>
+                          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{copy.habitsToday}</span>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                             <span className="text-xs font-mono text-axis-accent">
-                              You: {myHabitsDone}/{myHabitsTotal}
+                              {copy.you}: {myHabitsDone}/{myHabitsTotal}
                             </span>
                             <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
                               {partner.name.split(" ")[0]}: {stats?.habitsCompleted ?? 0}
@@ -296,9 +351,9 @@ export default function PartnersPage() {
                       {/* Focus Score */}
                       <div>
                         <div className="flex flex-col gap-1 mb-1.5 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Focus Score</span>
+                          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{copy.focusScore}</span>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                            <span className="text-xs font-mono text-axis-accent">You: {myScore.focusScore}</span>
+                            <span className="text-xs font-mono text-axis-accent">{copy.you}: {myScore.focusScore}</span>
                             <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
                               {partner.name.split(" ")[0]}: {stats?.focusScore ?? 0}
                             </span>
@@ -330,7 +385,7 @@ export default function PartnersPage() {
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
                     >
                       <IconNudge size={14} className="text-axis-accent" />
-                      {nudgeSent === partner.id ? "Nudge sent!" : nudgingId === partner.id ? "Sending..." : "Send Nudge"}
+                      {nudgeSent === partner.id ? copy.nudgeSent : nudgingId === partner.id ? copy.sending : copy.sendNudge}
                     </button>
                   </div>
                 )}
@@ -352,10 +407,10 @@ export default function PartnersPage() {
           <IconPartners size={24} className="text-axis-accent" />
         </div>
         <h3 className="text-base font-semibold mb-2" style={{ color: "var(--text-primary)" }}>
-          Invite a Partner
+          {copy.inviteTitle}
         </h3>
         <p className="text-sm mb-4 max-w-xs mx-auto" style={{ color: "var(--text-tertiary)" }}>
-          Share your invite link. When they sign up, you&apos;re automatically connected.
+          {copy.inviteBody}
         </p>
 
         {user && (
@@ -364,7 +419,7 @@ export default function PartnersPage() {
               style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-primary)" }}>
               <span className="text-[11px] font-mono px-3 py-2.5 flex-1 truncate text-left"
                 style={{ color: "var(--text-tertiary)" }}>
-                {typeof window !== "undefined" ? `${getBrowserAppUrl()}/signup?invite=${user.id}` : "Loading..."}
+                {typeof window !== "undefined" ? `${getBrowserAppUrl()}/signup?invite=${user.id}` : copy.loading}
               </span>
             </div>
           </div>
@@ -374,7 +429,7 @@ export default function PartnersPage() {
           onClick={handleCopyInvite}
           className="bg-axis-accent text-axis-dark text-xs font-semibold px-6 py-2.5 rounded-lg hover:bg-axis-accent/90 transition-all"
         >
-          {copied ? "Copied!" : "Copy Invite Link"}
+          {copied ? copy.copied : copy.copy}
         </button>
       </div>
 
@@ -382,7 +437,7 @@ export default function PartnersPage() {
       {!loading && activePartners.length === 0 && pendingPartners.length === 0 && (
         <div className="text-center py-4">
           <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
-            No partners yet. Share your invite link to get started.
+            {copy.empty}
           </p>
         </div>
       )}

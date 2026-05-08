@@ -62,9 +62,14 @@ export function useRevenue() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).maybeSingle();
     if (profile?.plan === "free" && streams.length >= 1) {
-      toast.error("Free plan limit reached", { description: "1 revenue stream maximum. Upgrade to Pro in Settings to unlock unlimited streams." });
+      const isDe = typeof document !== "undefined" && document.documentElement.lang === "de";
+      toast.error(isDe ? "Free-Plan-Limit erreicht" : "Free plan limit reached", {
+        description: isDe
+          ? "Maximal 1 Einnahmequelle. Upgrade auf Pro in den Einstellungen fuer unbegrenzte Quellen."
+          : "1 revenue stream maximum. Upgrade to Pro in Settings to unlock unlimited streams.",
+      });
       openUpgradePrompt({ source: "revenue_limit" });
       return;
     }

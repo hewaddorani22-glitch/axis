@@ -20,6 +20,7 @@ Copy `.env.local.example` to `.env.local` and fill in:
 - `NEXT_PUBLIC_APP_URL` | Public app URL used for billing redirects and metadata
 - `STRIPE_SECRET_KEY` | Stripe secret key (for Pro subscriptions)
 - `STRIPE_PRO_PRICE_ID` | Stripe recurring monthly price for lomoura Pro
+- `STRIPE_PRO_YEARLY_PRICE_ID` | Optional Stripe recurring yearly price; if missing, checkout uses an inline EUR 89/year price
 - `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret
 - `SUPABASE_SERVICE_ROLE_KEY` | Server-only Supabase key for secure API routes and Stripe sync
 - `SUPABASE_DB_PASSWORD` or `SUPABASE_DB_URL` | Optional, only needed for local schema scripts

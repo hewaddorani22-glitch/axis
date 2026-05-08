@@ -25,15 +25,82 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { EmptyState } from "@/components/app/empty-state";
+import { useLocale } from "@/lib/i18n/provider";
 
-const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEK_DAYS = {
+  de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+  en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+};
+
+const COPY = {
+  de: {
+    done: "Erledigt",
+    skipped: "Übersprungen",
+    dayStreak: (n: number) => `${n} Tage Streak`,
+    skipToday: "Heute skippen",
+    today: "Heute",
+    bestStreak: "Bester Streak",
+    days: "Tage",
+    freezeTitle: "Streak-Freeze",
+    freezeUsed: (date: string) => `Am ${date} genutzt. Wird nächsten Monat zurückgesetzt.`,
+    freezeBody: "Schütze deinen Streak an einem schlechten Tag. 1 Freipass pro Monat.",
+    used: "Genutzt",
+    freezing: "Friert ein...",
+    useFreeze: "Freeze nutzen",
+    unlock: "Freischalten",
+    emptyTitle: "Welche Routine willst du fix machen?",
+    emptyBody: "Eine reicht zum Start. Workout, Lernblock, kein Handy nach 22 Uhr — du entscheidest. Leg sie unten an.",
+    icon: "Icon",
+    addHabit: "Neues Habit hinzufügen...",
+    quantified: "Messbar",
+    target: "+ Ziel",
+    add: "Hinzufügen",
+    targetPlaceholder: "Ziel (z. B. 5)",
+    unitPlaceholder: "Einheit (z. B. km, Liter)",
+    noTheme: "Kein Thema",
+    limit: "Free: 3 Habits. Pro schaltet unbegrenzt viele Habits frei.",
+    upgrade: "Upgrade auf Pro",
+  },
+  en: {
+    done: "Done",
+    skipped: "Skipped",
+    dayStreak: (n: number) => `${n} day streak`,
+    skipToday: "Skip Today",
+    today: "Today",
+    bestStreak: "Best Streak",
+    days: "days",
+    freezeTitle: "Streak Freeze",
+    freezeUsed: (date: string) => `Used on ${date} this month. Resets next month.`,
+    freezeBody: "Protect your streak on an off day. 1 free pass per month.",
+    used: "Used",
+    freezing: "Freezing...",
+    useFreeze: "Use Freeze",
+    unlock: "Unlock",
+    emptyTitle: "Which routine do you want to lock in?",
+    emptyBody: "One is enough to start. Workout, study block, no phone after 10pm — your call. Add it below.",
+    icon: "Icon",
+    addHabit: "Add a new habit...",
+    quantified: "Quantified",
+    target: "+ Target",
+    add: "Add",
+    targetPlaceholder: "Target (e.g. 5)",
+    unitPlaceholder: "Unit (e.g. km, liters)",
+    noTheme: "No theme",
+    limit: "Free: 3 habits. Pro unlocks unlimited habits.",
+    upgrade: "Upgrade to Pro",
+  },
+};
 
 function SortableHabitItem({
   habit,
   toggleHabit,
+  copy,
+  weekDays,
 }: {
   habit: HabitWithStatus;
   toggleHabit: (id: string, action?: "done" | "skip" | "undo", val?: number) => void;
+  copy: typeof COPY.de;
+  weekDays: string[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
 
@@ -91,7 +158,7 @@ function SortableHabitItem({
                 className="text-xs font-mono text-axis-accent px-2 py-0.5 rounded-md"
                 style={{ backgroundColor: "var(--bg-accent-soft)" }}
               >
-                Done
+                {copy.done}
               </span>
             )}
             {habit.todaySkipped && (
@@ -99,14 +166,14 @@ function SortableHabitItem({
                 className="text-xs font-mono text-amber-500 px-2 py-0.5 rounded-md"
                 style={{ backgroundColor: "rgba(245, 158, 11, 0.1)" }}
               >
-                Skipped
+                {copy.skipped}
               </span>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 mt-0.5">
             <p className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-              {habit.streak} day streak
+              {copy.dayStreak(habit.streak)}
             </p>
             {habit.target_value && (
                <div className="flex items-center gap-1">
@@ -126,7 +193,7 @@ function SortableHabitItem({
                  onClick={() => toggleHabit(habit.id, "skip")}
                  className="text-[10px] font-semibold text-axis-text2 hover:text-axis-text1 hover:bg-axis-hover px-2 rounded transition-colors"
                >
-                 Skip Today
+                 {copy.skipToday}
                </button>
             )}
           </div>
@@ -168,6 +235,9 @@ function SortableHabitItem({
 export default function SystemsPage() {
   const { habits, loading, addHabit, toggleHabit, reorderHabits, completedToday, total } = useHabits();
   const { user } = useUser();
+  const { locale } = useLocale();
+  const copy = COPY[locale === "en" ? "en" : "de"];
+  const weekDays = WEEK_DAYS[locale === "en" ? "en" : "de"];
   const { streak } = useStreak();
   const { objectives } = useObjectives();
   const [newHabit, setNewHabit] = useState("");
@@ -199,7 +269,7 @@ export default function SystemsPage() {
       .select("used_on")
       .eq("user_id", authUser.id)
       .eq("month", month)
-      .single();
+      .maybeSingle();
     setFreezeUsed(data?.used_on || null);
     setFreezeLoading(false);
   }, [supabase]);
@@ -230,6 +300,7 @@ export default function SystemsPage() {
 
   const handleAdd = async () => {
     if (!newHabit.trim()) return;
+    if (isFreeAtHabitLimit) return;
     const targetVal = showQuantified && newTarget ? parseFloat(newTarget) : null;
     const unitVal = showQuantified && newUnit ? newUnit.trim() : null;
     
@@ -243,6 +314,7 @@ export default function SystemsPage() {
   };
 
   const bestStreak = habits.length > 0 ? Math.max(...habits.map((h) => h.streak)) : 0;
+  const isFreeAtHabitLimit = Boolean(user) && user?.plan !== "pro" && total >= 3;
 
   const Skeleton = ({ className = "" }: { className?: string }) => <div className={`axis-skeleton ${className}`} />;
 
@@ -265,7 +337,7 @@ export default function SystemsPage() {
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
           <IconHabits size={14} className="text-axis-accent" />
           <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-            Today
+            {copy.today}
           </span>
           <span className="text-sm font-bold">
             {completedToday}/{total}
@@ -274,9 +346,9 @@ export default function SystemsPage() {
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
           <IconStreak size={14} className="text-orange-500" />
           <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-            Best Streak
+            {copy.bestStreak}
           </span>
-          <span className="text-sm font-bold text-orange-500">{bestStreak > 0 ? `${bestStreak} days` : "0"}</span>
+          <span className="text-sm font-bold text-orange-500">{bestStreak > 0 ? `${bestStreak} ${copy.days}` : "0"}</span>
         </div>
       </div>
 
@@ -287,7 +359,7 @@ export default function SystemsPage() {
             <div className="flex items-center gap-2 mb-1">
               <div className="mt-0.5"><IconFreeze size={18} className="text-blue-400" /></div>
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                Streak Freeze
+                {copy.freezeTitle}
               </h3>
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-axis-accent text-axis-dark">
                 PRO
@@ -295,8 +367,8 @@ export default function SystemsPage() {
             </div>
             <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
               {freezeUsed
-                ? `Used on ${freezeUsed} this month. Resets next month.`
-                : "Protect your streak on an off day. 1 free pass per month."}
+                ? copy.freezeUsed(freezeUsed)
+                : copy.freezeBody}
             </p>
           </div>
           {!freezeLoading &&
@@ -306,7 +378,7 @@ export default function SystemsPage() {
                   className="text-xs font-mono px-3 py-2 rounded-xl"
                   style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }}
                 >
-                  Used
+                  {copy.used}
                 </span>
               ) : (
                 <button
@@ -319,7 +391,7 @@ export default function SystemsPage() {
                     color: "var(--text-primary)",
                   }}
                 >
-                  {freezing ? "Freezing..." : "Use Freeze"}
+                  {freezing ? copy.freezing : copy.useFreeze}
                 </button>
               )
             ) : (
@@ -327,7 +399,7 @@ export default function SystemsPage() {
                 href="/settings"
                 className="text-xs font-semibold text-axis-dark bg-axis-accent px-4 py-2 rounded-xl hover:bg-axis-accent/90 transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
-                Unlock
+                {copy.unlock}
               </Link>
             ))}
         </div>
@@ -343,15 +415,15 @@ export default function SystemsPage() {
       ) : habits.length === 0 ? (
         <EmptyState
           icon={<IconHabits size={24} className="text-axis-accent" />}
-          title="Which routine do you want to lock in?"
-          description="One is enough to start. Workout, study block, no phone after 10pm — your call. Add it below."
+          title={copy.emptyTitle}
+          description={copy.emptyBody}
         />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={habits.map((h) => h.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-4">
               {habits.map((h) => (
-                <SortableHabitItem key={h.id} habit={h} toggleHabit={toggleHabit} />
+                <SortableHabitItem key={h.id} habit={h} toggleHabit={toggleHabit} copy={copy} weekDays={weekDays} />
               ))}
             </div>
           </SortableContext>
@@ -363,7 +435,7 @@ export default function SystemsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="text"
-            placeholder="Icon"
+            placeholder={copy.icon}
             value={newIcon}
             onChange={(e) => setNewIcon(e.target.value)}
             className="h-12 w-full rounded-xl text-center text-xl outline-none sm:w-12"
@@ -373,7 +445,7 @@ export default function SystemsPage() {
           <input
             ref={habitInputRef}
             type="text"
-            placeholder="Add a new habit..."
+            placeholder={copy.addHabit}
             value={newHabit}
             onChange={(e) => setNewHabit(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
@@ -390,13 +462,14 @@ export default function SystemsPage() {
                 borderColor: showQuantified ? "rgba(205,255,79,0.3)" : "var(--border-primary)"
               }}
             >
-              {showQuantified ? "Quantified" : "+ Target"}
+              {showQuantified ? copy.quantified : copy.target}
             </button>
             <button
               onClick={handleAdd}
+              disabled={isFreeAtHabitLimit || !newHabit.trim()}
               className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-95"
             >
-              Add
+              {copy.add}
             </button>
           </div>
         </div>
@@ -405,7 +478,7 @@ export default function SystemsPage() {
           <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2 duration-300 sm:flex sm:flex-wrap sm:items-center sm:pl-14">
             <input
               type="number"
-              placeholder="Target (e.g. 5)"
+              placeholder={copy.targetPlaceholder}
               value={newTarget}
               onChange={(e) => setNewTarget(e.target.value)}
               className="w-full text-xs rounded-lg px-3 py-2 outline-none sm:w-32"
@@ -413,7 +486,7 @@ export default function SystemsPage() {
             />
             <input
               type="text"
-              placeholder="Unit (e.g. km, Liters)"
+              placeholder={copy.unitPlaceholder}
               value={newUnit}
               onChange={(e) => setNewUnit(e.target.value)}
               className="w-full text-xs rounded-lg px-3 py-2 outline-none sm:w-48"
@@ -425,7 +498,7 @@ export default function SystemsPage() {
               className="w-full text-xs font-mono rounded-lg px-3 py-2 outline-none sm:min-w-[170px] sm:w-auto"
               style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
             >
-              <option value="">No theme</option>
+              <option value="">{copy.noTheme}</option>
               {objectives.map((objective) => (
                 <option key={objective.id} value={objective.id}>
                   {objective.title}
@@ -436,16 +509,26 @@ export default function SystemsPage() {
         )}
       </div>
 
+      {isFreeAtHabitLimit && (
+        <div className="rounded-xl border border-axis-accent/25 bg-axis-accent/5 px-4 py-3">
+          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+            {copy.limit}{" "}
+            <Link href="/settings" className="font-semibold text-axis-accent hover:underline">
+              {copy.upgrade}
+            </Link>
+          </p>
+        </div>
+      )}
+
       <div
         className="rounded-xl p-4 text-center"
         style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}
       >
         <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-          {total}/3 habits /{" "}
+          {total}/3 Habits /{" "}
           <Link href="/settings" className="text-axis-accent hover:underline">
-            Upgrade to Pro
+            {copy.upgrade}
           </Link>{" "}
-          for unlimited
         </p>
       </div>
     </div>

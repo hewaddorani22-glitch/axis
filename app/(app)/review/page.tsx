@@ -7,6 +7,7 @@ import { useStreak } from "@/hooks/useStreak";
 import { trackEvent } from "@/lib/analytics";
 import { openUpgradePrompt } from "@/lib/upgrade-prompt";
 import { formatCurrency } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n/provider";
 
 interface WeeklyReview {
   id: string;
@@ -47,12 +48,13 @@ function getDaysElapsedInWeek(weekStart: string): number {
   return Math.max(1, Math.min(7, elapsed));
 }
 
-function formatWeekLabel(weekStart: string): string {
+function formatWeekLabel(weekStart: string, locale: "de" | "en"): string {
   const start = new Date(`${weekStart}T00:00:00`);
   const end = new Date(`${weekStart}T00:00:00`);
   end.setDate(end.getDate() + 6);
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  return `${start.toLocaleDateString("en-US", opts)} / ${end.toLocaleDateString("en-US", opts)}`;
+  const dateLocale = locale === "de" ? "de-DE" : "en-US";
+  return `${start.toLocaleDateString(dateLocale, opts)} / ${end.toLocaleDateString(dateLocale, opts)}`;
 }
 
 function isSunday(): boolean {
@@ -68,9 +70,94 @@ const EMPTY_SUMMARY: WeeklySummary = {
   daysElapsed: 1,
 };
 
+const COPY = {
+  de: {
+    title: "Dein Wochen-Review",
+    sunday: "Sonntag: Review machen",
+    tasksDone: "AUFGABEN",
+    tasksCompleted: "Diese Woche erledigt",
+    noTasks: "Noch keine Aufgaben",
+    habitsDone: "HABITS",
+    checkins: "Check-ins diese Woche",
+    noCheckins: "Noch keine Check-ins",
+    activeDays: "AKTIVE TAGE",
+    activeDaysSub: "Aufgabe + Habit am selben Tag",
+    weekRevenue: "WOCHEN-UMSATZ",
+    trackedThisWeek: "Diese Woche getrackt",
+    dayStreak: "TAGE-STREAK",
+    keepAlive: "Am Leben halten",
+    startToday: "Heute starten",
+    promptTitle: "Was ist diese Woche wirklich passiert?",
+    promptBody:
+      "Schreib auf, was funktioniert hat, was chaotisch war und worauf du dich nächste Woche fokussierst. Nach ein paar Wochen wird daraus dein persönliches Muster.",
+    wins: "Wins diese Woche",
+    winsPlaceholder: "Was lief gut? Worauf bist du stolz?",
+    struggles: "Schwierigkeiten",
+    strugglesPlaceholder: "Was war schwer? Was würdest du anders machen?",
+    nextFocus: "Fokus nächste Woche",
+    nextFocusPlaceholder: "Welche eine Sache macht nächste Woche erfolgreich?",
+    saving: "Speichert...",
+    saved: "Gespeichert ✓",
+    update: "Review aktualisieren",
+    save: "Review speichern",
+    past: "Vergangene Reviews",
+    view: "Öffnen",
+    empty: "Leer",
+    winsShort: "WINS",
+    strugglesShort: "SCHWIERIG",
+    nextShort: "NÄCHSTER FOKUS",
+    firstReview: "Mach oben dein erstes Wochen-Review. Komm jeden Sonntag zurück.",
+    archive: (n: number) => `+ ${n} ältere${n === 1 ? "s Review" : " Reviews"} im Archiv`,
+    archiveSub: "Pro schaltet den kompletten Verlauf frei.",
+    upgrade: "UPGRADE",
+  },
+  en: {
+    title: "This Week's Review",
+    sunday: "Sunday: do your review",
+    tasksDone: "TASKS DONE",
+    tasksCompleted: "Completed this week",
+    noTasks: "No tasks yet",
+    habitsDone: "HABITS DONE",
+    checkins: "Check-ins this week",
+    noCheckins: "No check-ins yet",
+    activeDays: "ACTIVE DAYS",
+    activeDaysSub: "Task + habit on the same day",
+    weekRevenue: "WEEK REVENUE",
+    trackedThisWeek: "Tracked this week",
+    dayStreak: "DAY STREAK",
+    keepAlive: "Keep it alive",
+    startToday: "Start today",
+    promptTitle: "What actually happened this week?",
+    promptBody:
+      "Write down what worked, what felt messy, and the one focus for next week. This becomes much more useful once you have a few weeks in a row.",
+    wins: "Wins this week",
+    winsPlaceholder: "What went well? What are you proud of?",
+    struggles: "Struggles",
+    strugglesPlaceholder: "What was hard? What would you do differently?",
+    nextFocus: "Next week's focus",
+    nextFocusPlaceholder: "What's the one thing that will make next week a win?",
+    saving: "Saving...",
+    saved: "Saved ✓",
+    update: "Update Review",
+    save: "Save Review",
+    past: "Past Reviews",
+    view: "View",
+    empty: "Empty",
+    winsShort: "WINS",
+    strugglesShort: "STRUGGLES",
+    nextShort: "NEXT FOCUS",
+    firstReview: "Complete your first weekly review above. Come back every Sunday.",
+    archive: (n: number) => `+ ${n} earlier ${n === 1 ? "review" : "reviews"} in your archive`,
+    archiveSub: "Pro unlocks full history.",
+    upgrade: "UPGRADE",
+  },
+};
+
 export default function ReviewPage() {
   const { user, loading: userLoading } = useUser();
   const { streak } = useStreak();
+  const { locale } = useLocale();
+  const copy = COPY[locale === "en" ? "en" : "de"];
 
   const [reviews, setReviews] = useState<WeeklyReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -179,34 +266,34 @@ export default function ReviewPage() {
 
   const summaryCards = [
     {
-      label: "TASKS DONE",
+      label: copy.tasksDone,
       value: summary.missionsTotal > 0 ? `${summary.missionsCompleted}/${summary.missionsTotal}` : "0",
-      sub: summary.missionsTotal > 0 ? "Completed this week" : "No tasks yet",
+      sub: summary.missionsTotal > 0 ? copy.tasksCompleted : copy.noTasks,
       accent: "text-axis-accent",
     },
     {
-      label: "HABITS DONE",
+      label: copy.habitsDone,
       value: `${summary.habitsCompleted}`,
-      sub: summary.habitsCompleted > 0 ? "Check-ins this week" : "No check-ins yet",
+      sub: summary.habitsCompleted > 0 ? copy.checkins : copy.noCheckins,
       accent: "text-axis-accent2",
     },
     {
-      label: "ACTIVE DAYS",
+      label: copy.activeDays,
       value: `${summary.activeDays}/${summary.daysElapsed}`,
-      sub: "Task + habit on the same day",
+      sub: copy.activeDaysSub,
       accent: "text-orange-500",
     },
     showRevenueSummary
       ? {
-          label: "WEEK REVENUE",
+          label: copy.weekRevenue,
           value: formatCurrency(summary.revenueTotal),
-          sub: "Tracked this week",
+          sub: copy.trackedThisWeek,
           accent: "text-emerald-500",
         }
       : {
-          label: "DAY STREAK",
+          label: copy.dayStreak,
           value: `${streak}`,
-          sub: streak > 0 ? "Keep it alive" : "Start today",
+          sub: streak > 0 ? copy.keepAlive : copy.startToday,
           accent: "text-orange-500",
         },
   ];
@@ -216,16 +303,16 @@ export default function ReviewPage() {
       <div className="axis-card">
         <div className="flex flex-col gap-2 mb-1 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-            This Week&apos;s Review
+            {copy.title}
           </h2>
           {isSunday() && (
             <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-axis-accent/10 text-axis-accent">
-              Sunday: do your review
+              {copy.sunday}
             </span>
           )}
         </div>
         <p className="text-xs font-mono mb-5" style={{ color: "var(--text-tertiary)" }}>
-          {formatWeekLabel(thisWeek)}
+          {formatWeekLabel(thisWeek, locale)}
         </p>
 
         <div className="grid grid-cols-2 gap-3 mb-5 sm:grid-cols-4">
@@ -248,22 +335,22 @@ export default function ReviewPage() {
 
         <div className="rounded-2xl px-4 py-3 mb-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-            What actually happened this week?
+            {copy.promptTitle}
           </p>
           <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-tertiary)" }}>
-            Write down what worked, what felt messy, and the one focus for next week. This becomes much more useful once you have a few weeks in a row.
+            {copy.promptBody}
           </p>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              Wins this week
+              {copy.wins}
             </label>
             <textarea
               value={wins}
               onChange={(e) => setWins(e.target.value)}
-              placeholder="What went well? What are you proud of?"
+              placeholder={copy.winsPlaceholder}
               rows={3}
               className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none transition-all"
               style={{
@@ -278,12 +365,12 @@ export default function ReviewPage() {
 
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              Struggles
+              {copy.struggles}
             </label>
             <textarea
               value={struggles}
               onChange={(e) => setStruggles(e.target.value)}
-              placeholder="What was hard? What would you do differently?"
+              placeholder={copy.strugglesPlaceholder}
               rows={3}
               className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none transition-all"
               style={{
@@ -298,12 +385,12 @@ export default function ReviewPage() {
 
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              Next week&apos;s focus
+              {copy.nextFocus}
             </label>
             <textarea
               value={nextFocus}
               onChange={(e) => setNextFocus(e.target.value)}
-              placeholder="What's the one thing that will make next week a win?"
+              placeholder={copy.nextFocusPlaceholder}
               rows={3}
               className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none transition-all"
               style={{
@@ -325,11 +412,11 @@ export default function ReviewPage() {
           {saving ? (
             <div className="w-5 h-5 border-2 border-axis-dark/30 border-t-axis-dark rounded-full animate-spin" />
           ) : saved ? (
-            "Saved ✓"
+            copy.saved
           ) : thisWeekReview ? (
-            "Update Review"
+            copy.update
           ) : (
-            "Save Review"
+            copy.save
           )}
         </button>
       </div>
@@ -337,22 +424,22 @@ export default function ReviewPage() {
       {!reviewsLoading && pastReviews.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold px-1" style={{ color: "var(--text-primary)" }}>
-            Past Reviews
+            {copy.past}
           </h3>
           {pastReviews.map((review) => (
             <details key={review.id} className="axis-card group">
               <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
                 <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                  {formatWeekLabel(review.week_start)}
+                  {formatWeekLabel(review.week_start, locale)}
                 </p>
                 <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-                  {review.wins || review.struggles || review.next_week_focus ? "View" : "Empty"}
+                  {review.wins || review.struggles || review.next_week_focus ? copy.view : copy.empty}
                 </span>
               </summary>
               <div className="mt-4 pt-4 space-y-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
                 {review.wins && (
                   <div>
-                    <p className="text-[11px] font-mono font-semibold mb-1 text-axis-accent">WINS</p>
+                    <p className="text-[11px] font-mono font-semibold mb-1 text-axis-accent">{copy.winsShort}</p>
                     <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
                       {review.wins}
                     </p>
@@ -360,7 +447,7 @@ export default function ReviewPage() {
                 )}
                 {review.struggles && (
                   <div>
-                    <p className="text-[11px] font-mono font-semibold mb-1 text-amber-500">STRUGGLES</p>
+                    <p className="text-[11px] font-mono font-semibold mb-1 text-amber-500">{copy.strugglesShort}</p>
                     <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
                       {review.struggles}
                     </p>
@@ -369,7 +456,7 @@ export default function ReviewPage() {
                 {review.next_week_focus && (
                   <div>
                     <p className="text-[11px] font-mono font-semibold mb-1" style={{ color: "var(--text-tertiary)" }}>
-                      NEXT FOCUS
+                      {copy.nextShort}
                     </p>
                     <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
                       {review.next_week_focus}
@@ -384,7 +471,7 @@ export default function ReviewPage() {
 
       {!reviewsLoading && reviews.length === 0 && (
         <p className="text-center text-sm py-4" style={{ color: "var(--text-tertiary)" }}>
-          Complete your first weekly review above. Come back every Sunday.
+          {copy.firstReview}
         </p>
       )}
 
@@ -395,14 +482,14 @@ export default function ReviewPage() {
         >
           <div className="min-w-0">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              + {hiddenPastCount} earlier {hiddenPastCount === 1 ? "review" : "reviews"} in your archive
+              {copy.archive(hiddenPastCount)}
             </p>
             <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-              Pro unlocks full history.
+              {copy.archiveSub}
             </p>
           </div>
           <span className="shrink-0 text-xs font-mono font-bold rounded-md bg-axis-accent text-axis-dark px-2.5 py-1">
-            UPGRADE
+            {copy.upgrade}
           </span>
         </button>
       )}

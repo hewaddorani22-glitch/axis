@@ -12,11 +12,13 @@ function SettingsContent() {
   const { user, loading, updateProfile, signOut, refetch } = useUser();
   const searchParams = useSearchParams();
   const upgradeStatus = searchParams.get("upgrade");
+  const checkoutInterval = searchParams.get("interval") === "yearly" ? "yearly" : "monthly";
   const checkoutSessionId = searchParams.get("session_id");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [fieldValue, setFieldValue] = useState("");
   const [billingState, setBillingState] = useState<"idle" | "checkout" | "portal" | "confirming">("idle");
   const [upgradeMessage, setUpgradeMessage] = useState<{ tone: "success" | "warning" | "error"; text: string } | null>(null);
+  const [autoCheckoutStarted, setAutoCheckoutStarted] = useState(false);
 
   useEffect(() => {
     if (upgradeStatus !== "success") {
@@ -95,9 +97,13 @@ function SettingsContent() {
 
   const handleUpgrade = async () => {
     try {
-      trackEvent("pro_cta_clicked", { source: "settings" });
+      trackEvent("pro_cta_clicked", { source: "settings", plan: checkoutInterval });
       setBillingState("checkout");
-      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interval: checkoutInterval }),
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -127,6 +133,15 @@ function SettingsContent() {
       alert("Network error. Please try again.");
     }
   };
+
+  useEffect(() => {
+    if (upgradeStatus !== "start" || autoCheckoutStarted || loading || !user || user.plan === "pro") {
+      return;
+    }
+
+    setAutoCheckoutStarted(true);
+    void handleUpgrade();
+  }, [autoCheckoutStarted, loading, upgradeStatus, user?.id, user?.plan]);
 
   if (loading) {
     return (

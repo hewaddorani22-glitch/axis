@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMissions, Mission } from "@/hooks/useMissions";
 import { useObjectives } from "@/hooks/useObjectives";
+import { useUser } from "@/hooks/useUser";
 import { IconTarget, IconCheck, IconTimer, IconEnergy, IconFocus } from "@/components/icons";
 import Link from "next/link";
 import {
@@ -23,8 +24,52 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { EmptyState } from "@/components/app/empty-state";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocale } from "@/lib/i18n/provider";
 
 type Priority = "high" | "med" | "low";
+
+const COPY = {
+  de: {
+    completion: "Erledigt",
+    done: "Erledigt",
+    estTime: "Zeit",
+    addMission: "Neue Mission hinzufügen...",
+    advanced: "Erweitert",
+    details: "+ Details",
+    high: "Hoch",
+    med: "Mittel",
+    low: "Niedrig",
+    add: "Hinzufügen",
+    minutes: "Minuten (z. B. 45)",
+    energy: "Energie:",
+    noTheme: "Kein Thema",
+    emptyTitle: "Was machst du heute?",
+    emptyBody: "Tipp 1-3 Dinge ein, die heute zählen. Klein anfangen ist okay.",
+    limit: "Free: 5 Missionen pro Tag. Pro schaltet unbegrenzt viele Missionen frei.",
+    counter: (n: number) => `${n}/5 Missionen heute`,
+    upgrade: "Upgrade auf Pro",
+  },
+  en: {
+    completion: "Completion",
+    done: "Done",
+    estTime: "Est. Time",
+    addMission: "Add a new mission...",
+    advanced: "Advanced",
+    details: "+ Details",
+    high: "High",
+    med: "Med",
+    low: "Low",
+    add: "Add",
+    minutes: "Est. Minutes (e.g. 45)",
+    energy: "Energy:",
+    noTheme: "No theme",
+    emptyTitle: "What are you doing today?",
+    emptyBody: "Type 1-3 things that matter today. Use the input above. Starting small is fine.",
+    limit: "Free: 5 daily missions. Pro unlocks unlimited missions.",
+    counter: (n: number) => `${n}/5 missions today`,
+    upgrade: "Upgrade to Pro",
+  },
+};
 
 // Extracted SortableItem Component
 function SortableMissionItem({
@@ -130,6 +175,9 @@ function SortableMissionItem({
 }
 
 export default function MissionsPage() {
+  const { user } = useUser();
+  const { locale } = useLocale();
+  const copy = COPY[locale === "en" ? "en" : "de"];
   const [selectedDay, setSelectedDay] = useState(0);
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<Priority>("med");
@@ -148,6 +196,7 @@ export default function MissionsPage() {
   const { missions, loading, addMission, toggleMission, reorderMissions, completedCount, completionRate, total } =
     useMissions(dateStr);
   const { objectives } = useObjectives();
+  const isFreeAtMissionLimit = Boolean(user) && user?.plan !== "pro" && isTodayView && total >= 5;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -163,6 +212,7 @@ export default function MissionsPage() {
 
   const handleAdd = async () => {
     if (!newTitle.trim()) return;
+    if (isFreeAtMissionLimit) return;
     const estimated_time = showAdvanced && newTime ? parseInt(newTime, 10) : undefined;
     const energy_level = showAdvanced ? newEnergy : undefined;
     
@@ -204,14 +254,14 @@ export default function MissionsPage() {
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
           <IconTarget size={14} className="text-axis-accent" />
           <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-            Completion
+            {copy.completion}
           </span>
           <span className="text-sm font-bold text-axis-accent">{completionRate}%</span>
         </div>
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
           <IconCheck size={14} style={{ color: "var(--text-tertiary)" }} />
           <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-            Done
+            {copy.done}
           </span>
           <span className="text-sm font-bold">
             {completedCount}/{total}
@@ -220,7 +270,7 @@ export default function MissionsPage() {
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
           <IconTimer size={14} className="text-axis-accent" />
           <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-            Est. Time
+            {copy.estTime}
           </span>
           <span className="text-sm font-bold">
             {missions.reduce((sum, m) => sum + (m.estimated_time || 0), 0)}m
@@ -265,7 +315,7 @@ export default function MissionsPage() {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Add a new mission..."
+              placeholder={copy.addMission}
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
@@ -283,7 +333,7 @@ export default function MissionsPage() {
                 borderColor: showAdvanced ? "rgba(205,255,79,0.3)" : "var(--border-primary)"
               }}
             >
-              {showAdvanced ? "Advanced" : "+ Details"}
+              {showAdvanced ? copy.advanced : copy.details}
             </button>
             <select
               value={newPriority}
@@ -291,15 +341,16 @@ export default function MissionsPage() {
               className="text-xs font-mono rounded-lg px-2 py-2 outline-none"
               style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
             >
-              <option value="high">High</option>
-              <option value="med">Med</option>
-              <option value="low">Low</option>
+              <option value="high">{copy.high}</option>
+              <option value="med">{copy.med}</option>
+              <option value="low">{copy.low}</option>
             </select>
             <button
               onClick={handleAdd}
+              disabled={isFreeAtMissionLimit || !newTitle.trim()}
               className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-2 rounded-lg hover:bg-axis-accent/90 transition-all active:scale-[0.98]"
             >
-              Add
+              {copy.add}
             </button>
           </div>
         </div>
@@ -308,23 +359,23 @@ export default function MissionsPage() {
           <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2 duration-300 sm:flex sm:flex-wrap sm:items-center sm:pl-8">
             <input
               type="number"
-              placeholder="Est. Minutes (e.g. 45)"
+              placeholder={copy.minutes}
               value={newTime}
               onChange={(e) => setNewTime(e.target.value)}
               className="w-full text-xs rounded-lg px-3 py-2 outline-none sm:w-40"
               style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
             />
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>Energy:</span>
+              <span className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>{copy.energy}</span>
               <select
                 value={newEnergy}
                 onChange={(e) => setNewEnergy(e.target.value as "high" | "med" | "low")}
                 className="text-xs font-mono rounded-lg px-3 py-2 outline-none"
                 style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
               >
-                <option value="high">High</option>
-                <option value="med">Medium</option>
-                <option value="low">Low</option>
+                <option value="high">{copy.high}</option>
+                <option value="med">{copy.med}</option>
+                <option value="low">{copy.low}</option>
               </select>
             </div>
             <select
@@ -333,7 +384,7 @@ export default function MissionsPage() {
               className="w-full text-xs font-mono rounded-lg px-3 py-2 outline-none sm:min-w-[170px] sm:w-auto"
               style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
             >
-              <option value="">No theme</option>
+              <option value="">{copy.noTheme}</option>
               {objectives.map((objective) => (
                 <option key={objective.id} value={objective.id}>
                   {objective.title}
@@ -354,8 +405,8 @@ export default function MissionsPage() {
       ) : missions.length === 0 ? (
         <EmptyState
           icon={<IconTarget size={24} className="text-axis-accent" />}
-          title="What are you doing today?"
-          description="Type 1–3 things that matter today. Use the input above. Starting small is fine."
+          title={copy.emptyTitle}
+          description={copy.emptyBody}
         />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -374,16 +425,26 @@ export default function MissionsPage() {
         </DndContext>
       )}
 
+      {isFreeAtMissionLimit && (
+        <div className="rounded-xl border border-axis-accent/25 bg-axis-accent/5 px-4 py-3">
+          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+            {copy.limit}{" "}
+            <Link href="/settings" className="font-semibold text-axis-accent hover:underline">
+              {copy.upgrade}
+            </Link>
+          </p>
+        </div>
+      )}
+
       <div
         className="rounded-xl p-4 text-center"
         style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}
       >
         <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-          {total}/5 missions today /{" "}
+          {copy.counter(total)} /{" "}
           <Link href="/settings" className="text-axis-accent hover:underline">
-            Upgrade to Pro
+            {copy.upgrade}
           </Link>{" "}
-          for unlimited
         </p>
       </div>
     </div>

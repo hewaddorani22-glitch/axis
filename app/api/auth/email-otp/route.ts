@@ -4,6 +4,7 @@ import { sendEmailOtpEmail, resend as resendClient } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Mode = "login" | "signup" | "auto";
+type OtpLocale = "de" | "en";
 
 function isMode(value: unknown): value is Mode {
   return value === "login" || value === "signup" || value === "auto";
@@ -15,6 +16,10 @@ function normalizeEmail(value: unknown) {
 
 function normalizeName(value: unknown) {
   return typeof value === "string" ? value.trim().slice(0, 80) : "";
+}
+
+function normalizeLocale(value: unknown): OtpLocale {
+  return value === "en" ? "en" : "de";
 }
 
 function isValidEmail(email: string) {
@@ -39,6 +44,7 @@ export async function POST(request: Request) {
     const email = normalizeEmail(body?.email);
     const name = normalizeName(body?.name);
     const mode: Mode = isMode(body?.mode) ? body.mode : "auto";
+    const locale = normalizeLocale(body?.locale);
 
     if (!isValidEmail(email)) {
       return NextResponse.json(
@@ -93,10 +99,11 @@ export async function POST(request: Request) {
     }
 
     try {
-      const sentEmail = await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
+      const sentEmail = await sendEmailOtpEmail(email, data.properties.email_otp, { mode, locale });
       console.info("[email-otp] Resend sent", {
         emailId: sentEmail?.id,
         mode,
+        locale,
         verificationType: data.properties.verification_type,
         accountExists,
         recipientDomain: getEmailDomain(email),
@@ -104,6 +111,7 @@ export async function POST(request: Request) {
     } catch (sendError) {
       console.error("[email-otp] Resend send failed", {
         mode,
+        locale,
         verificationType: data.properties.verification_type,
         accountExists,
         recipientDomain: getEmailDomain(email),
