@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/provider";
 import {
   loadQuizAnswers,
@@ -15,7 +16,6 @@ import {
   IconUser,
   IconTarget,
   IconHabits,
-  IconProve,
   IconCheck,
   IconChevronRight,
   IconChevronLeft,
@@ -64,12 +64,19 @@ export default function OnboardingPage() {
   const router = useRouter();
   const supabaseCheck = createClient();
   const { locale } = useLocale();
+  const supabase = createClient();
 
   useEffect(() => {
     supabaseCheck.from("users").select("onboarding_done").single().then(({ data }) => {
       if (data?.onboarding_done) router.replace("/dashboard");
     });
   }, []); // eslint-disable-line
+
+  useEffect(() => {
+    trackEvent("onboarding_started", {
+      source: loadQuizAnswers() ? "start_funnel" : "direct",
+    });
+  }, []);
 
   // Quiz pre-fill: if the user came from /start, seed userType + first mission
   useEffect(() => {
@@ -84,6 +91,46 @@ export default function OnboardingPage() {
     });
     // Keep quiz answers around until onboarding completes; clearQuizAnswers is called in handleComplete.
   }, [locale]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateProfile = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || cancelled) return;
+
+      const profileName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split("@")[0] ||
+        "";
+      const browserTimezone =
+        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("name, user_type, timezone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      setName((prev) => prev || profile?.name || profileName);
+      if (!userType && profile?.user_type) {
+        setUserType(profile.user_type as UserType);
+      }
+      setTimezone(profile?.timezone || browserTimezone);
+    };
+
+    void hydrateProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
@@ -107,100 +154,135 @@ export default function OnboardingPage() {
       professional: ["Finish TPS report", "Prepare presentation", "Inbox zero", "Weekly sync", "Follow up leads"],
     };
     const titles = examples[userType] || [];
-    setMissions(titles.map((t, i) => ({
-      title: t,
-      priority: i === 0 ? "high" : i < 3 ? "med" : "low"
-    })));
+    setMissions((prev) =>
+      titles.map((t, i) => ({
+        title: i === 0 && prev[0]?.title.trim() ? prev[0].title : t,
+        priority: i === 0 ? "high" : i < 3 ? "med" : "low",
+      }))
+    );
   }, [userType]);
 
   const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
   const [customHabits, setCustomHabits] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
-  const [proveUsername, setProveUsername] = useState("");
-  const [proveBio, setProveBio] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
-  const supabase = createClient();
-  const totalSteps = 5;
+  const totalSteps = 3;
   const progressPct = (step / totalSteps) * 100;
 
   const stepTitles = [
-    { title: "Your Profile", subtitle: "Tell us about yourself so we can personalize your experience.", icon: <IconUser size={20} className="text-axis-accent" /> },
-    { title: "Today's Tasks", subtitle: "What do you need to accomplish today? Set up to 5 priorities.", icon: <IconTarget size={20} className="text-axis-accent" /> },
-    { title: "Habits", subtitle: "Choose the habits you want to build. Consistency is everything.", icon: <IconHabits size={20} className="text-axis-accent" /> },
-    { title: "Public Profile", subtitle: "Set up your public profile. Show the world your accountability.", icon: <IconProve size={20} className="text-axis-accent" /> },
-    { title: "All Set!", subtitle: "Review your setup. Everything looks ready: let's go.", icon: <IconCheck size={20} className="text-axis-accent" /> },
+    { title: "Your Profile", subtitle: "Tell us what fits your life so we can personalize day one.", icon: <IconUser size={20} className="text-axis-accent" /> },
+    { title: "Today's Tasks", subtitle: "Start with the 1-3 things that matter most today.", icon: <IconTarget size={20} className="text-axis-accent" /> },
+    { title: "Habits", subtitle: "Pick one or two habits you want to keep showing up for.", icon: <IconHabits size={20} className="text-axis-accent" /> },
   ];
 
   const canProceed = () => {
     switch (step) {
       case 1: return name.trim().length > 0 && userType !== null;
       case 2: return missions.some((m) => m.title.trim().length > 0);
-      case 3: return selectedHabits.length + customHabits.length >= 2;
-      case 4: return proveUsername.trim().length >= 3;
-      case 5: return true;
+      case 3: return selectedHabits.length + customHabits.length >= 1;
       default: return true;
     }
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async ({ skip = false }: { skip?: boolean } = {}) => {
     setLoading(true);
+    setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.auth.updateUser({
-      data: { full_name: name.trim(), name: name.trim() },
-    });
-
-    await supabase.from("users").update({
-      name: name.trim(),
-      user_type: userType,
-      timezone,
-      onboarding_done: true,
-      prove_it_username: proveUsername.trim().toLowerCase(),
-      prove_it_bio: proveBio.trim() || null,
-    }).eq("id", user.id);
-
-    const today = new Date().toISOString().split("T")[0];
-    const validMissions = missions.filter((m) => m.title.trim());
-    if (validMissions.length > 0) {
-      await supabase.from("missions").insert(
-        validMissions.map((m, i) => ({
-          user_id: user.id,
-          title: m.title.trim(),
-          priority: m.priority,
-          date: today,
-          sort_order: i,
-        }))
-      );
+    if (!user) {
+      setSaveError("Your session expired. Please log in again.");
+      setLoading(false);
+      return;
     }
 
-    const allHabits = [
-      ...selectedHabits.map((name) => ({ name, icon: "IconHabits" })),
-      ...customHabits.map((name) => ({ name, icon: "IconHabits" })),
-    ];
-    if (allHabits.length > 0) {
-      await supabase.from("habits").insert(
-        allHabits.map((h, i) => ({
-          user_id: user.id,
-          name: h.name,
-          icon: h.icon,
-          sort_order: i,
-        }))
-      );
-    }
+    const fallbackName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split("@")[0] ||
+      "there";
+    const finalName = name.trim() || fallbackName;
 
     try {
-      await fetch("/api/email/welcome", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email, name: name.trim() }),
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { full_name: finalName, name: finalName },
       });
-    } catch {}
 
-    clearQuizAnswers();
-    router.push("/dashboard");
-    router.refresh();
+      if (authError) throw authError;
+
+      const { error: profileError } = await supabase
+        .from("users")
+        .update({
+          name: finalName,
+          user_type: userType,
+          timezone,
+          onboarding_done: true,
+          prove_it_username: null,
+          prove_it_bio: null,
+        })
+        .eq("id", user.id);
+
+      if (profileError) throw profileError;
+
+      const today = new Date().toISOString().split("T")[0];
+      const validMissions = skip ? [] : missions.filter((m) => m.title.trim());
+      if (validMissions.length > 0) {
+        const { error: missionsError } = await supabase.from("missions").insert(
+          validMissions.map((m, i) => ({
+            user_id: user.id,
+            title: m.title.trim(),
+            priority: m.priority,
+            date: today,
+            sort_order: i,
+          }))
+        );
+
+        if (missionsError) throw missionsError;
+      }
+
+      const allHabits = skip
+        ? []
+        : [
+            ...selectedHabits.map((habitName) => ({ name: habitName, icon: "IconHabits" })),
+            ...customHabits.map((habitName) => ({ name: habitName, icon: "IconHabits" })),
+          ];
+      if (allHabits.length > 0) {
+        const { error: habitsError } = await supabase.from("habits").insert(
+          allHabits.map((h, i) => ({
+            user_id: user.id,
+            name: h.name,
+            icon: h.icon,
+            sort_order: i,
+          }))
+        );
+
+        if (habitsError) throw habitsError;
+      }
+
+      try {
+        await fetch("/api/email/welcome", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: finalName }),
+        });
+      } catch {}
+
+      trackEvent("onboarding_completed", {
+        skipped: skip,
+        missionsCreated: validMissions.length,
+        habitsCreated: allHabits.length,
+        userType,
+      });
+
+      clearQuizAnswers();
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error: any) {
+      setSaveError(error?.message || "We couldn't finish setup. Please try again.");
+      setLoading(false);
+      return;
+    }
+
   };
 
   const currentStep = stepTitles[step - 1];
@@ -218,7 +300,7 @@ export default function OnboardingPage() {
           <button
             onClick={() => {
               if (confirm("Skip setup? You can configure everything later in Settings.")) {
-                handleComplete();
+                void handleComplete({ skip: true });
               }
             }}
             className="text-xs text-white/20 hover:text-white/40 transition-colors"
@@ -244,6 +326,12 @@ export default function OnboardingPage() {
           ))}
         </div>
       </div>
+
+      {saveError && (
+        <div className="mb-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {saveError}
+        </div>
+      )}
 
       <div className="flex items-start gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-axis-accent/10 border border-axis-accent/20 flex items-center justify-center">
@@ -359,8 +447,7 @@ export default function OnboardingPage() {
       {step === 3 && (
         <div className="space-y-4 animate-fade-in">
           <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Pick 2-3 daily habits you want to track. These build your streak and feed into your system health.
-            Consistency here separates doers from dreamers.
+            Pick one or two daily habits you want to track first. You can always add more later.
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {suggestedHabits.map((habit) => {
@@ -428,103 +515,7 @@ export default function OnboardingPage() {
               Add
             </button>
           </div>
-          <p className="text-[10px] font-mono text-white/20">{selectedHabits.length + customHabits.length}/5 selected (min 2)</p>
-        </div>
-      )}
-
-      {step === 4 && (
-        <div className="space-y-5 animate-fade-in">
-          <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Your public profile is your public accountability page. Share it with partners,
-            on social media, or embed it anywhere. People can see your streaks, grades, and activity.
-          </p>
-          <div>
-            <label className="text-xs font-mono text-white/40 block mb-2">Username</label>
-            <div className="flex flex-col bg-white/[0.06] border border-white/[0.08] rounded-xl overflow-hidden sm:flex-row sm:items-center">
-              <span className="break-all bg-white/[0.03] px-4 py-3 text-xs font-mono text-white/20 sm:border-r sm:border-white/[0.06] sm:py-3.5">lomoura.com/prove/</span>
-              <input
-                type="text"
-                placeholder="your-name"
-                value={proveUsername}
-                onChange={(e) => setProveUsername(e.target.value.replace(/[^a-zA-Z0-9-_]/g, "").toLowerCase())}
-                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm font-mono text-white outline-none placeholder:text-white/20 sm:px-3"
-                autoFocus
-              />
-            </div>
-            {proveUsername.length > 0 && proveUsername.length < 3 && (
-              <p className="text-[10px] text-red-400 mt-1">Username must be at least 3 characters</p>
-            )}
-          </div>
-          <div>
-            <label className="text-xs font-mono text-white/40 block mb-2">Bio (optional)</label>
-            <input
-              type="text"
-              placeholder="e.g. Entrepreneur / Building my SaaS"
-              value={proveBio}
-              onChange={(e) => setProveBio(e.target.value)}
-              className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20"
-              maxLength={100}
-            />
-          </div>
-
-          <div className="bg-axis-dark border border-white/[0.06] rounded-xl p-5 text-center">
-            <p className="text-[10px] font-mono text-white/20 mb-3">PREVIEW</p>
-            <div className="w-14 h-14 rounded-2xl bg-axis-accent/20 flex items-center justify-center mx-auto mb-3">
-              <span className="text-lg font-bold font-mono text-axis-accent">
-                {name ? name.charAt(0).toUpperCase() : "?"}
-              </span>
-            </div>
-            <p className="text-base font-semibold text-white">{name || "Your Name"}</p>
-            <p className="text-xs text-white/30 mt-0.5">{proveBio || "Your bio"}</p>
-          <p className="break-all text-[10px] font-mono text-white/15 mt-2">lomoura.com/prove/{proveUsername || "..."}</p>
-          </div>
-        </div>
-      )}
-
-      {step === 5 && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <IconUser size={14} className="text-axis-accent" />
-                <span className="text-[10px] font-mono text-white/40">PROFILE</span>
-              </div>
-              <p className="text-sm font-semibold text-white">{name}</p>
-              <p className="text-xs text-white/30">{userType} / {timezone.split("/")[1]}</p>
-            </div>
-            
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <IconTarget size={14} className="text-axis-accent" />
-                <span className="text-[10px] font-mono text-white/40">MISSIONS</span>
-              </div>
-              <p className="text-sm font-semibold text-white">{missions.filter((m) => m.title.trim()).length} for today</p>
-              <p className="text-xs text-white/30 truncate">{missions.filter((m) => m.title.trim())[0]?.title || "0"}</p>
-            </div>
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <IconHabits size={14} className="text-axis-accent" />
-                <span className="text-[10px] font-mono text-white/40">HABITS</span>
-              </div>
-              <p className="text-sm font-semibold text-white">{selectedHabits.length + customHabits.length} daily</p>
-              <p className="text-xs text-white/30 truncate">{[...selectedHabits, ...customHabits].join(", ")}</p>
-            </div>
-            
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <IconProve size={14} className="text-axis-accent" />
-                <span className="text-[10px] font-mono text-white/40">PROVE IT</span>
-              </div>
-              <p className="text-sm font-semibold text-white">@{proveUsername}</p>
-              <p className="text-xs text-white/30">{proveBio || "No bio"}</p>
-            </div>
-          </div>
-
-          <div className="bg-axis-accent/10 border border-axis-accent/20 rounded-xl p-4 text-center">
-            <p className="text-sm text-axis-accent font-medium">
-              Everything's connected. Your dashboard, missions, and habits are ready to go.
-            </p>
-          </div>
+          <p className="text-[10px] font-mono text-white/20">{selectedHabits.length + customHabits.length}/5 selected (min 1)</p>
         </div>
       )}
 
@@ -550,7 +541,7 @@ export default function OnboardingPage() {
           </button>
         ) : (
           <button
-            onClick={handleComplete}
+            onClick={() => void handleComplete()}
             disabled={loading}
             className="flex min-w-[156px] items-center justify-center gap-2 bg-axis-accent text-axis-dark text-sm font-semibold px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-50 sm:px-8"
           >

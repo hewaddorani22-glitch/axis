@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/provider";
 
 export function Hero() {
@@ -62,6 +63,7 @@ export function Hero() {
         >
           <Link
             href="/start"
+            onClick={() => trackEvent("hero_cta_clicked", { location: "hero" })}
             className="inline-flex w-full items-center justify-center text-base font-semibold bg-axis-text1 text-white px-8 py-4 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] shadow-lg shadow-axis-text1/10 sm:w-auto"
           >
             {t("hero.cta")}

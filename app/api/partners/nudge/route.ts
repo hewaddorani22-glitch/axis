@@ -15,8 +15,26 @@ export async function POST(request: Request) {
 
   const { toUserId } = await request.json();
   if (!toUserId) return NextResponse.json({ error: "Missing toUserId" }, { status: 400 });
+  if (toUserId === user.id) {
+    return NextResponse.json({ error: "Cannot nudge yourself" }, { status: 400 });
+  }
 
   const admin = createAdminClient();
+  const { data: partnerships } = await admin
+    .from("partnerships")
+    .select("user_a, user_b")
+    .eq("status", "active")
+    .or(`user_a.eq.${user.id},user_b.eq.${user.id}`);
+
+  const partnerIds = new Set(
+    (partnerships || []).map((partnership) =>
+      partnership.user_a === user.id ? partnership.user_b : partnership.user_a
+    )
+  );
+
+  if (!partnerIds.has(toUserId)) {
+    return NextResponse.json({ error: "Partner not found" }, { status: 403 });
+  }
 
   // Record the nudge
   await admin.from("nudges").insert({ from_user: user.id, to_user: toUserId });

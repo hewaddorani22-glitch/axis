@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 
 export type ObjectiveRollupType = "missions" | "revenue" | "habits";
@@ -275,6 +276,9 @@ export function useObjectives() {
       .single();
 
     if (data) {
+      if (objectives.length === 0) {
+        trackEvent("first_goal_created", { source: "themes" });
+      }
       await fetchObjectives();
     }
   };

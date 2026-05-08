@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
 import { useAxisScore } from "@/hooks/useAxisScore";
@@ -117,10 +118,11 @@ export function Sidebar() {
                     <IconUpgrade size={13} className="text-axis-accent" />
                     <p className="text-xs font-semibold text-axis-accent">Upgrade to Pro</p>
                   </div>
-                  <p className="mb-3 text-[11px] leading-relaxed text-white/45">Unlimited everything. $9/mo.</p>
+                  <p className="mb-3 text-[11px] leading-relaxed text-white/45">Unlimited everything. 9 €/Monat.</p>
                   <button
                     onClick={async () => {
                       try {
+                        trackEvent("pro_cta_clicked", { source: "sidebar" });
                         setStartingCheckout(true);
                         const res = await fetch("/api/stripe/checkout", { method: "POST" });
                         const data = await res.json();

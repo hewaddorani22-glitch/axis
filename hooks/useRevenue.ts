@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 
@@ -109,6 +110,9 @@ export function useRevenue() {
       toast.error("Failed to add entry");
       setEntries((prev) => prev.filter((e) => e.id !== tempId));
     } else if (data) {
+      if (entries.length === 0) {
+        trackEvent("first_revenue_entry_created", { source: "revenue" });
+      }
       // Replace temp ID with real ID
       setEntries((prev) => prev.map((e) => (e.id === tempId ? (data as RevenueEntry) : e)));
     }

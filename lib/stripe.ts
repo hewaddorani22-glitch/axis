@@ -17,7 +17,7 @@ export function getStripe(): Stripe {
 export const PLANS = {
   pro: {
     name: "lomoura Pro",
-    price: 900, // $9.00 in cents
+    price: 900, // 9,00 EUR in cents
     priceId: getStripePriceId(),
     features: [
       "Unlimited missions",

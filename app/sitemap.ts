@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 const routes = [
   "",
+  "/start",
   "/login",
   "/signup",
   "/support",

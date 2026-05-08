@@ -17,7 +17,7 @@ export function Footer() {
               <span className="text-base font-bold tracking-tight">lomoura</span>
             </div>
             <p className="text-sm text-axis-text3 leading-relaxed max-w-sm md:max-w-[240px]">
-              One system for everything you do. Missions, revenue, habits, goals.
+              Plan your day with tasks, habits, goals, and revenue in one place.
             </p>
           </div>
 
@@ -28,7 +28,7 @@ export function Footer() {
               <li><a href="#features" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Features</a></li>
               <li><a href="#pricing" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Pricing</a></li>
               <li><Link href="/login" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Log in</Link></li>
-              <li><Link href="/signup" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Sign up</Link></li>
+              <li><Link href="/start" className="text-sm text-axis-text3 hover:text-axis-text1 transition-colors">Sign up</Link></li>
             </ul>
           </div>
 

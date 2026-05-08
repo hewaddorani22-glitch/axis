@@ -3,6 +3,7 @@ import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAppUrl, getStripePriceId } from "@/lib/env";
+import { recordServerEvent } from "@/lib/server-analytics";
 import { headers } from "next/headers";
 
 export async function POST() {
@@ -62,7 +63,7 @@ export async function POST() {
       ? [{ price: priceId, quantity: 1 }]
       : [{
           price_data: {
-            currency: "usd",
+            currency: "eur",
             product_data: {
               name: "lomoura Pro",
               description: "Unlimited missions, habits, revenue tracking, goals, and accountability.",
@@ -85,6 +86,16 @@ export async function POST() {
         metadata: { supabase_user_id: user.id },
       },
       allow_promotion_codes: true,
+    });
+
+    await recordServerEvent({
+      event: "checkout_started",
+      userId: user.id,
+      path: "/api/stripe/checkout",
+      props: {
+        hasPriceId: Boolean(priceId),
+        plan: "pro",
+      },
     });
 
     return NextResponse.json({ url: session.url });

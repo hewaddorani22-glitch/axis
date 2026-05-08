@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "lomoura",
     short_name: "lomoura",
     description:
-      "A focused operating system for daily missions, habit streaks, revenue tracking, goals, and accountability.",
+      "Know what to do today with tasks, habits, goals, revenue tracking, and simple accountability.",
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",

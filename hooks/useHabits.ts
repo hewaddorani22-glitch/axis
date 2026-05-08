@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 
@@ -142,6 +143,9 @@ export function useHabits() {
       .single();
 
     if (data) {
+      if (habits.length === 0) {
+        trackEvent("first_habit_created", { source: "habits" });
+      }
       setHabits((prev) => [
         ...prev,
         { ...(data as Habit), todayDone: false, todaySkipped: false, todayValue: null, streak: 0, weekLog: Array(7).fill("missed") },

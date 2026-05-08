@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 function SettingsContent() {
   const { user, loading, updateProfile, signOut, refetch } = useUser();
@@ -92,6 +93,7 @@ function SettingsContent() {
 
   const handleUpgrade = async () => {
     try {
+      trackEvent("pro_cta_clicked", { source: "settings" });
       setBillingState("checkout");
       const res = await fetch("/api/stripe/checkout", { method: "POST" });
       const data = await res.json();
@@ -277,7 +279,7 @@ function SettingsContent() {
               ? "Redirecting to checkout..."
               : billingState === "confirming"
                 ? "Confirming payment..."
-                : "Upgrade to Pro: $9/mo"}
+                : "Upgrade to Pro: 9 €/Monat"}
           </button>
         )}
       </div>

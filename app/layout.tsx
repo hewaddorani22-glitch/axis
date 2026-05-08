@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import "@/styles/globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CommandPaletteProvider } from "@/components/app/command-palette";
+import { PageTracker } from "@/components/tracking/page-tracker";
 import { Toaster } from "sonner";
 import { LocaleProvider } from "@/lib/i18n/provider";
 import { detectLocaleFromHeader, isLocale, LOCALE_COOKIE, type Locale } from "@/lib/i18n/dict";
@@ -11,16 +12,16 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://lomoura.com"),
   applicationName: "lomoura",
   title: {
-    default: "lomoura | Missions, Habits, Revenue, Goals",
+    default: "lomoura | Tasks, Habits, Goals, Revenue",
     template: "%s | lomoura",
   },
   description:
-    "lomoura is a focused operating system for daily missions, habit streaks, revenue tracking, goals, public accountability, and partner check-ins.",
+    "lomoura helps you know what to do today with tasks, habits, goals, revenue tracking, and simple daily accountability.",
   keywords: [
     "lomoura",
     "productivity app",
-    "business OS",
-    "daily missions",
+    "daily planner",
+    "task planner",
     "habit tracker",
     "revenue tracker",
     "goal tracker",
@@ -43,9 +44,9 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.webmanifest",
   openGraph: {
-    title: "lomoura | Missions, Habits, Revenue, Goals",
+    title: "lomoura | Tasks, Habits, Goals, Revenue",
     description:
-      "Run your day from one clean system: missions, habit streaks, revenue, goals, accountability partners, and public proof.",
+      "Know what to do today in under a minute. Tasks, habits, goals, revenue, and daily accountability in one app.",
     url: "https://lomoura.com",
     siteName: "lomoura",
     images: [
@@ -61,9 +62,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "lomoura | Missions, Habits, Revenue, Goals",
+    title: "lomoura | Tasks, Habits, Goals, Revenue",
     description:
-      "Run your day from one clean system: missions, habit streaks, revenue, goals, accountability partners, and public proof.",
+      "Know what to do today in under a minute. Tasks, habits, goals, revenue, and daily accountability in one app.",
     images: ["/api/og"],
   },
   robots: {
@@ -113,7 +114,10 @@ export default function RootLayout({
       <body className="font-display antialiased">
         <LocaleProvider initialLocale={initialLocale}>
           <ThemeProvider>
-            <CommandPaletteProvider>{children}</CommandPaletteProvider>
+            <CommandPaletteProvider>
+              <PageTracker />
+              {children}
+            </CommandPaletteProvider>
             <Toaster position="bottom-right" theme="system" />
           </ThemeProvider>
         </LocaleProvider>

@@ -21,15 +21,31 @@ export async function GET(request: Request) {
   const today = new Date().toISOString().split("T")[0];
 
   const admin = createAdminClient();
+  const { data: partnerships } = await admin
+    .from("partnerships")
+    .select("user_a, user_b")
+    .eq("status", "active")
+    .or(`user_a.eq.${user.id},user_b.eq.${user.id}`);
+
+  const allowedPartnerIds = new Set(
+    (partnerships || []).map((partnership) =>
+      partnership.user_a === user.id ? partnership.user_b : partnership.user_a
+    )
+  );
+  const filteredPartnerIds = partnerIds.filter((partnerId) => allowedPartnerIds.has(partnerId));
+
+  if (!filteredPartnerIds.length) {
+    return NextResponse.json({ stats: {} });
+  }
 
   // Fetch today's missions, habit logs, and streak data for all partner IDs in parallel
   const [missionsRes, habitLogsRes, allMissionsRes, allHabitLogsRes] = await Promise.all([
-    admin.from("missions").select("user_id, status").in("user_id", partnerIds).eq("date", today),
-    admin.from("habit_logs").select("user_id, date, completed").in("user_id", partnerIds).eq("date", today).eq("completed", true),
+    admin.from("missions").select("user_id, status").in("user_id", filteredPartnerIds).eq("date", today),
+    admin.from("habit_logs").select("user_id, date, completed").in("user_id", filteredPartnerIds).eq("date", today).eq("completed", true),
     // For streak: last 90 days of missions (done)
-    admin.from("missions").select("user_id, date").in("user_id", partnerIds).eq("status", "done").gte("date", getDateDaysAgo(90)),
+    admin.from("missions").select("user_id, date").in("user_id", filteredPartnerIds).eq("status", "done").gte("date", getDateDaysAgo(90)),
     // For streak: last 90 days of habit logs
-    admin.from("habit_logs").select("user_id, date").in("user_id", partnerIds).eq("completed", true).gte("date", getDateDaysAgo(90)),
+    admin.from("habit_logs").select("user_id, date").in("user_id", filteredPartnerIds).eq("completed", true).gte("date", getDateDaysAgo(90)),
   ]);
 
   const missions = missionsRes.data || [];
@@ -47,7 +63,7 @@ export async function GET(request: Request) {
     lastActive: string | null;
   }> = {};
 
-  for (const partnerId of partnerIds) {
+  for (const partnerId of filteredPartnerIds) {
     const todayMissions = missions.filter((m) => m.user_id === partnerId);
     const todayDone = todayMissions.filter((m) => m.status === "done").length;
     const todayTotal = todayMissions.length;

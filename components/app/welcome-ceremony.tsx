@@ -10,15 +10,15 @@ const STORAGE_KEY = "lomoura-welcome-shown";
 const COPY = {
   de: {
     title: (name: string) => `Willkommen, ${name}.`,
-    sub: "Dein System steht. Streak: 1. Lass uns die erste Mission heute erledigen — drei Tage in Folge und du bist nicht mehr aufzuhalten.",
+    sub: "Dein Setup steht. Lass uns heute die erste Mission erledigen und deinen ersten echten Streak starten.",
     cta: "Lass uns loslegen",
-    badge: "Tag 1 · Streak 1",
+    badge: "Tag 1 · Startklar",
   },
   en: {
     title: (name: string) => `Welcome, ${name}.`,
-    sub: "Your system is live. Streak: 1. Let's finish the first mission today — three days in a row and you're unstoppable.",
+    sub: "Your setup is ready. Let's finish your first mission today and start a real streak.",
     cta: "Let's go",
-    badge: "Day 1 · Streak 1",
+    badge: "Day 1 · Ready",
   },
 };
 

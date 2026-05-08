@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { getAppUrl, getSupabaseAnonKey, getSupabaseUrl } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordServerEvent } from "@/lib/server-analytics";
 import { activatePartnership } from "@/lib/partners";
 
 function sanitizeNextPath(next: string | null) {
@@ -147,10 +148,21 @@ export async function GET(request: Request) {
     .maybeSingle();
 
   if (!profile) {
-    await admin.from("users").insert({
-      id: user.id,
-      email,
-      name,
+    await admin.from("users").upsert(
+      {
+        id: user.id,
+        email,
+        name,
+      },
+      { onConflict: "id" }
+    );
+    await recordServerEvent({
+      event: "signup_completed",
+      userId: user.id,
+      path: next,
+      props: {
+        method: code ? "oauth_or_magic_link" : "otp",
+      },
     });
   } else {
     await admin.from("users").update({ email }).eq("id", user.id);

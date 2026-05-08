@@ -192,6 +192,19 @@ CREATE TABLE push_subscriptions (
   last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Analytics Events
+CREATE TABLE analytics_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  event_name TEXT NOT NULL,
+  anon_id TEXT,
+  session_id TEXT,
+  path TEXT,
+  referrer TEXT,
+  props JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE objectives ENABLE ROW LEVEL SECURITY;
@@ -209,9 +222,11 @@ ALTER TABLE daily_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streak_freezes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streak_restores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: Users can only access their own data
 CREATE POLICY "Users read own data" ON users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users insert own data" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users update own data" ON users FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "Objectives: own data" ON objectives FOR ALL USING (auth.uid() = user_id);
@@ -227,6 +242,7 @@ CREATE POLICY "Daily Scores: own data" ON daily_scores FOR ALL USING (auth.uid()
 CREATE POLICY "Streak Freezes: own data" ON streak_freezes FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Streak Restores: own data" ON streak_restores FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Push Subscriptions: own data" ON push_subscriptions FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Analytics events: read own" ON analytics_events FOR SELECT USING (auth.uid() = user_id);
 
 -- Partnerships: both users can read
 CREATE POLICY "Partnerships: read own" ON partnerships FOR SELECT USING (auth.uid() = user_a OR auth.uid() = user_b);

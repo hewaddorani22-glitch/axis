@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { getBrowserAppUrl } from "@/lib/env";
+import { trackEvent } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/provider";
 import { LanguageSwitch } from "@/components/landing/language-switch";
 import { TikTokPixel } from "@/components/tracking/tiktok-pixel";
@@ -144,6 +145,7 @@ function StartFunnel() {
   const handleGoogleSave = async () => {
     setAuthError("");
     setAuthLoading(true);
+    trackEvent("signup_started", { method: "google", source: "start_funnel" });
     trackTikTokEvent("ClickButton", {
       content_id: initialPreset.slug || "start-funnel",
       method: "google",
@@ -168,6 +170,7 @@ function StartFunnel() {
     e.preventDefault();
     setAuthError("");
     setAuthLoading(true);
+    trackEvent("signup_started", { method: "email_otp", source: "start_funnel" });
     const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
     callbackUrl.searchParams.set("next", "/onboarding");
     const { error } = await supabase.auth.signInWithOtp({
@@ -214,6 +217,7 @@ function StartFunnel() {
       content_id: initialPreset.slug || "start-funnel",
       method: "email_otp",
     });
+    trackEvent("signup_completed", { method: "email_otp", source: "start_funnel" });
     router.push("/onboarding");
     router.refresh();
   };

@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 
@@ -73,7 +74,12 @@ export function useMissions(date?: string) {
       .select()
       .single();
 
-    if (data) setMissions((prev) => [...prev, data as Mission]);
+    if (data) {
+      if (missions.length === 0) {
+        trackEvent("first_task_created", { source: "missions" });
+      }
+      setMissions((prev) => [...prev, data as Mission]);
+    }
   };
 
   const toggleMission = async (id: string) => {

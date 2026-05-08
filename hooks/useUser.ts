@@ -40,11 +40,11 @@ export function useUser() {
       // Create profile if doesn't exist (first login via OAuth)
       const { data: newProfile } = await supabase
         .from("users")
-        .insert({
+        .upsert({
           id: authUser.id,
           email: authUser.email!,
           name: authUser.user_metadata?.full_name || authUser.email?.split("@")[0],
-        })
+        }, { onConflict: "id" })
         .select()
         .single();
       setUser(newProfile as UserProfile);

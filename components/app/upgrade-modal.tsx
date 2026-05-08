@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
+import { trackEvent } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/provider";
 import { createClient } from "@/lib/supabase/client";
 
@@ -54,7 +55,10 @@ export function UpgradeModal() {
       if (!createdAt) return;
       const ageMs = Date.now() - new Date(createdAt).getTime();
       if (ageMs < TRIGGER_DAY * DAY_MS) return;
-      if (!cancelled) setOpen(true);
+      if (!cancelled) {
+        setOpen(true);
+        trackEvent("pro_paywall_seen", { source: "upgrade_modal" });
+      }
     })();
 
     return () => {
@@ -64,6 +68,7 @@ export function UpgradeModal() {
 
   const handleUpgrade = async () => {
     setLoading(true);
+    trackEvent("pro_cta_clicked", { source: "upgrade_modal" });
     try {
       const res = await fetch("/api/stripe/checkout", { method: "POST" });
       const data = await res.json();
@@ -139,7 +144,7 @@ export function UpgradeModal() {
             </ul>
 
             <div className="bg-white/[0.04] border border-white/10 rounded-xl p-4 mb-6 flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight">$9</span>
+              <span className="text-3xl font-bold tracking-tight">9 €</span>
               <span className="text-sm text-white/50">{t("upgrade.permonth")}</span>
               <span className="ml-auto text-[11px] font-mono text-axis-accent uppercase">
                 {t("upgrade.cancel")}

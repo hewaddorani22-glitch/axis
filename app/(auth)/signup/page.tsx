@@ -6,6 +6,7 @@ import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { IconMail } from "@/components/icons";
 import { getBrowserAppUrl } from "@/lib/env";
+import { trackEvent } from "@/lib/analytics";
 
 function SignupForm() {
   const [name, setName] = useState("");
@@ -36,6 +37,7 @@ function SignupForm() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    trackEvent("signup_started", { method: "password", source: "signup_page" });
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -65,6 +67,7 @@ function SignupForm() {
           email: user.email!,
           name: name,
         });
+        trackEvent("signup_completed", { method: "password", source: "signup_page" });
         await acceptInvite();
         router.push("/onboarding");
         router.refresh();
@@ -73,6 +76,7 @@ function SignupForm() {
   };
 
   const handleGoogleSignup = async () => {
+    trackEvent("signup_started", { method: "google", source: "signup_page" });
     const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
     callbackUrl.searchParams.set("next", "/onboarding");
     if (inviteId) callbackUrl.searchParams.set("invite", inviteId);
@@ -198,8 +202,8 @@ function SignupForm() {
 
       <p className="text-xs text-center text-axis-text3 mt-4">
         By signing up, you agree to our{" "}
-        <a href="#" className="underline hover:text-axis-text1">Terms</a> and{" "}
-        <a href="#" className="underline hover:text-axis-text1">Privacy Policy</a>.
+        <Link href="/terms" className="underline hover:text-axis-text1">Terms</Link> and{" "}
+        <Link href="/privacy" className="underline hover:text-axis-text1">Privacy Policy</Link>.
       </p>
 
       <p className="text-center text-sm text-axis-text3 mt-6">

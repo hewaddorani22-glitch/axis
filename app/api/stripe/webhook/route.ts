@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeWebhookSecret } from "@/lib/env";
+import { recordServerEvent } from "@/lib/server-analytics";
 
 async function updateUserById(userId: string, updates: { plan?: "free" | "pro"; stripeCustomerId?: string | null }) {
   const update: Record<string, string | null> = {};
@@ -67,6 +68,15 @@ export async function POST(request: Request) {
         await updateUserById(userId, {
           plan: "pro",
           stripeCustomerId: session.customer as string,
+        });
+        await recordServerEvent({
+          event: "pro_subscription_started",
+          userId,
+          path: "/api/stripe/webhook",
+          props: {
+            source: "checkout.session.completed",
+            customerId: session.customer as string,
+          },
         });
 
         console.log(`User ${userId} upgraded to Pro`);

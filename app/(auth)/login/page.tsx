@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getBrowserAppUrl } from "@/lib/env";
+import { trackEvent } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/provider";
 
 function LoginForm() {
@@ -15,27 +16,36 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/dashboard";
   const supabase = createClient();
 
-  const handleSendCode = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendLoginCode = async () => {
     setLoading(true);
     setError("");
+    setNotice("");
     const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
     callbackUrl.searchParams.set("next", redirect);
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true, emailRedirectTo: callbackUrl.toString() },
+      options: { shouldCreateUser: false, emailRedirectTo: callbackUrl.toString() },
     });
     setLoading(false);
     if (error) {
       setError(error.message || t("auth.error.generic"));
+      return false;
     } else {
       setStage("code");
+      setNotice("Check your inbox for the 6-digit code.");
+      return true;
     }
+  };
+
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendLoginCode();
   };
 
   const handleVerifyCode = async (e: React.FormEvent) => {
@@ -52,6 +62,7 @@ function LoginForm() {
       setLoading(false);
       return;
     }
+    trackEvent("login_completed", { method: "email_otp" });
     router.push(redirect);
     router.refresh();
   };
@@ -66,11 +77,13 @@ function LoginForm() {
       setLoading(false);
       return;
     }
+    trackEvent("login_completed", { method: "password" });
     router.push(redirect);
     router.refresh();
   };
 
   const handleGoogleLogin = async () => {
+    trackEvent("login_started", { method: "google" });
     const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
     callbackUrl.searchParams.set("next", redirect);
 
@@ -93,6 +106,12 @@ function LoginForm() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-6">
           {error}
+        </div>
+      )}
+
+      {notice && !error && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl px-4 py-3 mb-6">
+          {notice}
         </div>
       )}
 
@@ -191,10 +210,11 @@ function LoginForm() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setStage("email");
+              onClick={async () => {
                 setOtp("");
+                await sendLoginCode();
               }}
+              disabled={loading}
               className="text-axis-text3 hover:text-axis-text1 transition-colors"
             >
               {t("auth.code.resend")}

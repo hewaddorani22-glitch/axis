@@ -30,8 +30,8 @@ export const TT_PRESETS: Record<string, TtPreset> = {
     goal: "money",
     age: 27,
     startStage: "q2",
-    hookDe: "Solo-Business OS. Eine Mission. Jeden Tag.",
-    hookEn: "Solo business OS. One mission. Every day.",
+    hookDe: "Solo-Business ohne Chaos. Eine Mission. Jeden Tag.",
+    hookEn: "A solo business without the chaos. One mission. Every day.",
   },
   student: {
     goal: "grades",

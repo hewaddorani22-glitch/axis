@@ -33,7 +33,7 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold text-axis-text1 mb-3">Billing</h2>
           <ul className="list-disc pl-6 space-y-2">
             <li>Free plan: 5 missions, 3 habits, 1 revenue stream, 2 goals. No expiration.</li>
-            <li>Pro plan: $9/month, billed monthly via Stripe.</li>
+            <li>Pro plan: 9 €/month, billed monthly via Stripe.</li>
             <li>Cancel anytime from Settings / Manage Subscription. No questions asked.</li>
             <li>We offer a 14-day refund if lomoura doesn't work out. Email {SUPPORT_EMAIL}.</li>
           </ul>
