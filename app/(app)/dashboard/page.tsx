@@ -49,37 +49,20 @@ export default function DashboardPage() {
   const displayName = user?.name || "there";
   const isLoading = userLoading || missionsLoading || habitsLoading || revenueLoading || streakLoading || axisScore.loading;
 
-  const showRevenueStat =
-    mtdTotal > 0 ||
-    user?.user_type === "entrepreneur" ||
-    user?.user_type === "creator";
+  // Climber/Builder segments without side-income see habits instead of revenue.
+  // Hustlers and Creators always see revenue (it's their North Star metric).
+  const userType = user?.user_type;
+  const showRevenue =
+    userType === "entrepreneur" ||
+    userType === "creator" ||
+    mtdTotal > 0;
+
   const stats = [
-    ...(showRevenueStat
-      ? [{
-          label: "MTD Revenue",
-          value: formatCurrency(mtdTotal),
-          change: mtdTotal > 0 ? "This month" : "No entries yet",
-          changeColor: "text-emerald-500",
-          icon: <IconRevenue size={18} className="text-emerald-500" />,
-          extra: null,
-        }]
-      : []),
-    {
-      label: "Tasks Done",
-      value: `${completedCount}/${missionsTotal}`,
-      change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add tasks",
-      changeColor: "text-emerald-500",
-      icon: <IconTarget size={18} className="text-axis-accent" />,
-      extra: null,
-    },
-    {
-      label: "Streak",
-      value: `${streak} day${streak !== 1 ? "s" : ""}`,
-      change: streak >= 7 ? "On fire!" : streak > 0 ? "Keep going!" : "Start today",
-      changeColor: "text-orange-500",
-      icon: <IconStreak size={18} className="text-orange-500" />,
-      extra: <StreakShare streak={streak} name={displayName} score={axisScore.score} />,
-    },
+    showRevenue
+      ? { label: "MTD Revenue", value: formatCurrency(mtdTotal), change: mtdTotal > 0 ? "This month" : "No entries yet", changeColor: "text-emerald-500", icon: <IconRevenue size={18} className="text-emerald-500" />, extra: null }
+      : { label: "Habits Done", value: `${habitsCompleted}/${habitsTotal}`, change: habitsTotal > 0 ? `${Math.round((habitsCompleted / Math.max(habitsTotal, 1)) * 100)}%` : "Add habits", changeColor: "text-axis-accent", icon: <IconHabits size={18} className="text-axis-accent" />, extra: null },
+    { label: "Tasks Done", value: `${completedCount}/${missionsTotal}`, change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add tasks", changeColor: "text-emerald-500", icon: <IconTarget size={18} className="text-axis-accent" />, extra: null },
+    { label: "Streak", value: `${streak} day${streak !== 1 ? "s" : ""}`, change: streak >= 7 ? "On fire!" : streak > 0 ? "Keep going!" : "Start today", changeColor: "text-orange-500", icon: <IconStreak size={18} className="text-orange-500" />, extra: <StreakShare streak={streak} name={displayName} score={axisScore.score} /> },
   ];
 
   const Skeleton = ({ className = "" }: { className?: string }) => (

@@ -31,10 +31,10 @@ import {
 type UserType = "entrepreneur" | "student" | "creator" | "professional";
 
 const userTypes = [
-  { value: "entrepreneur" as UserType, label: "Entrepreneur", desc: "Building a business or startup" },
-  { value: "student" as UserType, label: "Student", desc: "Studying and learning new skills" },
-  { value: "creator" as UserType, label: "Creator", desc: "Content, design, music, art" },
-  { value: "professional" as UserType, label: "Professional", desc: "Growing in your career" },
+  { value: "entrepreneur" as UserType, label: "Side-Hustle / Selbstständig", desc: "Ich verdiene oder will online verdienen" },
+  { value: "professional" as UserType, label: "Angestellt — aber will mehr", desc: "9-to-5, aber raus aus dem Standby" },
+  { value: "creator" as UserType, label: "Creator / online aktiv", desc: "Posten, Reichweite, dranbleiben" },
+  { value: "student" as UserType, label: "Student / Schüler mit Plan", desc: "Studium + Disziplin + Side-Stuff" },
 ];
 
 const timezones = [
@@ -49,16 +49,50 @@ const timezones = [
   { value: "UTC", label: "UTC" },
 ];
 
-const suggestedHabits = [
-  { name: "Deep Work", icon: <IconFocus size={16} /> },
-  { name: "Content Creation", icon: <IconEdit size={16} /> },
-  { name: "Exercise", icon: <IconEnergy size={16} /> },
-  { name: "Reading", icon: <IconReview size={16} /> },
-  { name: "Outreach", icon: <IconGlobe size={16} /> },
-  { name: "Meditation", icon: <IconHabits size={16} /> },
-  { name: "Journaling", icon: <IconBriefing size={16} /> },
-  { name: "Cold Calling", icon: <IconLink size={16} /> },
-];
+// Segment-aware habit suggestions. Each user sees the 8 most relevant
+// habits for their flow first; the union is shown with their picks at top.
+const habitsBySegment: Record<UserType, { name: string; icon: React.ReactNode }[]> = {
+  entrepreneur: [
+    { name: "Deep Work", icon: <IconFocus size={16} /> },
+    { name: "Outreach", icon: <IconGlobe size={16} /> },
+    { name: "Sport", icon: <IconEnergy size={16} /> },
+    { name: "Cold Calling", icon: <IconLink size={16} /> },
+    { name: "Content Creation", icon: <IconEdit size={16} /> },
+    { name: "Reading", icon: <IconReview size={16} /> },
+    { name: "Journaling", icon: <IconBriefing size={16} /> },
+    { name: "Meditation", icon: <IconHabits size={16} /> },
+  ],
+  professional: [
+    { name: "Sport", icon: <IconEnergy size={16} /> },
+    { name: "Side-Project (30 Min)", icon: <IconFocus size={16} /> },
+    { name: "Reading / Lernen", icon: <IconReview size={16} /> },
+    { name: "Kein Handy nach 22 Uhr", icon: <IconHabits size={16} /> },
+    { name: "Journaling", icon: <IconBriefing size={16} /> },
+    { name: "Meditation", icon: <IconHabits size={16} /> },
+    { name: "Outreach", icon: <IconGlobe size={16} /> },
+    { name: "Content Creation", icon: <IconEdit size={16} /> },
+  ],
+  creator: [
+    { name: "Posten", icon: <IconEdit size={16} /> },
+    { name: "Engagement (30 Min)", icon: <IconGlobe size={16} /> },
+    { name: "Content schneiden", icon: <IconFocus size={16} /> },
+    { name: "Sport", icon: <IconEnergy size={16} /> },
+    { name: "Reading", icon: <IconReview size={16} /> },
+    { name: "Journaling", icon: <IconBriefing size={16} /> },
+    { name: "Cold DMs", icon: <IconLink size={16} /> },
+    { name: "Meditation", icon: <IconHabits size={16} /> },
+  ],
+  student: [
+    { name: "Lernblock (60 Min)", icon: <IconFocus size={16} /> },
+    { name: "Sport", icon: <IconEnergy size={16} /> },
+    { name: "Lesen / Buch", icon: <IconReview size={16} /> },
+    { name: "Schlaf vor 23 Uhr", icon: <IconHabits size={16} /> },
+    { name: "Journaling", icon: <IconBriefing size={16} /> },
+    { name: "Side-Project (30 Min)", icon: <IconEdit size={16} /> },
+    { name: "Meditation", icon: <IconHabits size={16} /> },
+    { name: "Kein Handy beim Lernen", icon: <IconLink size={16} /> },
+  ],
+};
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -148,10 +182,10 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!userType) return;
     const examples: Record<UserType, string[]> = {
-      entrepreneur: ["Review metrics", "Customer support calls", "Plan Q3 roadmap", "Write marketing copy", "Sync with team"],
-      student: ["Study for finals", "Complete assignment", "Read chapters 4-5", "Review notes", "Organize desk"],
-      creator: ["Draft new script", "Edit latest video", "Post on socials", "Reply to comments", "Brainstorm ideas"],
-      professional: ["Finish TPS report", "Prepare presentation", "Inbox zero", "Weekly sync", "Follow up leads"],
+      entrepreneur: ["Eine Sache, die heute Umsatz bringt", "3 Cold-DMs / Outreach", "1 h am Hauptprojekt", "Workout 30 Min", "Inbox auf Null"],
+      professional: ["30 Min am Side-Project", "Workout 30 Min", "1 wichtige Sache im Job fertig", "30 Min lernen / lesen", "Kein Handy nach 22 Uhr"],
+      creator: ["1 Post / Reel rausschicken", "30 Min Engagement", "Nächsten Content-Block schneiden", "Workout 30 Min", "Idee für nächste Woche notiert"],
+      student: ["60 Min fokussiert lernen — ohne Handy", "Workout 30 Min", "Aufgabe X bearbeitet", "30 Min Side-Project", "Schlaf vor 23 Uhr planen"],
     };
     const titles = examples[userType] || [];
     setMissions((prev) =>
@@ -450,7 +484,7 @@ export default function OnboardingPage() {
             Pick one or two daily habits you want to track first. You can always add more later.
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {suggestedHabits.map((habit) => {
+            {(userType ? habitsBySegment[userType] : habitsBySegment.professional).map((habit) => {
               const isSelected = selectedHabits.includes(habit.name);
               return (
                 <button

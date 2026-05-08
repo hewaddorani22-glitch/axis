@@ -16,7 +16,8 @@ const de: Dict = {
   "nav.cta": "Streak starten",
 
   // Hero
-  "hero.badge": "Public Beta — über 12.000 aktive Streaks",
+  "hero.badge": "Public Beta — Streaks laufen gerade",
+  "hero.badge.live": "{n} Streaks heute aktiv",
   "hero.title.a": "Wisse jeden Morgen in 60 Sekunden,",
   "hero.title.b": "was du heute wirklich tun musst.",
   "hero.sub": "Für alle, die mehr aus ihrem Leben machen wollen — Studierende, Angestellte, Hustler, Creator. Eine App. Ein Tab. Dein Streak.",
@@ -354,7 +355,8 @@ const en: Dict = {
   "nav.login": "Log in",
   "nav.cta": "Start your streak",
 
-  "hero.badge": "Public Beta — 12,000+ active streaks",
+  "hero.badge": "Public Beta — streaks running now",
+  "hero.badge.live": "{n} streaks active today",
   "hero.title.a": "Know exactly what to do today",
   "hero.title.b": "in 60 seconds.",
   "hero.sub": "For everyone who wants more out of their life — students, employees, hustlers, creators. One app. One tab. Your streak.",

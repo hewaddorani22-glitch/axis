@@ -8,6 +8,22 @@ import { useLocale } from "@/lib/i18n/provider";
 export function Hero() {
   const { t } = useLocale();
   const [personaIndex, setPersonaIndex] = useState(0);
+  const [activeStreaks, setActiveStreaks] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/stats/active-streaks")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && typeof data?.count === "number" && data.count > 0) {
+          setActiveStreaks(data.count);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const personas = [
     { name: t("hero.persona.hustler"), line: t("hero.persona.hustler.line") },
@@ -39,7 +55,11 @@ export function Hero() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 bg-white border border-axis-border rounded-full px-4 py-1.5 mb-8 animate-fade-in">
           <span className="w-2 h-2 bg-axis-accent2 rounded-full animate-pulse-soft" />
-          <span className="text-xs font-mono font-medium text-axis-text2">{t("hero.badge")}</span>
+          <span className="text-xs font-mono font-medium text-axis-text2">
+            {activeStreaks !== null
+              ? t("hero.badge.live", { n: activeStreaks.toLocaleString("de-DE") })
+              : t("hero.badge")}
+          </span>
         </div>
 
         {/* Headline */}
