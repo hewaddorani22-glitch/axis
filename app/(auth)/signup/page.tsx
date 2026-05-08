@@ -180,6 +180,9 @@ function SignupForm() {
             <p className="text-sm text-axis-text2">
               {t("signup.code.sent", { email })}
             </p>
+            <p className="mt-2 text-xs text-axis-text3">
+              {t("auth.code.help")}
+            </p>
           </div>
           <div>
             <label htmlFor="signup-code" className="block text-xs font-medium text-axis-text2 mb-1.5">{t("signup.code.label")}</label>

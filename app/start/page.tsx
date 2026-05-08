@@ -573,6 +573,9 @@ function StartFunnel() {
                   <p className="text-sm text-axis-text2 mb-4">
                     {t("auth.code.sub", { email })}
                   </p>
+                  <p className="text-xs text-axis-text3 mb-4">
+                    {t("auth.code.help")}
+                  </p>
                   <input
                     autoFocus
                     type="text"

@@ -9,7 +9,7 @@ export const FROM_EMAIL = getFromEmail();
 const APP_URL = getAppUrl();
 
 /**
- * Send a custom 6-digit email sign-in code.
+ * Send a custom email sign-in code.
  * We send this ourselves so the product can use OTP-only auth
  * without depending on Supabase's hosted magic-link template.
  */
@@ -38,6 +38,10 @@ export async function sendEmailOtpEmail(
     from: FROM_EMAIL,
     to,
     subject: `${heading}: ${code}`,
+    tags: [
+      { name: "category", value: "auth_otp" },
+      { name: "mode", value: mode },
+    ],
     text: `${heading}\n\n${body}\n\n${code}\n\nWenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.`,
     html: `
       <div style="font-family: 'Outfit', sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px;">

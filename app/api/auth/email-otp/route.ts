@@ -26,11 +26,11 @@ function friendlyError(message: string, mode: Mode) {
     return "Dieses Konto nutzt Google. Bitte melde dich mit Google an.";
   }
 
-  if (mode === "login") {
-    return "Fuer diese E-Mail wurde kein Konto gefunden.";
-  }
-
   return "Der Code konnte gerade nicht gesendet werden. Bitte versuch es gleich nochmal.";
+}
+
+function getEmailDomain(email: string) {
+  return email.split("@").pop() || "unknown";
 }
 
 export async function POST(request: Request) {
@@ -78,10 +78,6 @@ export async function POST(request: Request) {
 
     const accountExists = Boolean(existingProfile);
 
-    if (mode === "login" && !accountExists) {
-      return NextResponse.json({ error: friendlyError("not_found", mode) }, { status: 404 });
-    }
-
     const { data, error } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email,
@@ -97,10 +93,21 @@ export async function POST(request: Request) {
     }
 
     try {
-      await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
-    } catch (err) {
+      const sentEmail = await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
+      console.info("[email-otp] Resend sent", {
+        emailId: sentEmail?.id,
+        mode,
+        verificationType: data.properties.verification_type,
+        accountExists,
+        recipientDomain: getEmailDomain(email),
+      });
+    } catch (sendError) {
       console.error("[email-otp] Resend send failed", {
-        message: err instanceof Error ? err.message : String(err),
+        mode,
+        verificationType: data.properties.verification_type,
+        accountExists,
+        recipientDomain: getEmailDomain(email),
+        message: sendError instanceof Error ? sendError.message : "unknown",
       });
       return NextResponse.json(
         {

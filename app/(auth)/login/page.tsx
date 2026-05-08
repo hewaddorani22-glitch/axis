@@ -165,6 +165,9 @@ function LoginForm() {
             <p className="text-sm text-axis-text2 mb-3">
               {t("auth.code.sub", { email })}
             </p>
+            <p className="text-xs text-axis-text3 mb-3">
+              {t("auth.code.help")}
+            </p>
           </div>
           <div>
             <label htmlFor="email-code" className="block text-xs font-medium text-axis-text2 mb-1.5">
