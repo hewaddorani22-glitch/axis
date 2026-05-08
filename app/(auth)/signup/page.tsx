@@ -188,18 +188,18 @@ function SignupForm() {
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="123456"
+              placeholder="12345678"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
               className="w-full rounded-xl px-4 py-3 text-center tracking-[0.4em] text-lg bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
               required
-              maxLength={6}
+              maxLength={8}
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading || code.length !== 6}
+            disabled={loading || code.length < 6}
             className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (

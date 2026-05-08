@@ -580,14 +580,14 @@ function StartFunnel() {
                     autoComplete="one-time-code"
                     placeholder={t("auth.code.placeholder")}
                     value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                     required
-                    maxLength={6}
+                    maxLength={8}
                     className="w-full rounded-xl px-4 py-3 text-center tracking-[0.4em] text-lg bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
                   />
                   <button
                     type="submit"
-                    disabled={authLoading || code.length !== 6}
+                    disabled={authLoading || code.length < 6}
                     className="w-full mt-4 flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3.5 rounded-xl hover:bg-axis-text1/90 active:scale-[0.98] transition-all disabled:opacity-60"
                   >
                     {authLoading ? t("auth.code.verifying") : t("auth.code.cta")}

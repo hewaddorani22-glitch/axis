@@ -31,8 +31,8 @@ export async function sendEmailOtpEmail(
       : "Dein Lomoura Code";
   const body =
     mode === "login"
-      ? "Gib diesen 6-stelligen Code in Lomoura ein, um dich anzumelden."
-      : "Gib diesen 6-stelligen Code in Lomoura ein, um dein Konto zu bestaetigen und weiterzumachen.";
+      ? "Gib diesen Code in Lomoura ein, um dich anzumelden."
+      : "Gib diesen Code in Lomoura ein, um dein Konto zu bestaetigen und weiterzumachen.";
 
   const { data, error } = await resend.emails.send({
     from: FROM_EMAIL,
