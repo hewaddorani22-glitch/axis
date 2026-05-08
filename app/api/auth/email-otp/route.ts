@@ -1,6 +1,6 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { sendEmailOtpEmail } from "@/lib/resend";
+import { sendEmailOtpEmail, resend as resendClient } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type Mode = "login" | "signup" | "auto";
@@ -33,6 +33,73 @@ function friendlyError(message: string, mode: Mode) {
   return "Der Code konnte gerade nicht gesendet werden. Bitte versuch es gleich nochmal.";
 }
 
+/**
+ * Send the OTP using our own Resend template. Returns true on success.
+ * Logs server-side on failure so triage shows up in Vercel logs.
+ */
+async function trySendViaResend(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+  mode: Mode,
+  name: string,
+  accountExists: boolean,
+): Promise<{ ok: boolean; verificationType?: EmailOtpType }> {
+  if (!resendClient) {
+    console.warn("[email-otp] Resend not configured — falling back to Supabase native");
+    return { ok: false };
+  }
+
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: !accountExists && name ? { data: { full_name: name, name } } : undefined,
+  });
+
+  if (error || !data?.properties?.email_otp || !data.properties.verification_type) {
+    console.error("[email-otp] generateLink failed", { error: error?.message });
+    return { ok: false };
+  }
+
+  try {
+    await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
+    return {
+      ok: true,
+      verificationType: data.properties.verification_type as EmailOtpType,
+    };
+  } catch (err) {
+    console.error("[email-otp] Resend send failed", {
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return { ok: false };
+  }
+}
+
+/**
+ * Fallback: ask Supabase to send the OTP from its own email pipeline.
+ * Requires SMTP to be configured in the Supabase Auth dashboard (or relies on
+ * the Supabase hosted email service for low-volume / dev). Either way, this
+ * keeps auth working when our custom Resend setup is misconfigured.
+ */
+async function trySendViaSupabase(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+  accountExists: boolean,
+  name: string,
+): Promise<{ ok: boolean; verificationType?: EmailOtpType; error?: string }> {
+  const { error } = await admin.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: !accountExists,
+      data: !accountExists && name ? { full_name: name, name } : undefined,
+    },
+  });
+  if (error) {
+    console.error("[email-otp] Supabase fallback failed", { message: error.message });
+    return { ok: false, error: error.message };
+  }
+  return { ok: true, verificationType: "email" as EmailOtpType };
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
@@ -43,7 +110,7 @@ export async function POST(request: Request) {
     if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: "Bitte gib eine gueltige E-Mail-Adresse ein." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -55,52 +122,55 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (profileError) {
+      console.error("[email-otp] users lookup failed", { message: profileError.message });
       return NextResponse.json(
         { error: "Die Anmeldung konnte gerade nicht vorbereitet werden." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     const accountExists = Boolean(existingProfile);
 
     if (mode === "login" && !accountExists) {
-      return NextResponse.json(
-        { error: friendlyError("not_found", mode) },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: friendlyError("not_found", mode) }, { status: 404 });
     }
 
-    const { data, error } = await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: !accountExists && name ? { data: { full_name: name, name } } : undefined,
+    // Path 1: try Resend with our custom template
+    const resendResult = await trySendViaResend(admin, email, mode, name, accountExists);
+    if (resendResult.ok) {
+      return NextResponse.json({
+        ok: true,
+        verificationType: resendResult.verificationType ?? "email",
+        accountExists,
+        channel: "resend",
+      });
+    }
+
+    // Path 2: fall back to Supabase's email pipeline
+    const supabaseResult = await trySendViaSupabase(admin, email, accountExists, name);
+    if (supabaseResult.ok) {
+      return NextResponse.json({
+        ok: true,
+        verificationType: supabaseResult.verificationType ?? "email",
+        accountExists,
+        channel: "supabase",
+      });
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          "Der Code konnte gerade nicht gesendet werden. Bitte versuch es gleich nochmal oder nutze Google-Login.",
+      },
+      { status: 502 },
+    );
+  } catch (err) {
+    console.error("[email-otp] unhandled", {
+      message: err instanceof Error ? err.message : String(err),
     });
-
-    if (error || !data?.properties?.email_otp || !data.properties.verification_type) {
-      return NextResponse.json(
-        { error: friendlyError(error?.message ?? "otp_failed", mode) },
-        { status: 400 }
-      );
-    }
-
-    try {
-      await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
-    } catch {
-      return NextResponse.json(
-        { error: "Der Code konnte gerade nicht per E-Mail gesendet werden." },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json({
-      ok: true,
-      verificationType: data.properties.verification_type as EmailOtpType,
-      accountExists,
-    });
-  } catch {
     return NextResponse.json(
       { error: "Die Anmeldung konnte gerade nicht vorbereitet werden." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
