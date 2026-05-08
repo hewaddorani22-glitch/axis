@@ -2,6 +2,15 @@ import { ImageResponse } from "@vercel/og";
 import { NextRequest } from "next/server";
 
 export const runtime = "edge";
+export const dynamic = "force-dynamic";
+
+const imageOptions = {
+  width: 1200,
+  height: 630,
+  headers: {
+    "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=3600",
+  },
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -29,15 +38,6 @@ export async function GET(req: NextRequest) {
               overflow: "hidden",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundImage:
-                  "linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px)",
-                backgroundSize: "44px 44px",
-              }}
-            />
             <div
               style={{
                 position: "absolute",
@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
             </div>
           </div>
         ),
-        { width: 1200, height: 630 }
+        imageOptions
       );
     }
 
@@ -135,20 +135,6 @@ export async function GET(req: NextRequest) {
             overflow: "hidden",
           }}
         >
-          {/* Background grid effect */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-              opacity: 0.5,
-            }}
-          />
-
           {/* Accent Glow */}
           <div
             style={{
@@ -157,7 +143,7 @@ export async function GET(req: NextRequest) {
               left: "-50%",
               width: "200%",
               height: "200%",
-              background: "radial-gradient(circle at center, rgba(205, 255, 79, 0.15) 0%, transparent 50%)",
+              background: "rgba(205, 255, 79, 0.08)",
             }}
           />
 
@@ -231,10 +217,7 @@ export async function GET(req: NextRequest) {
           </div>
         </div>
       ),
-      {
-        width: 1200,
-        height: 630,
-      }
+      imageOptions
     );
   } catch (e: any) {
     return new Response("Failed to generate OG image", { status: 500 });
