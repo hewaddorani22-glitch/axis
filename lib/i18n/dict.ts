@@ -23,7 +23,7 @@ const de: Dict = {
   "hero.sub": "Für alle, die mehr aus ihrem Leben machen wollen — Studierende, Angestellte, Hustler, Creator. Eine App. Ein Tab. Dein Streak.",
   "hero.cta": "Starte deinen Streak",
   "hero.secondary": "Wie's funktioniert",
-  "hero.trust": "Kein Kreditkarte · Login mit Google · Free forever",
+  "hero.trust": "Keine Kreditkarte · Login mit Google · Free forever",
   "hero.proof": "Menschen wie du holen gerade mehr aus ihrem Tag raus.",
   // 4 segments: Hustler / Climber / Creator / Builder
   "hero.persona.hustler": "Marco · 24 · Side-Hustle",

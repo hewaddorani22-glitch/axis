@@ -1,6 +1,10 @@
+"use client";
+
 import { IconBrandNotion, IconBrandTodoist, IconBrandMint, IconBrandHabitica, IconBrandGoogleSheets, IconBrandStrides } from "@/components/icons";
+import { useLocale } from "@/lib/i18n/provider";
 
 export function LogoRow() {
+  const { locale } = useLocale();
   const apps = [
     { name: "Notion", icon: <IconBrandNotion size={20} /> },
     { name: "Todoist", icon: <IconBrandTodoist size={20} /> },
@@ -14,7 +18,7 @@ export function LogoRow() {
     <section className="py-12 border-t border-axis-border">
       <div className="max-w-5xl mx-auto px-6">
         <p className="text-center text-sm font-mono text-axis-text3 mb-8 uppercase tracking-wider">
-          Replaces these apps
+          {locale === "de" ? "Ersetzt diese Apps" : "Replaces these apps"}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
           {apps.map((app) => (
