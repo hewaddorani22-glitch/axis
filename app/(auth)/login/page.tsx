@@ -189,7 +189,7 @@ function LoginForm() {
             disabled={loading || code.length < 6}
             className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50"
           >
-            {loading ? t("auth.code.verifying") : "Anmelden"}
+            {loading ? t("auth.code.verifying") : t("auth.login.link")}
           </button>
           <button
             type="button"

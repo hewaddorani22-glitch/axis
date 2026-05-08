@@ -125,7 +125,15 @@ export function useHabits() {
 
     const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
     if (profile?.plan === "free" && habits.length >= 3) {
-      toast.error("Free plan limit reached", { description: "3 habits maximum. Upgrade to Pro in Settings to unlock unlimited habits." });
+      const isDe = typeof document !== "undefined" && document.documentElement.lang === "de";
+      toast.error(
+        isDe ? "Free-Plan-Limit erreicht" : "Free plan limit reached",
+        {
+          description: isDe
+            ? "Maximal 3 Habits. Upgrade auf Pro in den Einstellungen fuer unbegrenzte Habits."
+            : "3 habits maximum. Upgrade to Pro in Settings to unlock unlimited habits.",
+        },
+      );
       openUpgradePrompt({ source: "habit_limit" });
       return;
     }

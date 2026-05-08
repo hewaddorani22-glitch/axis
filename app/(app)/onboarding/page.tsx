@@ -30,12 +30,20 @@ import {
 
 type UserType = "entrepreneur" | "student" | "creator" | "professional";
 
-const userTypes = [
-  { value: "entrepreneur" as UserType, label: "Side-Hustle / Selbstständig", desc: "Ich verdiene oder will online verdienen" },
-  { value: "professional" as UserType, label: "Angestellt — aber will mehr", desc: "9-to-5, aber raus aus dem Standby" },
-  { value: "creator" as UserType, label: "Creator / online aktiv", desc: "Posten, Reichweite, dranbleiben" },
-  { value: "student" as UserType, label: "Student / Schüler mit Plan", desc: "Studium + Disziplin + Side-Stuff" },
-];
+const userTypesByLocale: Record<"de" | "en", { value: UserType; label: string; desc: string }[]> = {
+  de: [
+    { value: "entrepreneur", label: "Side-Hustle / Selbststaendig", desc: "Ich verdiene oder will online verdienen" },
+    { value: "professional", label: "Angestellt — aber will mehr", desc: "9-to-5, aber raus aus dem Standby" },
+    { value: "creator", label: "Creator / online aktiv", desc: "Posten, Reichweite, dranbleiben" },
+    { value: "student", label: "Student / Schueler mit Plan", desc: "Studium + Disziplin + Side-Stuff" },
+  ],
+  en: [
+    { value: "entrepreneur", label: "Side-hustle / self-employed", desc: "I earn online or want to" },
+    { value: "professional", label: "Employed — but want more", desc: "9-to-5, but ready to break out" },
+    { value: "creator", label: "Creator / online", desc: "Posting, building reach, staying consistent" },
+    { value: "student", label: "Student with a plan", desc: "Studies + discipline + side stuff" },
+  ],
+};
 
 const timezones = [
   { value: "Europe/Berlin", label: "Berlin (CET)" },
@@ -97,8 +105,11 @@ const habitsBySegment: Record<UserType, { name: string; icon: React.ReactNode }[
 export default function OnboardingPage() {
   const router = useRouter();
   const supabaseCheck = createClient();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const supabase = createClient();
+  const userTypes = userTypesByLocale[locale] ?? userTypesByLocale.de;
+  const [plan, setPlan] = useState<"free" | "pro">("free");
+  const habitMax = plan === "pro" ? 10 : 3;
 
   useEffect(() => {
     supabaseCheck.from("users").select("onboarding_done").single().then(({ data }) => {
@@ -146,7 +157,7 @@ export default function OnboardingPage() {
 
       const { data: profile } = await supabase
         .from("users")
-        .select("name, user_type, timezone")
+        .select("name, user_type, timezone, plan")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -157,6 +168,9 @@ export default function OnboardingPage() {
         setUserType(profile.user_type as UserType);
       }
       setTimezone(profile?.timezone || browserTimezone);
+      if (profile?.plan === "pro" || profile?.plan === "free") {
+        setPlan(profile.plan);
+      }
     };
 
     void hydrateProfile();
@@ -206,9 +220,9 @@ export default function OnboardingPage() {
   const progressPct = (step / totalSteps) * 100;
 
   const stepTitles = [
-    { title: "Your Profile", subtitle: "Tell us what fits your life so we can personalize day one.", icon: <IconUser size={20} className="text-axis-accent" /> },
-    { title: "Today's Tasks", subtitle: "Start with the 1-3 things that matter most today.", icon: <IconTarget size={20} className="text-axis-accent" /> },
-    { title: "Habits", subtitle: "Pick one or two habits you want to keep showing up for.", icon: <IconHabits size={20} className="text-axis-accent" /> },
+    { title: t("onb.step1.title"), subtitle: t("onb.step1.sub"), icon: <IconUser size={20} className="text-axis-accent" /> },
+    { title: t("onb.step2.title"), subtitle: t("onb.step2.sub"), icon: <IconTarget size={20} className="text-axis-accent" /> },
+    { title: t("onb.step3.title"), subtitle: t("onb.step3.sub"), icon: <IconHabits size={20} className="text-axis-accent" /> },
   ];
 
   const canProceed = () => {
@@ -225,7 +239,7 @@ export default function OnboardingPage() {
     setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setSaveError("Your session expired. Please log in again.");
+      setSaveError(t("onb.error.session"));
       setLoading(false);
       return;
     }
@@ -312,7 +326,7 @@ export default function OnboardingPage() {
       router.push("/dashboard");
       router.refresh();
     } catch (error: any) {
-      setSaveError(error?.message || "We couldn't finish setup. Please try again.");
+      setSaveError(error?.message || t("onb.error.save"));
       setLoading(false);
       return;
     }
@@ -325,24 +339,27 @@ export default function OnboardingPage() {
     <div className="mx-auto w-full max-w-2xl">
       <div className="flex items-center gap-3 mb-2">
         <AxisLogo size={24} />
-        <span className="text-sm font-bold text-white">lomoura Setup</span>
+        <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{t("onb.setup")}</span>
       </div>
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-mono text-white/40">Step {step} of {totalSteps}</span>
+          <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
+            {t("onb.step", { n: String(step), total: String(totalSteps) })}
+          </span>
           <button
             onClick={() => {
-              if (confirm("Skip setup? You can configure everything later in Settings.")) {
+              if (confirm(t("onb.skip.confirm"))) {
                 void handleComplete({ skip: true });
               }
             }}
-            className="text-xs text-white/20 hover:text-white/40 transition-colors"
+            className="text-xs transition-colors"
+            style={{ color: "var(--text-tertiary)" }}
           >
-            Skip for now
+            {t("onb.skip")}
           </button>
         </div>
-        <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+        <div className="h-1 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-tertiary)" }}>
           <div className="h-full bg-axis-accent rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
         </div>
         <div className="flex items-center justify-between mt-3">
@@ -352,8 +369,13 @@ export default function OnboardingPage() {
               className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
                 i + 1 < step ? "bg-axis-accent text-axis-dark" :
                 i + 1 === step ? "bg-axis-accent/20 text-axis-accent border border-axis-accent/40" :
-                "bg-white/[0.04] text-white/20"
+                ""
               }`}
+              style={
+                i + 1 > step
+                  ? { backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }
+                  : undefined
+              }
             >
               {i + 1 < step ? <IconCheck size={12} /> : i + 1}
             </div>
@@ -372,53 +394,69 @@ export default function OnboardingPage() {
           {currentStep.icon}
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">{currentStep.title}</h2>
-          <p className="text-sm text-white/40">{currentStep.subtitle}</p>
+          <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{currentStep.title}</h2>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{currentStep.subtitle}</p>
         </div>
       </div>
 
       {step === 1 && (
         <div className="space-y-6 animate-fade-in">
           <div>
-            <label className="text-xs font-mono text-white/40 block mb-2">Your name</label>
+            <label className="text-xs font-mono block mb-2" style={{ color: "var(--text-tertiary)" }}>{t("onb.step1.name")}</label>
             <input
               type="text"
-              placeholder="What should we call you?"
+              placeholder={t("onb.step1.name.placeholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-base rounded-xl px-5 py-4 outline-none placeholder:text-white/20 focus:border-axis-accent/50 focus:ring-2 focus:ring-axis-accent/10 transition-all"
+              className="w-full text-base rounded-xl px-5 py-4 outline-none focus:border-axis-accent/50 focus:ring-2 focus:ring-axis-accent/10 transition-all border"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                borderColor: "var(--border-primary)",
+                color: "var(--text-primary)",
+              }}
               autoFocus
             />
           </div>
 
           <div>
-            <label className="text-xs font-mono text-white/40 block mb-2">What describes you best?</label>
+            <label className="text-xs font-mono block mb-2" style={{ color: "var(--text-tertiary)" }}>{t("onb.step1.type")}</label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {userTypes.map((type) => (
-                <button
-                  key={type.value}
-                  onClick={() => setUserType(type.value)}
-                  className={`p-4 rounded-xl text-left transition-all border ${
-                    userType === type.value
-                      ? "bg-axis-accent/10 border-axis-accent/30"
-                      : "bg-white/[0.03] border-white/[0.06] hover:border-white/[0.12]"
-                  }`}
-                >
-                  <p className="text-sm font-semibold text-white">{type.label}</p>
-                  <p className="text-xs text-white/30 mt-0.5">{type.desc}</p>
-                </button>
-              ))}
+              {userTypes.map((type) => {
+                const isSelected = userType === type.value;
+                return (
+                  <button
+                    key={type.value}
+                    onClick={() => setUserType(type.value)}
+                    className={`p-4 rounded-xl text-left transition-all border ${
+                      isSelected ? "bg-axis-accent/10 border-axis-accent/30" : ""
+                    }`}
+                    style={
+                      isSelected
+                        ? undefined
+                        : { backgroundColor: "var(--bg-tertiary)", borderColor: "var(--border-primary)" }
+                    }
+                  >
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{type.label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{type.desc}</p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-mono text-white/40 block mb-2 flex items-center gap-1.5">
-              <IconGlobe size={12} /> Timezone
+            <label className="text-xs font-mono block mb-2 flex items-center gap-1.5" style={{ color: "var(--text-tertiary)" }}>
+              <IconGlobe size={12} /> {t("onb.step1.tz")}
             </label>
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full bg-white/[0.06] border border-white/[0.08] text-white/70 text-sm rounded-xl px-4 py-3 outline-none"
+              className="w-full text-sm rounded-xl px-4 py-3 outline-none border"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                borderColor: "var(--border-primary)",
+                color: "var(--text-secondary)",
+              }}
             >
               {timezones.map((tz) => (
                 <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -430,85 +468,128 @@ export default function OnboardingPage() {
 
       {step === 2 && (
         <div className="space-y-3 animate-fade-in">
-          <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Tasks are your daily priorities: the things that move the needle.
-            Set up to 5 for today, ranked by importance. You can always change them later.
+          <p
+            className="text-xs rounded-xl px-4 py-3 border"
+            style={{
+              color: "var(--text-secondary)",
+              backgroundColor: "var(--bg-tertiary)",
+              borderColor: "var(--border-primary)",
+            }}
+          >
+            {t("onb.step2.hint")}
           </p>
-          {missions.map((mission, i) => (
-            <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                i === 0 ? "bg-red-500/10 text-red-400" :
-                i < 3 ? "bg-amber-500/10 text-amber-400" :
-                "bg-white/[0.04] text-white/20"
-              }`}>
-                <span className="text-xs font-mono font-bold">{i + 1}</span>
+          {missions.map((mission, i) => {
+            const placeholder =
+              i === 0 ? t("onb.step2.placeholder.1")
+              : i === 1 ? t("onb.step2.placeholder.2")
+              : i === 2 ? t("onb.step2.placeholder.3")
+              : t("onb.step2.placeholder.n", { n: String(i + 1) });
+            return (
+              <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    i === 0 ? "bg-red-500/10 text-red-500"
+                    : i < 3 ? "bg-amber-500/10 text-amber-500"
+                    : ""
+                  }`}
+                  style={
+                    i >= 3
+                      ? { backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }
+                      : undefined
+                  }
+                >
+                  <span className="text-xs font-mono font-bold">{i + 1}</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder={placeholder}
+                  value={mission.title}
+                  onChange={(e) => {
+                    const updated = [...missions];
+                    updated[i].title = e.target.value;
+                    setMissions(updated);
+                  }}
+                  className="w-full flex-1 text-sm rounded-xl px-4 py-3 outline-none focus:border-axis-accent/50 transition-all border"
+                  style={{
+                    backgroundColor: "var(--bg-tertiary)",
+                    borderColor: "var(--border-primary)",
+                    color: "var(--text-primary)",
+                  }}
+                  autoFocus={i === 0}
+                />
+                <select
+                  value={mission.priority}
+                  onChange={(e) => {
+                    const updated = [...missions];
+                    updated[i].priority = e.target.value as "high" | "med" | "low";
+                    setMissions(updated);
+                  }}
+                  className="w-full text-xs font-mono rounded-lg px-2 py-2 outline-none sm:w-auto border"
+                  style={{
+                    backgroundColor: "var(--bg-tertiary)",
+                    borderColor: "var(--border-primary)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <option value="high">{t("onb.priority.high")}</option>
+                  <option value="med">{t("onb.priority.med")}</option>
+                  <option value="low">{t("onb.priority.low")}</option>
+                </select>
               </div>
-              <input
-                type="text"
-                placeholder={
-                  i === 0 ? "Most important task today..." :
-                  i === 1 ? "Second priority..." :
-                  i === 2 ? "Third task..." :
-                  `Task ${ i + 1 } (optional)...`
-                }
-                value={mission.title}
-                onChange={(e) => {
-                  const updated = [...missions];
-                  updated[i].title = e.target.value;
-                  setMissions(updated);
-                }}
-                className="w-full flex-1 bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20 focus:border-axis-accent/50 transition-all"
-                autoFocus={i === 0}
-              />
-              <select
-                value={mission.priority}
-                onChange={(e) => {
-                  const updated = [...missions];
-                  updated[i].priority = e.target.value as "high" | "med" | "low";
-                  setMissions(updated);
-                }}
-                className="w-full bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-white/40 rounded-lg px-2 py-2 outline-none sm:w-auto"
-              >
-                <option value="high">High</option>
-                <option value="med">Med</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {step === 3 && (
         <div className="space-y-4 animate-fade-in">
-          <p className="text-xs text-white/30 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
-            Pick one or two daily habits you want to track first. You can always add more later.
+          <p
+            className="text-xs rounded-xl px-4 py-3 border"
+            style={{
+              color: "var(--text-secondary)",
+              backgroundColor: "var(--bg-tertiary)",
+              borderColor: "var(--border-primary)",
+            }}
+          >
+            {t("onb.step3.hint")}
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(userType ? habitsBySegment[userType] : habitsBySegment.professional).map((habit) => {
               const isSelected = selectedHabits.includes(habit.name);
+              const total = selectedHabits.length + customHabits.length;
+              const atCap = !isSelected && total >= habitMax;
               return (
                 <button
                   key={habit.name}
+                  disabled={atCap}
                   onClick={() => {
                     setSelectedHabits((prev) =>
                       isSelected ? prev.filter((h) => h !== habit.name) :
-                      prev.length + customHabits.length < 5 ? [...prev, habit.name] : prev
+                      prev.length + customHabits.length < habitMax ? [...prev, habit.name] : prev
                     );
                   }}
                   className={`flex min-w-0 items-center gap-3 p-4 rounded-xl transition-all border ${
-                    isSelected
-                      ? "bg-axis-accent/10 border-axis-accent/30"
-                      : "bg-white/[0.03] border-white/[0.06] hover:border-white/[0.12]"
+                    isSelected ? "bg-axis-accent/10 border-axis-accent/30"
+                    : atCap ? "opacity-40 cursor-not-allowed"
+                    : ""
                   }`}
+                  style={
+                    isSelected
+                      ? undefined
+                      : { backgroundColor: "var(--bg-tertiary)", borderColor: "var(--border-primary)" }
+                  }
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    isSelected ? "bg-axis-accent/20" : "bg-white/[0.04]"
-                  }`}>
-                    <div className={isSelected ? "text-axis-accent" : "text-white/30"}>
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      isSelected ? "bg-axis-accent/20" : ""
+                    }`}
+                    style={isSelected ? undefined : { backgroundColor: "var(--bg-secondary)" }}
+                  >
+                    <div style={{ color: isSelected ? "var(--accent)" : "var(--text-tertiary)" }}>
                       {habit.icon}
                     </div>
                   </div>
-                  <span className="min-w-0 flex-1 text-left text-sm text-white/80">{habit.name}</span>
+                  <span className="min-w-0 flex-1 text-left text-sm" style={{ color: "var(--text-primary)" }}>{habit.name}</span>
                   {isSelected && <IconCheck size={14} className="text-axis-accent ml-auto" />}
                 </button>
               );
@@ -518,38 +599,60 @@ export default function OnboardingPage() {
           {customHabits.map((h, i) => (
             <div key={i} className="flex items-center gap-2 bg-axis-accent/5 border border-axis-accent/15 rounded-xl px-4 py-3">
               <IconCheck size={14} className="text-axis-accent" />
-              <span className="text-sm text-white/70 flex-1">{h}</span>
-              <button onClick={() => setCustomHabits(customHabits.filter((_, j) => j !== i))} className="text-white/20 text-xs">x</button>
+              <span className="text-sm flex-1" style={{ color: "var(--text-primary)" }}>{h}</span>
+              <button
+                onClick={() => setCustomHabits(customHabits.filter((_, j) => j !== i))}
+                className="text-xs"
+                style={{ color: "var(--text-tertiary)" }}
+              >x</button>
             </div>
           ))}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="text"
-              placeholder="Or type your own habit..."
+              placeholder={t("onb.step3.custom.placeholder")}
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && customInput.trim() && selectedHabits.length + customHabits.length < 5) {
+                if (e.key === "Enter" && customInput.trim() && selectedHabits.length + customHabits.length < habitMax) {
                   setCustomHabits([...customHabits, customInput.trim()]);
                   setCustomInput("");
                 }
               }}
-              className="min-w-0 flex-1 bg-white/[0.06] border border-white/[0.08] text-white text-sm rounded-xl px-4 py-3 outline-none placeholder:text-white/20"
+              className="min-w-0 flex-1 text-sm rounded-xl px-4 py-3 outline-none border"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                borderColor: "var(--border-primary)",
+                color: "var(--text-primary)",
+              }}
             />
             <button
               onClick={() => {
-                if (customInput.trim() && selectedHabits.length + customHabits.length < 5) {
+                if (customInput.trim() && selectedHabits.length + customHabits.length < habitMax) {
                   setCustomHabits([...customHabits, customInput.trim()]);
                   setCustomInput("");
                 }
               }}
-              className="w-full bg-white/[0.06] text-white/50 text-sm px-4 py-3 rounded-xl hover:bg-white/[0.1] transition-all sm:w-auto"
+              disabled={selectedHabits.length + customHabits.length >= habitMax}
+              className="w-full text-sm px-4 py-3 rounded-xl transition-all sm:w-auto disabled:opacity-40 disabled:cursor-not-allowed border"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                borderColor: "var(--border-primary)",
+                color: "var(--text-secondary)",
+              }}
             >
-              Add
+              {t("onb.step3.add")}
             </button>
           </div>
-          <p className="text-[10px] font-mono text-white/20">{selectedHabits.length + customHabits.length}/5 selected (min 1)</p>
+          <p className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
+            {t("onb.step3.count", { n: String(selectedHabits.length + customHabits.length), max: String(habitMax) })}
+          </p>
+          {plan === "free" && (
+            <p className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
+              {t("onb.step3.limit.free")}
+            </p>
+          )}
         </div>
       )}
 
@@ -557,9 +660,10 @@ export default function OnboardingPage() {
         {step > 1 ? (
           <button
             onClick={() => setStep(step - 1)}
-            className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/60 transition-colors"
+            className="flex items-center gap-1.5 text-sm transition-colors"
+            style={{ color: "var(--text-secondary)" }}
           >
-            <IconChevronLeft size={16} /> Back
+            <IconChevronLeft size={16} /> {t("onb.back")}
           </button>
         ) : (
           <div />
@@ -571,7 +675,7 @@ export default function OnboardingPage() {
             disabled={!canProceed()}
             className="flex min-w-[132px] items-center justify-center gap-1.5 bg-axis-accent text-axis-dark text-sm font-semibold px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed sm:px-8"
           >
-            Continue <IconChevronRight size={16} />
+            {t("onb.continue")} <IconChevronRight size={16} />
           </button>
         ) : (
           <button
@@ -582,7 +686,7 @@ export default function OnboardingPage() {
             {loading ? (
               <div className="w-5 h-5 border-2 border-axis-dark/30 border-t-axis-dark rounded-full animate-spin" />
             ) : (
-              <>Launch Dashboard <IconChevronRight size={16} /></>
+              <>{t("onb.launch")} <IconChevronRight size={16} /></>
             )}
           </button>
         )}

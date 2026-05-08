@@ -345,6 +345,43 @@ const de: Dict = {
   "empty.revenue.title": "Erste 50 € loggen — los geht's.",
   "empty.revenue.sub": "Wenn du Side-Income hast, track jeden Euro. Wenn nicht: skip.",
   "empty.revenue.cta": "Stream anlegen",
+
+  // Onboarding
+  "onb.setup": "lomoura Setup",
+  "onb.step": "Schritt {n} von {total}",
+  "onb.skip": "Spaeter einrichten",
+  "onb.skip.confirm": "Setup ueberspringen? Du kannst alles spaeter in den Einstellungen anpassen.",
+  "onb.back": "Zurueck",
+  "onb.continue": "Weiter",
+  "onb.launch": "Dashboard starten",
+  "onb.error.session": "Deine Session ist abgelaufen. Bitte melde dich neu an.",
+  "onb.error.save": "Setup konnte nicht abgeschlossen werden. Bitte nochmal versuchen.",
+
+  "onb.step1.title": "Dein Profil",
+  "onb.step1.sub": "Sag uns kurz, was zu dir passt — wir richten Tag 1 fuer dich ein.",
+  "onb.step1.name": "Dein Name",
+  "onb.step1.name.placeholder": "Wie sollen wir dich nennen?",
+  "onb.step1.type": "Was beschreibt dich am besten?",
+  "onb.step1.tz": "Zeitzone",
+
+  "onb.step2.title": "Heutige Tasks",
+  "onb.step2.sub": "Starte mit den 1-3 Dingen, die heute wirklich zaehlen.",
+  "onb.step2.hint": "Tasks sind deine taeglichen Prioritaeten — die Dinge, die etwas bewegen. Bis zu 5 fuer heute, sortiert nach Wichtigkeit. Du kannst sie jederzeit aendern.",
+  "onb.step2.placeholder.1": "Wichtigste Aufgabe heute…",
+  "onb.step2.placeholder.2": "Zweite Prioritaet…",
+  "onb.step2.placeholder.3": "Dritte Aufgabe…",
+  "onb.step2.placeholder.n": "Aufgabe {n} (optional)…",
+  "onb.priority.high": "Hoch",
+  "onb.priority.med": "Mittel",
+  "onb.priority.low": "Niedrig",
+
+  "onb.step3.title": "Habits",
+  "onb.step3.sub": "Waehle ein oder zwei tagliche Habits, die du wirklich durchziehen willst.",
+  "onb.step3.hint": "Pick 1-2 tagliche Habits, die du als erstes tracken willst. Mehr kannst du jederzeit hinzufuegen.",
+  "onb.step3.custom.placeholder": "Oder selbst tippen…",
+  "onb.step3.add": "Hinzufuegen",
+  "onb.step3.count": "{n}/{max} ausgewaehlt (mind. 1)",
+  "onb.step3.limit.free": "Free-Plan: max. 3 Habits. Upgrade in den Einstellungen fuer mehr.",
 };
 
 const en: Dict = {
@@ -666,6 +703,43 @@ const en: Dict = {
   "empty.revenue.title": "Log your first $50 — let's go.",
   "empty.revenue.sub": "If you have side income, track every dollar. If not: skip.",
   "empty.revenue.cta": "Add stream",
+
+  // Onboarding
+  "onb.setup": "lomoura setup",
+  "onb.step": "Step {n} of {total}",
+  "onb.skip": "Skip for now",
+  "onb.skip.confirm": "Skip setup? You can configure everything later in Settings.",
+  "onb.back": "Back",
+  "onb.continue": "Continue",
+  "onb.launch": "Launch Dashboard",
+  "onb.error.session": "Your session expired. Please log in again.",
+  "onb.error.save": "We couldn't finish setup. Please try again.",
+
+  "onb.step1.title": "Your profile",
+  "onb.step1.sub": "Tell us what fits your life so we can personalize day one.",
+  "onb.step1.name": "Your name",
+  "onb.step1.name.placeholder": "What should we call you?",
+  "onb.step1.type": "What describes you best?",
+  "onb.step1.tz": "Timezone",
+
+  "onb.step2.title": "Today's tasks",
+  "onb.step2.sub": "Start with the 1-3 things that matter most today.",
+  "onb.step2.hint": "Tasks are your daily priorities: the things that move the needle. Set up to 5 for today, ranked by importance. You can always change them later.",
+  "onb.step2.placeholder.1": "Most important task today…",
+  "onb.step2.placeholder.2": "Second priority…",
+  "onb.step2.placeholder.3": "Third task…",
+  "onb.step2.placeholder.n": "Task {n} (optional)…",
+  "onb.priority.high": "High",
+  "onb.priority.med": "Med",
+  "onb.priority.low": "Low",
+
+  "onb.step3.title": "Habits",
+  "onb.step3.sub": "Pick one or two daily habits you want to keep showing up for.",
+  "onb.step3.hint": "Pick 1-2 daily habits you want to track first. You can always add more later.",
+  "onb.step3.custom.placeholder": "Or type your own habit…",
+  "onb.step3.add": "Add",
+  "onb.step3.count": "{n}/{max} selected (min 1)",
+  "onb.step3.limit.free": "Free plan: max 3 habits. Upgrade in Settings for more.",
 };
 
 export const dictionaries: Record<Locale, Dict> = { de, en };
