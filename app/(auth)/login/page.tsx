@@ -11,8 +11,7 @@ import { useLocale } from "@/lib/i18n/provider";
 function LoginForm() {
   const { t } = useLocale();
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [stage, setStage] = useState<"email" | "code" | "password">("email");
+  const [stage, setStage] = useState<"email" | "sent" | "password">("email");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -37,8 +36,8 @@ function LoginForm() {
       setError(error.message || t("auth.error.generic"));
       return false;
     } else {
-      setStage("code");
-      setNotice("Check your inbox for the 6-digit code.");
+      setStage("sent");
+      setNotice(t("auth.link.notice", { email }));
       return true;
     }
   };
@@ -46,25 +45,6 @@ function LoginForm() {
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     await sendLoginCode();
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp.trim(),
-      type: "email",
-    });
-    if (error) {
-      setError(t("auth.error.invalid"));
-      setLoading(false);
-      return;
-    }
-    trackEvent("login_completed", { method: "email_otp" });
-    router.push(redirect);
-    router.refresh();
   };
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
@@ -169,58 +149,39 @@ function LoginForm() {
         </form>
       )}
 
-      {stage === "code" && (
-        <form onSubmit={handleVerifyCode} className="space-y-4">
+      {stage === "sent" && (
+        <div className="space-y-4">
           <div>
-            <h2 className="text-base font-semibold mb-1">{t("auth.code.title")}</h2>
+            <h2 className="text-base font-semibold mb-1">{t("auth.link.title")}</h2>
             <p className="text-sm text-axis-text2 mb-3">
-              {t("auth.code.sub", { email })}
+              {t("auth.link.sub", { email })}
             </p>
-            <input
-              autoFocus
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]*"
-              maxLength={6}
-              placeholder={t("auth.code.placeholder")}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              required
-              className="w-full rounded-xl px-4 py-4 text-center text-2xl tracking-[0.4em] font-mono bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3/40 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-            />
+          </div>
+          <div className="rounded-xl border border-axis-border bg-axis-bg2/40 px-4 py-3 text-xs text-axis-text2">
+            {t("auth.link.tip")}
           </div>
           <button
-            type="submit"
-            disabled={loading || otp.length !== 6}
+            type="button"
+            onClick={async () => {
+              await sendLoginCode();
+            }}
+            disabled={loading}
             className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50"
           >
-            {loading ? t("auth.code.verifying") : t("auth.code.cta")}
+            {loading ? t("auth.email.sending") : t("auth.link.resend")}
           </button>
-          <div className="flex items-center justify-between text-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setStage("email");
-                setOtp("");
-              }}
-              className="text-axis-text3 hover:text-axis-text1 transition-colors"
-            >
-              {t("auth.code.change")}
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                setOtp("");
-                await sendLoginCode();
-              }}
-              disabled={loading}
-              className="text-axis-text3 hover:text-axis-text1 transition-colors"
-            >
-              {t("auth.code.resend")}
-            </button>
-          </div>
-        </form>
+          <button
+            type="button"
+            onClick={() => {
+              setStage("email");
+              setNotice("");
+              setError("");
+            }}
+            className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
+          >
+            {t("auth.link.change")}
+          </button>
+        </div>
       )}
 
       {stage === "password" && (
@@ -268,7 +229,7 @@ function LoginForm() {
             onClick={() => setStage("email")}
             className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
           >
-            ← Use email code instead
+            ← Use magic link instead
           </button>
         </form>
       )}

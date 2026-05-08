@@ -26,6 +26,19 @@ function readAuthError(url: URL) {
   );
 }
 
+function readHashSession(url: URL) {
+  const hashParams = new URLSearchParams(url.hash.startsWith("#") ? url.hash.slice(1) : url.hash);
+  const accessToken = hashParams.get("access_token");
+  const refreshToken = hashParams.get("refresh_token");
+
+  if (!accessToken || !refreshToken) return null;
+
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  };
+}
+
 export default function AuthConfirmPage() {
   const [error, setError] = useState("");
 
@@ -40,6 +53,7 @@ export default function AuthConfirmPage() {
       const code = currentUrl.searchParams.get("code");
       const tokenHash = currentUrl.searchParams.get("token_hash");
       const type = currentUrl.searchParams.get("type") as EmailOtpType | null;
+      const hashSession = readHashSession(currentUrl);
 
       try {
         let {
@@ -62,6 +76,11 @@ export default function AuthConfirmPage() {
             type,
           });
           if (verifyError) throw verifyError;
+        }
+
+        if (!session && hashSession) {
+          const { error: sessionError } = await supabase.auth.setSession(hashSession);
+          if (sessionError) throw sessionError;
         }
 
         const {

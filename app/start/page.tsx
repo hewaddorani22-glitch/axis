@@ -66,9 +66,8 @@ function StartFunnel() {
 
   // Save modal state
   const [showSave, setShowSave] = useState(false);
-  const [authMode, setAuthMode] = useState<"choose" | "email" | "code">("choose");
+  const [authMode, setAuthMode] = useState<"choose" | "email" | "sent">("choose");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
@@ -176,42 +175,8 @@ function StartFunnel() {
     if (error) {
       setAuthError(error.message || t("auth.error.generic"));
     } else {
-      setAuthMode("code");
+      setAuthMode("sent");
     }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    setAuthLoading(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp.trim(),
-      type: "email",
-    });
-    if (error) {
-      setAuthError(t("auth.error.invalid"));
-      setAuthLoading(false);
-      return;
-    }
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      try {
-        await supabase.from("users").upsert({
-          id: user.id,
-          email: user.email!,
-        });
-      } catch {
-        // non-fatal
-      }
-    }
-    trackTikTokEvent("CompleteRegistration", {
-      content_id: initialPreset.slug || "start-funnel",
-      method: "email_otp",
-    });
-    trackEvent("signup_completed", { method: "email_otp", source: "start_funnel" });
-    router.push("/onboarding");
-    router.refresh();
   };
 
   return (
@@ -572,55 +537,36 @@ function StartFunnel() {
                 </form>
               )}
 
-              {authMode === "code" && (
-                <form onSubmit={handleVerifyCode}>
-                  <h4 className="text-base font-semibold mb-1">{t("auth.code.title")}</h4>
+              {authMode === "sent" && (
+                <div>
+                  <h4 className="text-base font-semibold mb-1">{t("auth.link.title")}</h4>
                   <p className="text-sm text-axis-text2 mb-4">
-                    {t("auth.code.sub", { email })}
+                    {t("auth.link.sub", { email })}
                   </p>
-                  <input
-                    autoFocus
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    placeholder={t("auth.code.placeholder")}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    required
-                    className="w-full rounded-xl px-4 py-4 text-center text-2xl tracking-[0.4em] font-mono bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3/40 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-                  />
+                  <div className="rounded-xl border border-axis-border bg-axis-bg2/40 px-4 py-3 text-xs text-axis-text2">
+                    {t("auth.link.tip")}
+                  </div>
                   <button
-                    type="submit"
-                    disabled={authLoading || otp.length !== 6}
+                    type="button"
+                    onClick={async () => {
+                      await handleSendCode({ preventDefault() {} } as React.FormEvent);
+                    }}
+                    disabled={authLoading}
                     className="w-full mt-4 flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3.5 rounded-xl hover:bg-axis-text1/90 active:scale-[0.98] transition-all disabled:opacity-60"
                   >
-                    {authLoading ? t("auth.code.verifying") : t("auth.code.cta")}
+                    {authLoading ? t("auth.email.sending") : t("auth.link.resend")}
                   </button>
-                  <div className="mt-3 flex items-center justify-between text-xs">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMode("email");
-                        setOtp("");
-                      }}
-                      className="text-axis-text3 hover:text-axis-text1 transition-colors"
-                    >
-                      {t("auth.code.change")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMode("email");
-                        setOtp("");
-                      }}
-                      className="text-axis-text3 hover:text-axis-text1 transition-colors"
-                    >
-                      {t("auth.code.resend")}
-                    </button>
-                  </div>
-                </form>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("email");
+                      setAuthError("");
+                    }}
+                    className="w-full mt-3 text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
+                  >
+                    {t("auth.link.change")}
+                  </button>
+                </div>
               )}
             </motion.div>
           </motion.div>
