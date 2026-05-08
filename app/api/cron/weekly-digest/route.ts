@@ -26,8 +26,10 @@ export async function GET(request: Request) {
     const todayStr = today.toISOString().split("T")[0];
 
     let sentCount = 0;
+    let failedCount = 0;
 
     for (const user of users) {
+      try {
       // Get week stats
       const [missionsRes, habitsRes, revenueRes] = await Promise.all([
         supabase
@@ -74,9 +76,16 @@ export async function GET(request: Request) {
         grade: score.grade,
       });
       sentCount++;
+      } catch (err) {
+        failedCount++;
+        console.error("[weekly-digest] failed for user", {
+          userId: user.id,
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
 
-    return NextResponse.json({ sent: sentCount });
+    return NextResponse.json({ sent: sentCount, failed: failedCount });
   } catch (error: any) {
     console.error("Weekly digest cron error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

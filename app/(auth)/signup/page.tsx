@@ -7,8 +7,10 @@ import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getBrowserAppUrl } from "@/lib/env";
 import { trackEvent } from "@/lib/analytics";
+import { useLocale } from "@/lib/i18n/provider";
 
 function SignupForm() {
+  const { t } = useLocale();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -39,7 +41,7 @@ function SignupForm() {
     setLoading(false);
 
     if (!response.ok) {
-      setError(data?.error || "Could not send the code.");
+      setError(data?.error || t("signup.error.send"));
       return;
     }
 
@@ -62,7 +64,7 @@ function SignupForm() {
     if (error) {
       setError(
         /invalid|expired|token/i.test(error.message)
-          ? "That code is wrong or expired."
+          ? t("signup.error.invalid")
           : error.message
       );
       setLoading(false);
@@ -93,14 +95,14 @@ function SignupForm() {
   return (
     <>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Create your account</h1>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">{t("signup.title")}</h1>
         {inviteId ? (
           <p className="text-sm text-axis-text2">
-            You were invited to lomoura.{" "}
-            <span className="text-axis-accent font-medium">Sign up to connect with your partner.</span>
+            {t("signup.invite.text")}{" "}
+            <span className="text-axis-accent font-medium">{t("signup.invite.cta")}</span>
           </p>
         ) : (
-          <p className="text-sm text-axis-text2">Start building your system in 90 seconds</p>
+          <p className="text-sm text-axis-text2">{t("signup.sub")}</p>
         )}
       </div>
 
@@ -121,24 +123,24 @@ function SignupForm() {
           <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
         </svg>
-        Continue with Google
+        {t("signup.google")}
       </button>
 
       {/* Divider */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 h-px bg-axis-border" />
-        <span className="text-xs font-mono text-axis-text3">OR</span>
+        <span className="text-xs font-mono text-axis-text3">{t("signup.divider")}</span>
         <div className="flex-1 h-px bg-axis-border" />
       </div>
 
       {stage === "email" && (
         <form onSubmit={handleSendCode} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-xs font-medium text-axis-text2 mb-1.5">Full name</label>
+            <label htmlFor="name" className="block text-xs font-medium text-axis-text2 mb-1.5">{t("signup.name.label")}</label>
             <input
               id="name"
               type="text"
-              placeholder="Your name"
+              placeholder={t("signup.name.placeholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
@@ -146,11 +148,11 @@ function SignupForm() {
             />
           </div>
           <div>
-            <label htmlFor="signup-email" className="block text-xs font-medium text-axis-text2 mb-1.5">Email</label>
+            <label htmlFor="signup-email" className="block text-xs font-medium text-axis-text2 mb-1.5">{t("auth.email.label")}</label>
             <input
               id="signup-email"
               type="email"
-              placeholder="you@example.com"
+              placeholder={t("auth.email.placeholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
@@ -166,7 +168,7 @@ function SignupForm() {
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              "Send 6-digit code"
+              t("signup.cta.send")
             )}
           </button>
         </form>
@@ -176,12 +178,11 @@ function SignupForm() {
         <form onSubmit={handleVerifyCode} className="space-y-4">
           <div>
             <p className="text-sm text-axis-text2">
-              We sent a 6-digit code to{" "}
-              <span className="font-medium text-axis-text1">{email}</span>.
+              {t("signup.code.sent", { email })}
             </p>
           </div>
           <div>
-            <label htmlFor="signup-code" className="block text-xs font-medium text-axis-text2 mb-1.5">Code</label>
+            <label htmlFor="signup-code" className="block text-xs font-medium text-axis-text2 mb-1.5">{t("signup.code.label")}</label>
             <input
               id="signup-code"
               autoFocus
@@ -205,7 +206,7 @@ function SignupForm() {
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              "Create Account"
+              t("signup.cta.create")
             )}
           </button>
           <button
@@ -216,7 +217,7 @@ function SignupForm() {
             disabled={loading}
             className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
           >
-            Resend code
+            {t("signup.code.resend")}
           </button>
           <button
             type="button"
@@ -227,21 +228,21 @@ function SignupForm() {
             }}
             className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
           >
-            Use a different email
+            {t("signup.code.change")}
           </button>
         </form>
       )}
 
       <p className="text-xs text-center text-axis-text3 mt-4">
-        By signing up, you agree to our{" "}
-        <Link href="/terms" className="underline hover:text-axis-text1">Terms</Link> and{" "}
-        <Link href="/privacy" className="underline hover:text-axis-text1">Privacy Policy</Link>.
+        {t("signup.terms")}{" "}
+        <Link href="/terms" className="underline hover:text-axis-text1">{t("signup.terms.terms")}</Link> {t("signup.terms.and")}{" "}
+        <Link href="/privacy" className="underline hover:text-axis-text1">{t("signup.terms.privacy")}</Link>.
       </p>
 
       <p className="text-center text-sm text-axis-text3 mt-6">
-        Already have an account?{" "}
+        {t("signup.have.account")}{" "}
         <Link href="/login" className="text-axis-text1 font-medium hover:underline">
-          Log in
+          {t("signup.login")}
         </Link>
       </p>
     </>
@@ -250,7 +251,7 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div className="text-center text-axis-text3 text-sm">Loading...</div>}>
+    <Suspense fallback={<div className="text-center text-axis-text3 text-sm">…</div>}>
       <SignupForm />
     </Suspense>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/hooks/useUser";
+import { useLocale } from "@/lib/i18n/provider";
 import { IconPartners, IconCheck, IconPlus, IconCopy, IconStreak } from "@/components/icons";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -34,9 +35,10 @@ interface MemberHeatmap {
 
 // ── Heatmap cell ──────────────────────────────────────────────────────────────
 
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_LABEL_KEYS = ["heat.day.mon", "heat.day.tue", "heat.day.wed", "heat.day.thu", "heat.day.fri", "heat.day.sat", "heat.day.sun"];
 
 function HeatmapRow({ member }: { member: MemberHeatmap }) {
+  const { t } = useLocale();
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
@@ -77,7 +79,7 @@ function HeatmapRow({ member }: { member: MemberHeatmap }) {
                   ? "bg-axis-accent/80"
                   : "bg-white/[0.04] border border-white/[0.06]"
               )}
-              title={DAY_LABELS[i]}
+              title={t(DAY_LABEL_KEYS[i])}
               style={
                 status === "done"
                   ? { boxShadow: "0 0 8px rgba(205,255,79,0.3)" }
@@ -85,7 +87,7 @@ function HeatmapRow({ member }: { member: MemberHeatmap }) {
               }
             />
             <span className="text-[8px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-              {DAY_LABELS[i]}
+              {t(DAY_LABEL_KEYS[i])}
             </span>
           </div>
         ))}
@@ -114,6 +116,7 @@ function HeatmapRow({ member }: { member: MemberHeatmap }) {
 
 export default function NetworkPage() {
   const { user } = useUser();
+  const { t } = useLocale();
 
   const [squads, setSquads] = useState<Squad[]>([]);
   const [members, setMembers] = useState<MemberHeatmap[]>([]);
@@ -459,7 +462,7 @@ export default function NetworkPage() {
                     className="text-[10px] font-mono uppercase tracking-widest px-1"
                     style={{ color: "var(--text-tertiary)" }}
                   >
-                    Habit Consistency | Last 7 Days
+                    {t("heat.title")}
                   </p>
                   {loadingMembers ? (
                     <div className="space-y-2">

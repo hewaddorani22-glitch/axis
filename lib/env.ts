@@ -29,6 +29,10 @@ export function getStripePriceId(): string {
   return cleanEnvValue(process.env.STRIPE_PRO_PRICE_ID);
 }
 
+export function getStripeYearlyPriceId(): string {
+  return cleanEnvValue(process.env.STRIPE_PRO_YEARLY_PRICE_ID);
+}
+
 export function getStripeWebhookSecret(): string {
   return cleanEnvValue(process.env.STRIPE_WEBHOOK_SECRET);
 }

@@ -5,8 +5,10 @@ import { useUser } from "@/hooks/useUser";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { useLocale } from "@/lib/i18n/provider";
 
 function SettingsContent() {
+  const { t } = useLocale();
   const { user, loading, updateProfile, signOut, refetch } = useUser();
   const searchParams = useSearchParams();
   const upgradeStatus = searchParams.get("upgrade");
@@ -22,14 +24,14 @@ function SettingsContent() {
     }
 
     if (user?.plan === "pro") {
-      setUpgradeMessage({ tone: "success", text: "Welcome to lomoura Pro. Your subscription is active." });
+      setUpgradeMessage({ tone: "success", text: t("settings.pro.welcome") });
       return;
     }
 
     if (!checkoutSessionId) {
       setUpgradeMessage({
         tone: "warning",
-        text: "Payment completed, but lomoura is still syncing your Pro access. Refresh in a moment.",
+        text: t("settings.upgrade.syncing"),
       });
       return;
     }
@@ -50,18 +52,18 @@ function SettingsContent() {
         if (!res.ok) {
           setUpgradeMessage({
             tone: "warning",
-            text: data.error || "Payment completed, but lomoura is still syncing your Pro access.",
+            text: data.error || t("settings.upgrade.syncing"),
           });
           return;
         }
 
         await refetch();
-        setUpgradeMessage({ tone: "success", text: "Welcome to lomoura Pro. Your subscription is active." });
+        setUpgradeMessage({ tone: "success", text: t("settings.pro.welcome") });
       } catch {
         if (!cancelled) {
           setUpgradeMessage({
             tone: "warning",
-            text: "Payment completed, but lomoura could not verify it yet. Refresh in a moment.",
+            text: t("settings.upgrade.unverified"),
           });
         }
       } finally {
@@ -152,7 +154,7 @@ function SettingsContent() {
       )}
       {upgradeStatus === "cancelled" && (
         <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 text-sm rounded-xl px-4 py-3">
-          Upgrade cancelled. You can upgrade anytime.
+          {t("settings.upgrade.cancelled.long")}
         </div>
       )}
 
@@ -379,15 +381,13 @@ function SettingsContent() {
           </button>
           <button
             onClick={async () => {
-              const confirmed = confirm(
-                "Are you sure? This will permanently delete your account and ALL your data: tasks, habits, revenue, themes, and everything else. This cannot be undone."
-              );
+              const confirmed = confirm(t("settings.delete.warning"));
               if (!confirmed) return;
               const res = await fetch("/api/account/delete", { method: "DELETE" });
               if (res.ok) {
                 await signOut();
               } else {
-                alert("Something went wrong. Please try again or contact support.");
+                alert(t("settings.pro.error"));
               }
             }}
             className="w-full flex items-center justify-between py-3 px-4 rounded-xl bg-red-500/5 border border-red-500/10 text-sm text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all"

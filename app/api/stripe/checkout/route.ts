@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAppUrl, getStripePriceId } from "@/lib/env";
+import { getAppUrl, getStripePriceId, getStripeYearlyPriceId } from "@/lib/env";
 import { recordServerEvent } from "@/lib/server-analytics";
 import { headers } from "next/headers";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => null);
+    const intervalParam = body?.interval === "yearly" ? "yearly" : "monthly";
     const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -57,7 +59,10 @@ export async function POST() {
 
     const headersList = await headers();
     const origin = getAppUrl(headersList.get("origin"));
-    const priceId = getStripePriceId();
+    const monthlyPriceId = getStripePriceId();
+    const yearlyPriceId = getStripeYearlyPriceId();
+    const useYearly = intervalParam === "yearly";
+    const priceId = useYearly ? yearlyPriceId || monthlyPriceId : monthlyPriceId;
 
     const lineItems = priceId
       ? [{ price: priceId, quantity: 1 }]
@@ -65,11 +70,11 @@ export async function POST() {
           price_data: {
             currency: "eur",
             product_data: {
-              name: "lomoura Pro",
+              name: useYearly ? "lomoura Pro (Jahresabo)" : "lomoura Pro",
               description: "Unlimited missions, habits, revenue tracking, goals, and accountability.",
             },
-            recurring: { interval: "month" as const },
-            unit_amount: 900,
+            recurring: { interval: useYearly ? ("year" as const) : ("month" as const) },
+            unit_amount: useYearly ? 8900 : 900,
           },
           quantity: 1,
         }];

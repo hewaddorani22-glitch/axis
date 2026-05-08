@@ -2,11 +2,42 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale } from "@/lib/i18n/provider";
+import { trackEvent } from "@/lib/analytics";
 
 export function Pricing() {
   const { t } = useLocale();
+  const router = useRouter();
   const [yearly, setYearly] = useState(true);
+  const [proLoading, setProLoading] = useState(false);
+
+  const handleProCta = async () => {
+    if (proLoading) return;
+    trackEvent("pro_cta_clicked", { source: "pricing", plan: yearly ? "yearly" : "monthly" });
+    setProLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interval: yearly ? "yearly" : "monthly" }),
+      });
+      if (res.status === 401) {
+        router.push("/signup?next=upgrade");
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      router.push("/signup?next=upgrade");
+    } catch {
+      router.push("/signup?next=upgrade");
+    } finally {
+      setProLoading(false);
+    }
+  };
 
   const proAmount = yearly ? t("price.pro.amount.yearly") : t("price.pro.amount.monthly");
   const proUnit = yearly ? t("price.pro.unit.yearly") : t("price.pro.unit.monthly");
@@ -116,12 +147,14 @@ export function Pricing() {
               <p className="text-sm text-white/60 mt-2">{t("price.pro.tagline")}</p>
             </div>
 
-            <Link
-              href="/start"
-              className="w-full flex items-center justify-center text-sm font-semibold bg-axis-accent text-axis-text1 px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] mb-3"
+            <button
+              type="button"
+              onClick={handleProCta}
+              disabled={proLoading}
+              className="w-full flex items-center justify-center text-sm font-semibold bg-axis-accent text-axis-text1 px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {t("price.pro.cta")}
-            </Link>
+              {proLoading ? t("sidebar.upgrade.opening") : t("price.pro.cta")}
+            </button>
             <p className="text-[11px] text-center text-white/40 mb-6">{t("price.refund")}</p>
 
             <ul className="space-y-3">

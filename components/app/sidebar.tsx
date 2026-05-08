@@ -8,6 +8,7 @@ import { trackEvent } from "@/lib/analytics";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
 import { useAxisScore } from "@/hooks/useAxisScore";
+import { useLocale } from "@/lib/i18n/provider";
 import { AxisScoreWidget } from "@/components/app/axis-score-widget";
 import { getPrimaryNavItems, getSecondaryNavItems } from "@/components/app/navigation";
 import { SUPPORT_MAILTO } from "@/lib/support";
@@ -25,6 +26,7 @@ export function Sidebar() {
   const { user, signOut } = useUser();
   const { streak } = useStreak();
   const axisScore = useAxisScore();
+  const { t } = useLocale();
 
   const displayName = user?.name || user?.email?.split("@")[0] || "User";
   const initials = displayName.charAt(0).toUpperCase();
@@ -54,7 +56,7 @@ export function Sidebar() {
           {hasStreak && (
             <Link
               href="/systems"
-              title={`${streak}-day streak`}
+              title={t("sidebar.streak.title", { n: String(streak) })}
               className="flex items-center gap-1 bg-orange-500/10 border border-orange-500/20 rounded-lg px-2 py-1 hover:bg-orange-500/20 transition-all"
             >
               <IconStreak size={12} className="text-orange-400" />
@@ -121,9 +123,9 @@ export function Sidebar() {
                 <div className="mt-3 rounded-2xl border border-axis-accent/20 bg-axis-accent/10 p-3.5">
                   <div className="mb-1 flex items-center gap-2">
                     <IconUpgrade size={13} className="text-axis-accent" />
-                    <p className="text-xs font-semibold text-axis-accent">Upgrade to Pro</p>
+                    <p className="text-xs font-semibold text-axis-accent">{t("sidebar.upgrade.title")}</p>
                   </div>
-                  <p className="mb-3 text-[11px] leading-relaxed text-white/45">Unlimited everything. 9 €/Monat.</p>
+                  <p className="mb-3 text-[11px] leading-relaxed text-white/45">{t("sidebar.upgrade.sub")}</p>
                   <button
                     onClick={async () => {
                       try {
@@ -136,9 +138,9 @@ export function Sidebar() {
                           return;
                         }
 
-                        alert(data.error || "Failed to start checkout.");
+                        alert(data.error || t("sidebar.upgrade.failed"));
                       } catch {
-                        alert("Network error. Please try again.");
+                        alert(t("sidebar.upgrade.network"));
                       } finally {
                         setStartingCheckout(false);
                       }
@@ -146,7 +148,7 @@ export function Sidebar() {
                     disabled={startingCheckout}
                     className="block w-full rounded-xl bg-axis-accent px-4 py-2.5 text-center text-xs font-semibold text-axis-dark transition-all hover:bg-axis-accent/90"
                   >
-                    {startingCheckout ? "Opening..." : "Upgrade"}
+                    {startingCheckout ? t("sidebar.upgrade.opening") : t("sidebar.upgrade.cta")}
                   </button>
                 </div>
               )}
@@ -171,7 +173,7 @@ export function Sidebar() {
                 <button
                   onClick={signOut}
                   className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-white/60 transition-all"
-                  title="Sign out"
+                  title={t("sidebar.signout")}
                 >
                   <IconLogout size={16} />
                 </button>
@@ -216,7 +218,7 @@ export function Sidebar() {
                 className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/55 transition-all hover:bg-white/[0.04] hover:text-white/85"
               >
                 <IconMail size={18} className="shrink-0" />
-                <span className="truncate">Support</span>
+                <span className="truncate">{t("sidebar.support")}</span>
               </a>
               {user && (
                 <button
@@ -227,7 +229,7 @@ export function Sidebar() {
                   className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-white/55 transition-all hover:bg-white/[0.04] hover:text-white/85"
                 >
                   <IconLogout size={18} className="shrink-0" />
-                  <span className="truncate">Sign out</span>
+                  <span className="truncate">{t("sidebar.signout")}</span>
                 </button>
               )}
             </div>
@@ -274,7 +276,7 @@ export function Sidebar() {
             aria-label="Open more navigation"
           >
             <IconSettings size={18} />
-            <span className="text-[10px] font-medium">More</span>
+            <span className="text-[10px] font-medium">{t("sidebar.more")}</span>
           </button>
         </div>
       </nav>

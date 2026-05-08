@@ -72,9 +72,12 @@ export async function sendEmailOtpEmail(
  * Send welcome email after signup
  */
 export async function sendWelcomeEmail(to: string, name: string) {
-  if (!resend) return;
+  if (!resend) {
+    console.warn("[resend] sendWelcomeEmail skipped: RESEND_API_KEY not configured");
+    return;
+  }
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: FROM_EMAIL,
     to,
     subject: "Welcome to lomoura | Your system is ready",
@@ -105,13 +108,20 @@ export async function sendWelcomeEmail(to: string, name: string) {
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(error.message || "Welcome email delivery failed");
+  }
 }
 
 /**
  * Send streak warning email
  */
 export async function sendStreakWarning(to: string, name: string, streakDays: number) {
-  if (!resend) return;
+  if (!resend) {
+    console.warn("[resend] sendStreakWarning skipped: RESEND_API_KEY not configured");
+    return;
+  }
 
   await resend.emails.send({
     from: FROM_EMAIL,

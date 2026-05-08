@@ -6,6 +6,7 @@ import { useMissions } from "@/hooks/useMissions";
 import { useHabits } from "@/hooks/useHabits";
 import { useRevenue } from "@/hooks/useRevenue";
 import { useStreak } from "@/hooks/useStreak";
+import { useLocale } from "@/lib/i18n/provider";
 import {
   IconCommand, IconRevenue, IconTarget, IconStreak,
   IconBriefing, IconCheck, IconHabits, IconWarning
@@ -39,6 +40,7 @@ export default function DashboardPage() {
   const { mtdTotal, loading: revenueLoading } = useRevenue();
   const { streak, loading: streakLoading } = useStreak();
   const axisScore = useAxisScore();
+  const { t } = useLocale();
 
   const currentHour = new Date().getHours();
   const isLate = currentHour >= 20;
@@ -62,7 +64,7 @@ export default function DashboardPage() {
       ? { label: "MTD Revenue", value: formatCurrency(mtdTotal), change: mtdTotal > 0 ? "This month" : "No entries yet", changeColor: "text-emerald-500", icon: <IconRevenue size={18} className="text-emerald-500" />, extra: null }
       : { label: "Habits Done", value: `${habitsCompleted}/${habitsTotal}`, change: habitsTotal > 0 ? `${Math.round((habitsCompleted / Math.max(habitsTotal, 1)) * 100)}%` : "Add habits", changeColor: "text-axis-accent", icon: <IconHabits size={18} className="text-axis-accent" />, extra: null },
     { label: "Tasks Done", value: `${completedCount}/${missionsTotal}`, change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add tasks", changeColor: "text-emerald-500", icon: <IconTarget size={18} className="text-axis-accent" />, extra: null },
-    { label: "Streak", value: `${streak} day${streak !== 1 ? "s" : ""}`, change: streak >= 7 ? "On fire!" : streak > 0 ? "Keep going!" : "Start today", changeColor: "text-orange-500", icon: <IconStreak size={18} className="text-orange-500" />, extra: <StreakShare streak={streak} name={displayName} score={axisScore.score} /> },
+    { label: t("preview.streak"), value: `${streak} ${streak === 1 ? t("preview.streak.unit") : t("preview.streak.units")}`, change: streak >= 7 ? t("dash.streak.fire") : streak > 0 ? t("dash.streak.keep") : t("dash.streak.start"), changeColor: "text-orange-500", icon: <IconStreak size={18} className="text-orange-500" />, extra: <StreakShare streak={streak} name={displayName} score={axisScore.score} /> },
   ];
 
   const Skeleton = ({ className = "" }: { className?: string }) => (
@@ -73,60 +75,64 @@ export default function DashboardPage() {
   const kickoff = (() => {
     if (missionsTotal === 0) {
       return {
-        eyebrow: "Start here",
-        title: "Add 1-3 tasks that matter today",
-        description: "Keep it tiny. A clear day starts with one important thing, not a giant list.",
+        eyebrow: t("dash.kick.s1.eyebrow"),
+        title: t("dash.kick.s1.title"),
+        description: t("dash.kick.s1.desc"),
         primaryHref: "/missions?quickAdd=1",
-        primaryLabel: "Add first task",
+        primaryLabel: t("dash.kick.s1.primary"),
         secondaryHref: "/systems?quickAdd=1",
-        secondaryLabel: "Add a habit",
+        secondaryLabel: t("dash.kick.s1.secondary"),
       };
     }
 
     if (completedCount < missionsTotal && nextMission) {
+      const left = missionsTotal - completedCount;
       return {
-        eyebrow: "Do this next",
+        eyebrow: t("dash.kick.s2.eyebrow"),
         title: nextMission.title,
-        description: `${missionsTotal - completedCount} task${missionsTotal - completedCount === 1 ? "" : "s"} left today. Finish the next one before you add more.`,
+        description:
+          left === 1
+            ? t("dash.kick.s2.left.one")
+            : t("dash.kick.s2.left.many", { n: String(left) }),
         primaryHref: "/missions",
-        primaryLabel: "Open tasks",
+        primaryLabel: t("dash.kick.s2.primary"),
         secondaryHref: habitsTotal === 0 ? "/systems?quickAdd=1" : "/systems",
-        secondaryLabel: habitsTotal === 0 ? "Add a habit" : "Open habits",
+        secondaryLabel: habitsTotal === 0 ? t("dash.kick.s2.secondary.add") : t("dash.kick.s2.secondary.open"),
       };
     }
 
     if (habitsTotal === 0) {
       return {
-        eyebrow: "Lock in tomorrow",
-        title: "Add one habit you can repeat this week",
-        description: "One routine is enough to make the app feel useful every morning.",
+        eyebrow: t("dash.kick.s3.eyebrow"),
+        title: t("dash.kick.s3.title"),
+        description: t("dash.kick.s3.desc"),
         primaryHref: "/systems?quickAdd=1",
-        primaryLabel: "Add first habit",
+        primaryLabel: t("dash.kick.s3.primary"),
         secondaryHref: "/review",
-        secondaryLabel: "Open weekly review",
+        secondaryLabel: t("dash.kick.s3.secondary"),
       };
     }
 
     if (habitsCompleted === 0) {
       return {
-        eyebrow: "Keep momentum",
-        title: "Check off one habit before the day ends",
-        description: "One habit completion keeps your streak alive and makes tomorrow easier.",
+        eyebrow: t("dash.kick.s4.eyebrow"),
+        title: t("dash.kick.s4.title"),
+        description: t("dash.kick.s4.desc"),
         primaryHref: "/systems",
-        primaryLabel: "Open habits",
+        primaryLabel: t("dash.kick.s4.primary"),
         secondaryHref: "/review",
-        secondaryLabel: "Review the week",
+        secondaryLabel: t("dash.kick.s4.secondary"),
       };
     }
 
     return {
-      eyebrow: "Nice work",
-      title: "You handled the essentials for today",
-      description: "Use the weekly review now or add tomorrow's first task while it's still fresh.",
+      eyebrow: t("dash.kick.s5.eyebrow"),
+      title: t("dash.kick.s5.title"),
+      description: t("dash.kick.s5.desc"),
       primaryHref: "/review",
-      primaryLabel: "Open weekly review",
+      primaryLabel: t("dash.kick.s5.primary"),
       secondaryHref: "/missions?quickAdd=1",
-      secondaryLabel: "Plan tomorrow",
+      secondaryLabel: t("dash.kick.s5.secondary"),
     };
   })();
 
@@ -156,9 +162,9 @@ export default function DashboardPage() {
           <div className="flex items-start gap-4">
             <div className="mt-0.5"><IconWarning size={28} className="text-red-500" /></div>
             <div>
-              <p className="text-red-500 font-bold mb-1">Your {streak}-Day Streak is at Risk!</p>
+              <p className="text-red-500 font-bold mb-1">{t("dash.streak.risk.title", { streak: String(streak) })}</p>
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                You haven&apos;t completed any daily systems today. Finish a habit before midnight, or use a Streak Freeze.
+                {t("dash.streak.risk.desc")}
               </p>
             </div>
           </div>
@@ -198,8 +204,8 @@ export default function DashboardPage() {
             </p>
             <p className="mt-3 text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
               {streak > 0
-                ? `${streak}-day streak live${streak < 30 ? ` · ${30 - streak} days to 30` : " · keep the run alive"}`
-                : "Complete one task and one habit to start your streak."}
+                ? `${t("dash.streak.live", { streak: String(streak) })}${streak < 30 ? t("dash.streak.live.30", { n: String(30 - streak) }) : t("dash.streak.live.keep")}`
+                : t("dash.streak.empty")}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -245,9 +251,9 @@ export default function DashboardPage() {
           ) : missions.length === 0 ? (
             <EmptyState
               icon={<IconTarget size={20} className="text-axis-accent" />}
-              title="What are you doing today?"
-              description="Type 1–3 things that matter today. Starting small is fine."
-              actions={[{ label: "First mission", href: "/missions?quickAdd=1" }]}
+              title={t("dash.empty.missions.title")}
+              description={t("dash.empty.missions.desc")}
+              actions={[{ label: t("dash.empty.missions.cta"), href: "/missions?quickAdd=1" }]}
               compact
             />
           ) : (
@@ -290,9 +296,9 @@ export default function DashboardPage() {
           ) : habits.length === 0 ? (
             <EmptyState
               icon={<IconHabits size={20} className="text-axis-accent" />}
-              title="Which routine do you want to lock in?"
-              description="One is enough to start. Workout, study block, no phone after 10pm — your call."
-              actions={[{ label: "Add habit", href: "/systems?quickAdd=1" }]}
+              title={t("dash.empty.habits.title")}
+              description={t("dash.empty.habits.desc")}
+              actions={[{ label: t("dash.empty.habits.cta"), href: "/systems?quickAdd=1" }]}
               compact
             />
           ) : (
