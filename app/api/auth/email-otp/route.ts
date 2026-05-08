@@ -129,7 +129,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       verificationType: data.properties.verification_type as EmailOtpType,
-      accountExists,
     });
   } catch (err) {
     console.error("[email-otp] unhandled", {
