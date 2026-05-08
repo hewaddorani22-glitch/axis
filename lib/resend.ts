@@ -36,7 +36,7 @@ export async function sendEmailOtpEmail(
     from: FROM_EMAIL,
     to,
     subject: `${heading}: ${code}`,
-    text: `${heading}\n\n${body}\n\n${code}\n\nWenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.\n\n${APP_URL}`,
+    text: `${heading}\n\n${body}\n\n${code}\n\nWenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.`,
     html: `
       <div style="font-family: 'Outfit', sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px;">
         <div style="text-align: center; margin-bottom: 32px;">
