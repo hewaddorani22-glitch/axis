@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
               <div style={{ fontSize: 38, fontWeight: 800 }}>lomoura</div>
             </div>
 
-            <div style={{ zIndex: 1, maxWidth: 850 }}>
+            <div style={{ zIndex: 1, maxWidth: 850, display: "flex", flexDirection: "column" }}>
               <div
                 style={{
                   color: "#CDFF4F",
