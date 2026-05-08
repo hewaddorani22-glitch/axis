@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { trackEvent } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
+import { openUpgradePrompt } from "@/lib/upgrade-prompt";
 
 export type ObjectiveRollupType = "missions" | "revenue" | "habits";
 
@@ -256,6 +257,7 @@ export function useObjectives() {
       toast.error("Free plan limit reached", {
         description: "2 themes maximum. Upgrade to Pro in Settings to unlock unlimited themes.",
       });
+      openUpgradePrompt({ source: "theme_limit" });
       return;
     }
 

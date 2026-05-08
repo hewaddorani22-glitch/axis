@@ -9,7 +9,7 @@ import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
 import { useAxisScore } from "@/hooks/useAxisScore";
 import { AxisScoreWidget } from "@/components/app/axis-score-widget";
-import { primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
+import { getPrimaryNavItems, getSecondaryNavItems } from "@/components/app/navigation";
 import { SUPPORT_MAILTO } from "@/lib/support";
 import {
   AxisLogo,
@@ -32,6 +32,11 @@ export function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const hasStreak = streak > 0;
+  const primaryNavItems = getPrimaryNavItems({ pathname, userType: user?.user_type });
+  const secondaryNavItems = getSecondaryNavItems({
+    pathname,
+    hasPublicProfile: Boolean(user?.prove_it_username),
+  });
   const mobileMainItems = primaryNavItems.slice(0, 4);
   const mobileMoreItems = primaryNavItems.slice(4);
   const isMoreActive = [...mobileMoreItems, ...secondaryNavItems].some((item) => pathname === item.href);

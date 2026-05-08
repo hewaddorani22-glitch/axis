@@ -16,8 +16,8 @@ import { AxisScoreWidget } from "@/components/app/axis-score-widget";
 import { useAxisScore } from "@/hooks/useAxisScore";
 import { motion, AnimatePresence } from "framer-motion";
 import { WelcomeCeremony } from "@/components/app/welcome-ceremony";
-import { UpgradeModal } from "@/components/app/upgrade-modal";
 import { StreakShare } from "@/components/app/streak-share";
+import { openUpgradePrompt } from "@/lib/upgrade-prompt";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const currentHour = new Date().getHours();
   const isLate = currentHour >= 20;
   const streakAtRisk = streak >= 3 && habitsCompleted === 0 && isLate;
+  const hasStarted = missionsTotal > 0 || habitsTotal > 0 || completedCount > 0 || habitsCompleted > 0 || streak > 0;
 
   const greeting = getGreeting();
   const displayName = user?.name || "there";
@@ -64,9 +65,9 @@ export default function DashboardPage() {
         }]
       : []),
     {
-      label: "Missions Done",
+      label: "Tasks Done",
       value: `${completedCount}/${missionsTotal}`,
-      change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add missions",
+      change: missionsTotal > 0 ? `${Math.round((completedCount / missionsTotal) * 100)}%` : "Add tasks",
       changeColor: "text-emerald-500",
       icon: <IconTarget size={18} className="text-axis-accent" />,
       extra: null,
@@ -85,10 +86,70 @@ export default function DashboardPage() {
     <div className={`axis-skeleton ${className}`} />
   );
 
+  const nextMission = missions.find((mission) => mission.status !== "done");
+  const kickoff = (() => {
+    if (missionsTotal === 0) {
+      return {
+        eyebrow: "Start here",
+        title: "Add 1-3 tasks that matter today",
+        description: "Keep it tiny. A clear day starts with one important thing, not a giant list.",
+        primaryHref: "/missions?quickAdd=1",
+        primaryLabel: "Add first task",
+        secondaryHref: "/systems?quickAdd=1",
+        secondaryLabel: "Add a habit",
+      };
+    }
+
+    if (completedCount < missionsTotal && nextMission) {
+      return {
+        eyebrow: "Do this next",
+        title: nextMission.title,
+        description: `${missionsTotal - completedCount} task${missionsTotal - completedCount === 1 ? "" : "s"} left today. Finish the next one before you add more.`,
+        primaryHref: "/missions",
+        primaryLabel: "Open tasks",
+        secondaryHref: habitsTotal === 0 ? "/systems?quickAdd=1" : "/systems",
+        secondaryLabel: habitsTotal === 0 ? "Add a habit" : "Open habits",
+      };
+    }
+
+    if (habitsTotal === 0) {
+      return {
+        eyebrow: "Lock in tomorrow",
+        title: "Add one habit you can repeat this week",
+        description: "One routine is enough to make the app feel useful every morning.",
+        primaryHref: "/systems?quickAdd=1",
+        primaryLabel: "Add first habit",
+        secondaryHref: "/review",
+        secondaryLabel: "Open weekly review",
+      };
+    }
+
+    if (habitsCompleted === 0) {
+      return {
+        eyebrow: "Keep momentum",
+        title: "Check off one habit before the day ends",
+        description: "One habit completion keeps your streak alive and makes tomorrow easier.",
+        primaryHref: "/systems",
+        primaryLabel: "Open habits",
+        secondaryHref: "/review",
+        secondaryLabel: "Review the week",
+      };
+    }
+
+    return {
+      eyebrow: "Nice work",
+      title: "You handled the essentials for today",
+      description: "Use the weekly review now or add tomorrow's first task while it's still fresh.",
+      primaryHref: "/review",
+      primaryLabel: "Open weekly review",
+      secondaryHref: "/missions?quickAdd=1",
+      secondaryLabel: "Plan tomorrow",
+    };
+  })();
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       <WelcomeCeremony name={user?.name || ""} />
-      <UpgradeModal />
       {/* Greeting */}
       <div className="flex items-start gap-4 sm:items-center">
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
@@ -123,9 +184,12 @@ export default function DashboardPage() {
               Complete Habit
             </Link>
             {user?.plan !== "pro" && (
-              <Link href="/settings" className="w-full text-xs font-semibold px-4 py-2 bg-axis-accent text-axis-dark rounded-lg text-center hover:scale-105 transition-all shadow-[0_0_15px_rgba(205,255,79,0.3)] md:w-auto">
+              <button
+                onClick={() => openUpgradePrompt({ source: "streak_risk" })}
+                className="w-full text-xs font-semibold px-4 py-2 bg-axis-accent text-axis-dark rounded-lg text-center hover:scale-105 transition-all shadow-[0_0_15px_rgba(205,255,79,0.3)] md:w-auto"
+              >
                 Unlock Freeze (Pro)
-              </Link>
+              </button>
             )}
             {user?.plan === "pro" && (
               <Link href="/systems" className="w-full text-xs font-semibold px-4 py-2 border border-axis-border text-axis-text2 hover:text-axis-text1 rounded-lg text-center hover:bg-axis-hover transition-all md:w-auto">
@@ -136,21 +200,32 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Briefing */}
-      <div className="rounded-2xl p-5" style={{ backgroundColor: "var(--bg-accent-soft)", border: "1px solid rgba(205,255,79,0.2)" }}>
-        <div className="flex items-start gap-3">
-          <IconBriefing size={18} className="text-axis-accent mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-axis-accent mb-1">Morning Briefing</p>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              {streak > 0 ? (
-                <>You&apos;re on a <span className="text-axis-accent font-semibold">{streak}-day streak</span>{streak < 30 ? ` — ${30 - streak} more to 30!` : " — incredible!"} </>
-              ) : (
-                <>Start your streak today by completing a mission and a habit. </>
-              )}
-              {missionsTotal - completedCount > 0 && <>{missionsTotal - completedCount} mission{missionsTotal - completedCount !== 1 ? "s" : ""} remaining.</>}
-              {missionsTotal === 0 && <>Set your first missions to get started!</>}
+      <div className="rounded-3xl border border-axis-accent/20 p-5 sm:p-6" style={{ backgroundColor: "var(--bg-accent-soft)" }}>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-axis-accent/12 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.18em] text-axis-accent">
+              <IconBriefing size={13} className="shrink-0" />
+              {kickoff.eyebrow}
+            </div>
+            <h3 className="text-xl font-semibold tracking-tight text-balance" style={{ color: "var(--text-primary)" }}>
+              {kickoff.title}
+            </h3>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              {kickoff.description}
             </p>
+            <p className="mt-3 text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
+              {streak > 0
+                ? `${streak}-day streak live${streak < 30 ? ` · ${30 - streak} days to 30` : " · keep the run alive"}`
+                : "Complete one task and one habit to start your streak."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link href={kickoff.primaryHref} className="inline-flex items-center justify-center rounded-xl bg-axis-text1 px-4 py-3 text-sm font-semibold text-white transition-all hover:opacity-90">
+              {kickoff.primaryLabel}
+            </Link>
+            <Link href={kickoff.secondaryHref} className="inline-flex items-center justify-center rounded-xl border border-axis-border px-4 py-3 text-sm font-semibold transition-all hover:bg-axis-hover" style={{ color: "var(--text-primary)" }}>
+              {kickoff.secondaryLabel}
+            </Link>
           </div>
         </div>
       </div>
@@ -172,18 +247,13 @@ export default function DashboardPage() {
         ))}
       </motion.div>
 
-      {/* lomoura Score */}
-      <motion.div variants={itemVariants} initial="hidden" animate="show">
-        <AxisScoreWidget {...axisScore} loading={axisScore.loading} />
-      </motion.div>
-
-      {/* Two columns — Missions + Habits */}
+      {/* Two columns — Tasks + Habits */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Missions */}
+        {/* Tasks */}
         <div className="axis-card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <IconTarget size={16} className="text-axis-accent" /> Today&apos;s Missions
+              <IconTarget size={16} className="text-axis-accent" /> Today&apos;s Tasks
             </h3>
             <Link href="/missions" className="text-xs font-mono text-axis-accent hover:underline">View all →</Link>
           </div>
@@ -228,7 +298,7 @@ export default function DashboardPage() {
         <div className="axis-card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <IconHabits size={16} className="text-axis-accent" /> Daily Systems
+              <IconHabits size={16} className="text-axis-accent" /> Habits
             </h3>
             <Link href="/systems" className="text-xs font-mono text-axis-accent hover:underline">View all →</Link>
           </div>
@@ -278,6 +348,12 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {hasStarted && (
+        <motion.div variants={itemVariants} initial="hidden" animate="show">
+          <AxisScoreWidget {...axisScore} loading={axisScore.loading} />
+        </motion.div>
+      )}
     </div>
   );
 }

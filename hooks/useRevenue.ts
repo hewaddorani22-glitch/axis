@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
+import { openUpgradePrompt } from "@/lib/upgrade-prompt";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 
@@ -64,6 +65,7 @@ export function useRevenue() {
     const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
     if (profile?.plan === "free" && streams.length >= 1) {
       toast.error("Free plan limit reached", { description: "1 revenue stream maximum. Upgrade to Pro in Settings to unlock unlimited streams." });
+      openUpgradePrompt({ source: "revenue_limit" });
       return;
     }
 

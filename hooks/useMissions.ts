@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
+import { openUpgradePrompt } from "@/lib/upgrade-prompt";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 
@@ -55,6 +56,7 @@ export function useMissions(date?: string) {
     const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).single();
     if (profile?.plan === "free" && missions.length >= 5) {
       toast.error("Free plan limit reached", { description: "5 daily missions maximum. Upgrade to Pro in Settings to unlock unlimited missions." });
+      openUpgradePrompt({ source: "mission_limit" });
       return;
     }
 

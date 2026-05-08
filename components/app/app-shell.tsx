@@ -9,6 +9,7 @@ import { PwaInstallPrompt } from "@/components/app/pwa-install-prompt";
 import { StreakRecoveryModal } from "@/components/app/streak-recovery-modal";
 import { StreakRestorePromptModal } from "@/components/app/streak-restore-prompt-modal";
 import { PushSubscribePrompt } from "@/components/app/push-subscribe-prompt";
+import { UpgradeModal } from "@/components/app/upgrade-modal";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
@@ -31,6 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <PwaInstallPrompt />
       <StreakRecoveryModal />
       <StreakRestorePromptModal />
+      <UpgradeModal />
       <PushSubscribePrompt vapidPublicKey={VAPID_PUBLIC_KEY} />
       <Sidebar />
       <div className="min-w-0 lg:pl-[260px]">

@@ -14,7 +14,8 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
-import { primaryNavItems, secondaryNavItems } from "@/components/app/navigation";
+import { getPrimaryNavItems, getSecondaryNavItems } from "@/components/app/navigation";
+import { useUser } from "@/hooks/useUser";
 import {
   IconCommand,
   IconGoals,
@@ -54,11 +55,19 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { user } = useUser();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const deferredQuery = useDeferredValue(query);
+
+  const primaryNavItems = getPrimaryNavItems({ pathname, userType: user?.user_type });
+  const secondaryNavItems = getSecondaryNavItems({
+    pathname,
+    hasPublicProfile: Boolean(user?.prove_it_username),
+  });
+  const showRevenueActions = primaryNavItems.some((item) => item.href === "/revenue");
 
   const closePalette = () => {
     setOpen(false);
@@ -73,7 +82,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const commands: Command[] = [
+  const commands = [
     ...[...primaryNavItems, ...secondaryNavItems].map((item) => {
       const shortLabel = "shortLabel" in item && typeof item.shortLabel === "string" ? item.shortLabel : "";
 
@@ -90,7 +99,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     }),
     {
       id: "create-mission",
-      section: "Capture",
+      section: "Capture" as const,
       label: "Add Task",
       hint: "Jump into Tasks and focus the quick-add bar.",
       keywords: ["mission", "task", "todo", "capture"],
@@ -101,7 +110,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     },
     {
       id: "create-habit",
-      section: "Capture",
+      section: "Capture" as const,
       label: "Add Habit",
       hint: "Open Habits and focus the habit composer.",
       keywords: ["habit", "system", "routine", "capture"],
@@ -112,7 +121,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     },
     {
       id: "create-theme",
-      section: "Capture",
+      section: "Capture" as const,
       label: "Add Theme",
       hint: "Open Themes and start a new operating objective.",
       keywords: ["theme", "goal", "milestone", "target", "capture"],
@@ -123,7 +132,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     },
     {
       id: "log-income",
-      section: "Capture",
+      section: "Capture" as const,
       label: "Log Income",
       hint: "Open Revenue Tracker and start a new income entry.",
       keywords: ["income", "revenue", "payment", "sale", "capture"],
@@ -134,7 +143,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     },
     {
       id: "toggle-theme",
-      section: "System",
+      section: "System" as const,
       label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
       hint: "Toggle the global app appearance.",
       keywords: ["theme", "dark", "light", "appearance"],
@@ -147,7 +156,12 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
         });
       },
     },
-  ];
+  ] satisfies Command[];
+
+  const filteredBaseCommands = commands.filter((command) => {
+    if (command.id === "log-income" && !showRevenueActions) return false;
+    return true;
+  });
 
   const queryTerms = deferredQuery
     .trim()
@@ -157,8 +171,8 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
 
   const filteredCommands =
     queryTerms.length === 0
-      ? commands
-      : commands.filter((command) => {
+      ? filteredBaseCommands
+      : filteredBaseCommands.filter((command) => {
           const haystack = [command.label, command.hint, command.shortcut || "", ...command.keywords]
             .join(" ")
             .toLowerCase();
