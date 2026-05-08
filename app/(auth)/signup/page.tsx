@@ -1,78 +1,78 @@
 "use client";
 
+import type { EmailOtpType } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { IconMail } from "@/components/icons";
 import { getBrowserAppUrl } from "@/lib/env";
 import { trackEvent } from "@/lib/analytics";
 
 function SignupForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [stage, setStage] = useState<"email" | "code">("email");
+  const [verificationType, setVerificationType] = useState<EmailOtpType>("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const inviteId = searchParams.get("invite"); // Partner invite
   const supabase = createClient();
 
-  const acceptInvite = async () => {
-    if (!inviteId) return;
-    try {
-      await fetch("/api/partners/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviterId: inviteId }),
-      });
-    } catch {
-      // Non-fatal: user can connect manually
-    }
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    trackEvent("signup_started", { method: "password", source: "signup_page" });
+    trackEvent("signup_started", { method: "email_otp", source: "signup_page" });
 
-    const { error } = await supabase.auth.signUp({
+    const response = await fetch("/api/auth/email-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        name,
+        mode: "signup",
+      }),
+    });
+    const data = await response.json().catch(() => null);
+    setLoading(false);
+
+    if (!response.ok) {
+      setError(data?.error || "Could not send the code.");
+      return;
+    }
+
+    setVerificationType(data?.verificationType || "email");
+    setCode("");
+    setStage("code");
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const { error } = await supabase.auth.verifyOtp({
       email,
-      password,
-      options: {
-        data: { full_name: name },
-        emailRedirectTo: (() => {
-          const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
-          callbackUrl.searchParams.set("next", "/onboarding");
-          if (inviteId) callbackUrl.searchParams.set("invite", inviteId);
-          return callbackUrl.toString();
-        })(),
-      },
+      token: code,
+      type: verificationType,
     });
 
     if (error) {
-      setError(error.message);
+      setError(
+        /invalid|expired|token/i.test(error.message)
+          ? "That code is wrong or expired."
+          : error.message
+      );
       setLoading(false);
-    } else {
-      setSuccess(true);
-      setLoading(false);
-      // If email confirmation is disabled, redirect directly
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from("users").upsert({
-          id: user.id,
-          email: user.email!,
-          name: name,
-        });
-        trackEvent("signup_completed", { method: "password", source: "signup_page" });
-        await acceptInvite();
-        router.push("/onboarding");
-        router.refresh();
-      }
+      return;
     }
+
+    const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
+    callbackUrl.searchParams.set("next", "/onboarding");
+    if (inviteId) callbackUrl.searchParams.set("invite", inviteId);
+    window.location.assign(callbackUrl.toString());
   };
 
   const handleGoogleSignup = async () => {
@@ -89,22 +89,6 @@ function SignupForm() {
       },
     });
   };
-
-  if (success) {
-    return (
-      <div className="text-center">
-        <div className="w-16 h-16 bg-axis-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <IconMail size={32} className="text-axis-accent" />
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight mb-2">Check your email</h1>
-        <p className="text-sm text-axis-text2 max-w-xs mx-auto">
-          We sent a confirmation link to{" "}
-          <span className="font-medium text-axis-text1">{email}</span>.
-          Click the link to activate your account and jump straight into lomoura.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -147,58 +131,106 @@ function SignupForm() {
         <div className="flex-1 h-px bg-axis-border" />
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSignup} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-xs font-medium text-axis-text2 mb-1.5">Full name</label>
-          <input
-            id="name"
-            type="text"
-            placeholder="Your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="signup-email" className="block text-xs font-medium text-axis-text2 mb-1.5">Email</label>
-          <input
-            id="signup-email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="signup-password" className="block text-xs font-medium text-axis-text2 mb-1.5">Password</label>
-          <input
-            id="signup-password"
-            type="password"
-            placeholder="Min. 8 characters"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-            minLength={8}
-            required
-          />
-        </div>
+      {stage === "email" && (
+        <form onSubmit={handleSendCode} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-xs font-medium text-axis-text2 mb-1.5">Full name</label>
+            <input
+              id="name"
+              type="text"
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="signup-email" className="block text-xs font-medium text-axis-text2 mb-1.5">Email</label>
+            <input
+              id="signup-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+              required
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            "Create Account"
-          )}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading || !name || !email}
+            className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              "Send 6-digit code"
+            )}
+          </button>
+        </form>
+      )}
+
+      {stage === "code" && (
+        <form onSubmit={handleVerifyCode} className="space-y-4">
+          <div>
+            <p className="text-sm text-axis-text2">
+              We sent a 6-digit code to{" "}
+              <span className="font-medium text-axis-text1">{email}</span>.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="signup-code" className="block text-xs font-medium text-axis-text2 mb-1.5">Code</label>
+            <input
+              id="signup-code"
+              autoFocus
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="123456"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="w-full rounded-xl px-4 py-3 text-center tracking-[0.4em] text-lg bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+              required
+              maxLength={6}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || code.length !== 6}
+            className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              "Create Account"
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await handleSendCode({ preventDefault() {} } as React.FormEvent);
+            }}
+            disabled={loading}
+            className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
+          >
+            Resend code
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStage("email");
+              setCode("");
+              setError("");
+            }}
+            className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
+          >
+            Use a different email
+          </button>
+        </form>
+      )}
 
       <p className="text-xs text-center text-axis-text3 mt-4">
         By signing up, you agree to our{" "}

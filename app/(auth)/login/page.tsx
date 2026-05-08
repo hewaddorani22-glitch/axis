@@ -1,7 +1,8 @@
 "use client";
 
+import type { EmailOtpType } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getBrowserAppUrl } from "@/lib/env";
@@ -11,12 +12,12 @@ import { useLocale } from "@/lib/i18n/provider";
 function LoginForm() {
   const { t } = useLocale();
   const [email, setEmail] = useState("");
-  const [stage, setStage] = useState<"email" | "sent" | "password">("email");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [stage, setStage] = useState<"email" | "code">("email");
+  const [verificationType, setVerificationType] = useState<EmailOtpType>("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/dashboard";
   const supabase = createClient();
@@ -25,41 +26,56 @@ function LoginForm() {
     setLoading(true);
     setError("");
     setNotice("");
-    const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
-    callbackUrl.searchParams.set("next", redirect);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: false, emailRedirectTo: callbackUrl.toString() },
+    const response = await fetch("/api/auth/email-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, mode: "login" }),
     });
+    const data = await response.json().catch(() => null);
     setLoading(false);
-    if (error) {
-      setError(error.message || t("auth.error.generic"));
+
+    if (!response.ok) {
+      setError(data?.error || t("auth.error.generic"));
       return false;
-    } else {
-      setStage("sent");
-      setNotice(t("auth.link.notice", { email }));
-      return true;
     }
+
+    setVerificationType(data?.verificationType || "email");
+    setCode("");
+    setStage("code");
+    setNotice(t("auth.code.sub", { email }));
+    return true;
   };
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    trackEvent("login_started", { method: "email_otp" });
     await sendLoginCode();
   };
 
-  const handlePasswordLogin = async (e: React.FormEvent) => {
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: verificationType,
+    });
+
     if (error) {
-      setError(error.message);
+      setError(
+        /invalid|expired|token/i.test(error.message)
+          ? t("auth.error.invalid")
+          : error.message || t("auth.error.generic")
+      );
       setLoading(false);
       return;
     }
-    trackEvent("login_completed", { method: "password" });
-    router.push(redirect);
-    router.refresh();
+
+    trackEvent("login_completed", { method: "email_otp" });
+    const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
+    callbackUrl.searchParams.set("next", redirect);
+    window.location.assign(callbackUrl.toString());
   };
 
   const handleGoogleLogin = async () => {
@@ -139,97 +155,63 @@ function LoginForm() {
           >
             {loading ? t("auth.email.sending") : t("auth.email.cta")}
           </button>
-          <button
-            type="button"
-            onClick={() => setStage("password")}
-            className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
-          >
-            Use password instead
-          </button>
         </form>
       )}
 
-      {stage === "sent" && (
-        <div className="space-y-4">
+      {stage === "code" && (
+        <form onSubmit={handleVerifyCode} className="space-y-4">
           <div>
-            <h2 className="text-base font-semibold mb-1">{t("auth.link.title")}</h2>
+            <h2 className="text-base font-semibold mb-1">{t("auth.code.title")}</h2>
             <p className="text-sm text-axis-text2 mb-3">
-              {t("auth.link.sub", { email })}
+              {t("auth.code.sub", { email })}
             </p>
           </div>
-          <div className="rounded-xl border border-axis-border bg-axis-bg2/40 px-4 py-3 text-xs text-axis-text2">
-            {t("auth.link.tip")}
+          <div>
+            <label htmlFor="email-code" className="block text-xs font-medium text-axis-text2 mb-1.5">
+              {t("auth.code.title")}
+            </label>
+            <input
+              id="email-code"
+              autoFocus
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder={t("auth.code.placeholder")}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              required
+              maxLength={6}
+              className="w-full rounded-xl px-4 py-3 text-center tracking-[0.4em] text-lg bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+            />
           </div>
+          <button
+            type="submit"
+            disabled={loading || code.length !== 6}
+            className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {loading ? t("auth.code.verifying") : "Anmelden"}
+          </button>
           <button
             type="button"
             onClick={async () => {
               await sendLoginCode();
             }}
             disabled={loading}
-            className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50"
+            className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
           >
-            {loading ? t("auth.email.sending") : t("auth.link.resend")}
+            {t("auth.code.resend")}
           </button>
           <button
             type="button"
             onClick={() => {
               setStage("email");
+              setCode("");
               setNotice("");
               setError("");
             }}
             className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
           >
-            {t("auth.link.change")}
-          </button>
-        </div>
-      )}
-
-      {stage === "password" && (
-        <form onSubmit={handlePasswordLogin} className="space-y-4">
-          <div>
-            <label htmlFor="email-pw" className="block text-xs font-medium text-axis-text2 mb-1.5">
-              {t("auth.email.label")}
-            </label>
-            <input
-              id="email-pw"
-              type="email"
-              autoComplete="email"
-              placeholder={t("auth.email.placeholder")}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="password" className="text-xs font-medium text-axis-text2">Password</label>
-              <Link href="/forgot-password" className="text-xs text-axis-text3 hover:text-axis-text1 transition-colors">Forgot?</Link>
-            </div>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="********"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full rounded-xl px-4 py-3 text-sm bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3 rounded-xl hover:bg-axis-text1/90 transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            {loading ? "..." : "Log in"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setStage("email")}
-            className="w-full text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
-          >
-            ← Use magic link instead
+            {t("auth.code.change")}
           </button>
         </form>
       )}

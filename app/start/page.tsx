@@ -1,7 +1,8 @@
 "use client";
 
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -32,7 +33,6 @@ function formatCountdown(seconds: number): string {
 }
 
 function StartFunnel() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { t, locale } = useLocale();
   const supabase = useMemo(() => createClient(), []);
@@ -66,8 +66,10 @@ function StartFunnel() {
 
   // Save modal state
   const [showSave, setShowSave] = useState(false);
-  const [authMode, setAuthMode] = useState<"choose" | "email" | "sent">("choose");
+  const [authMode, setAuthMode] = useState<"choose" | "email" | "code">("choose");
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [verificationType, setVerificationType] = useState<EmailOtpType>("email");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
@@ -162,21 +164,48 @@ function StartFunnel() {
     setAuthError("");
     setAuthLoading(true);
     trackEvent("signup_started", { method: "email_otp", source: "start_funnel" });
+    const response = await fetch("/api/auth/email-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, mode: "auto" }),
+    });
+    const data = await response.json().catch(() => null);
+    setAuthLoading(false);
+
+    if (!response.ok) {
+      setAuthError(data?.error || t("auth.error.generic"));
+      return;
+    }
+
+    setVerificationType(data?.verificationType || "email");
+    setCode("");
+    setAuthMode("code");
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoading(true);
+
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: verificationType,
+    });
+
+    if (error) {
+      setAuthError(
+        /invalid|expired|token/i.test(error.message)
+          ? t("auth.error.invalid")
+          : error.message || t("auth.error.generic")
+      );
+      setAuthLoading(false);
+      return;
+    }
+
     const callbackUrl = new URL("/callback", `${getBrowserAppUrl()}/`);
     callbackUrl.searchParams.set("next", "/onboarding");
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: callbackUrl.toString(),
-      },
-    });
-    setAuthLoading(false);
-    if (error) {
-      setAuthError(error.message || t("auth.error.generic"));
-    } else {
-      setAuthMode("sent");
-    }
+    window.location.assign(callbackUrl.toString());
   };
 
   return (
@@ -399,6 +428,7 @@ function StartFunnel() {
                     setShowSave(true);
                     setAuthMode("choose");
                     setAuthError("");
+                    setCode("");
                   }}
                   expired={expired}
                   onRestart={() => {
@@ -537,36 +567,53 @@ function StartFunnel() {
                 </form>
               )}
 
-              {authMode === "sent" && (
-                <div>
-                  <h4 className="text-base font-semibold mb-1">{t("auth.link.title")}</h4>
+              {authMode === "code" && (
+                <form onSubmit={handleVerifyCode}>
+                  <h4 className="text-base font-semibold mb-1">{t("auth.code.title")}</h4>
                   <p className="text-sm text-axis-text2 mb-4">
-                    {t("auth.link.sub", { email })}
+                    {t("auth.code.sub", { email })}
                   </p>
-                  <div className="rounded-xl border border-axis-border bg-axis-bg2/40 px-4 py-3 text-xs text-axis-text2">
-                    {t("auth.link.tip")}
-                  </div>
+                  <input
+                    autoFocus
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder={t("auth.code.placeholder")}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    required
+                    maxLength={6}
+                    className="w-full rounded-xl px-4 py-3 text-center tracking-[0.4em] text-lg bg-white border border-axis-border text-axis-text1 placeholder:text-axis-text3 focus:border-axis-text1 focus:ring-2 focus:ring-axis-text1/10 outline-none transition-all"
+                  />
+                  <button
+                    type="submit"
+                    disabled={authLoading || code.length !== 6}
+                    className="w-full mt-4 flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3.5 rounded-xl hover:bg-axis-text1/90 active:scale-[0.98] transition-all disabled:opacity-60"
+                  >
+                    {authLoading ? t("auth.code.verifying") : t("auth.code.cta")}
+                  </button>
                   <button
                     type="button"
                     onClick={async () => {
                       await handleSendCode({ preventDefault() {} } as React.FormEvent);
                     }}
                     disabled={authLoading}
-                    className="w-full mt-4 flex items-center justify-center text-sm font-semibold bg-axis-text1 text-white px-6 py-3.5 rounded-xl hover:bg-axis-text1/90 active:scale-[0.98] transition-all disabled:opacity-60"
+                    className="w-full mt-3 text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
                   >
-                    {authLoading ? t("auth.email.sending") : t("auth.link.resend")}
+                    {t("auth.code.resend")}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       setAuthMode("email");
                       setAuthError("");
+                      setCode("");
                     }}
-                    className="w-full mt-3 text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
+                    className="w-full mt-2 text-xs text-axis-text3 hover:text-axis-text1 transition-colors"
                   >
-                    {t("auth.link.change")}
+                    {t("auth.code.change")}
                   </button>
-                </div>
+                </form>
               )}
             </motion.div>
           </motion.div>

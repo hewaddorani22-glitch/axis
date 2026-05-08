@@ -9,6 +9,58 @@ export const FROM_EMAIL = getFromEmail();
 const APP_URL = getAppUrl();
 
 /**
+ * Send a custom 6-digit email sign-in code.
+ * We send this ourselves so the product can use OTP-only auth
+ * without depending on Supabase's hosted magic-link template.
+ */
+export async function sendEmailOtpEmail(
+  to: string,
+  code: string,
+  options?: {
+    mode?: "login" | "signup" | "auto";
+  }
+) {
+  if (!resend) return;
+
+  const mode = options?.mode ?? "auto";
+  const heading =
+    mode === "login"
+      ? "Dein Lomoura Login-Code"
+      : "Dein Lomoura Code";
+  const body =
+    mode === "login"
+      ? "Gib diesen 6-stelligen Code in Lomoura ein, um dich anzumelden."
+      : "Gib diesen 6-stelligen Code in Lomoura ein, um dein Konto zu bestaetigen und weiterzumachen.";
+
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `${heading}: ${code}`,
+    text: `${heading}\n\n${body}\n\n${code}\n\nWenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.\n\n${APP_URL}`,
+    html: `
+      <div style="font-family: 'Outfit', sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 20px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <strong style="font-size: 18px;">lomoura</strong>
+        </div>
+        <h1 style="font-size: 24px; margin-bottom: 12px;">${heading}</h1>
+        <p style="color: #52525B; line-height: 1.6; margin-bottom: 24px;">
+          ${body}
+        </p>
+        <div style="margin: 0 0 24px; padding: 20px; border-radius: 16px; border: 1px solid #E4E4E7; background: #FAFAFA; text-align: center;">
+          <div style="font-size: 13px; letter-spacing: 0.12em; color: #71717A; margin-bottom: 10px;">DEIN CODE</div>
+          <div style="font-size: 36px; line-height: 1; font-weight: 800; letter-spacing: 0.24em; color: #0B0B0F; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+            ${code}
+          </div>
+        </div>
+        <p style="color: #71717A; line-height: 1.6; font-size: 13px; margin-bottom: 0;">
+          Wenn du das nicht angefordert hast, kannst du diese E-Mail ignorieren.
+        </p>
+      </div>
+    `,
+  });
+}
+
+/**
  * Send welcome email after signup
  */
 export async function sendWelcomeEmail(to: string, name: string) {
