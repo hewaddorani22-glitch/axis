@@ -33,73 +33,6 @@ function friendlyError(message: string, mode: Mode) {
   return "Der Code konnte gerade nicht gesendet werden. Bitte versuch es gleich nochmal.";
 }
 
-/**
- * Send the OTP using our own Resend template. Returns true on success.
- * Logs server-side on failure so triage shows up in Vercel logs.
- */
-async function trySendViaResend(
-  admin: ReturnType<typeof createAdminClient>,
-  email: string,
-  mode: Mode,
-  name: string,
-  accountExists: boolean,
-): Promise<{ ok: boolean; verificationType?: EmailOtpType }> {
-  if (!resendClient) {
-    console.warn("[email-otp] Resend not configured — falling back to Supabase native");
-    return { ok: false };
-  }
-
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-    options: !accountExists && name ? { data: { full_name: name, name } } : undefined,
-  });
-
-  if (error || !data?.properties?.email_otp || !data.properties.verification_type) {
-    console.error("[email-otp] generateLink failed", { error: error?.message });
-    return { ok: false };
-  }
-
-  try {
-    await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
-    return {
-      ok: true,
-      verificationType: data.properties.verification_type as EmailOtpType,
-    };
-  } catch (err) {
-    console.error("[email-otp] Resend send failed", {
-      message: err instanceof Error ? err.message : String(err),
-    });
-    return { ok: false };
-  }
-}
-
-/**
- * Fallback: ask Supabase to send the OTP from its own email pipeline.
- * Requires SMTP to be configured in the Supabase Auth dashboard (or relies on
- * the Supabase hosted email service for low-volume / dev). Either way, this
- * keeps auth working when our custom Resend setup is misconfigured.
- */
-async function trySendViaSupabase(
-  admin: ReturnType<typeof createAdminClient>,
-  email: string,
-  accountExists: boolean,
-  name: string,
-): Promise<{ ok: boolean; verificationType?: EmailOtpType; error?: string }> {
-  const { error } = await admin.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: !accountExists,
-      data: !accountExists && name ? { full_name: name, name } : undefined,
-    },
-  });
-  if (error) {
-    console.error("[email-otp] Supabase fallback failed", { message: error.message });
-    return { ok: false, error: error.message };
-  }
-  return { ok: true, verificationType: "email" as EmailOtpType };
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
@@ -111,6 +44,20 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Bitte gib eine gueltige E-Mail-Adresse ein." },
         { status: 400 },
+      );
+    }
+
+    // Hard fail if Resend is not configured. We send the OTP ourselves; we do
+    // NOT fall back to Supabase's hosted email because that emits a magic-link
+    // template, not an OTP code, which confuses users who expect a 6-digit code.
+    if (!resendClient) {
+      console.error("[email-otp] RESEND_API_KEY is not configured in this environment");
+      return NextResponse.json(
+        {
+          error:
+            "E-Mail-Versand ist gerade nicht konfiguriert. Bitte melde dich kurz mit Google an oder kontaktiere den Support.",
+        },
+        { status: 503 },
       );
     }
 
@@ -135,35 +82,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: friendlyError("not_found", mode) }, { status: 404 });
     }
 
-    // Path 1: try Resend with our custom template
-    const resendResult = await trySendViaResend(admin, email, mode, name, accountExists);
-    if (resendResult.ok) {
-      return NextResponse.json({
-        ok: true,
-        verificationType: resendResult.verificationType ?? "email",
-        accountExists,
-        channel: "resend",
-      });
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: !accountExists && name ? { data: { full_name: name, name } } : undefined,
+    });
+
+    if (error || !data?.properties?.email_otp || !data.properties.verification_type) {
+      console.error("[email-otp] generateLink failed", { message: error?.message });
+      return NextResponse.json(
+        { error: friendlyError(error?.message ?? "otp_failed", mode) },
+        { status: 400 },
+      );
     }
 
-    // Path 2: fall back to Supabase's email pipeline
-    const supabaseResult = await trySendViaSupabase(admin, email, accountExists, name);
-    if (supabaseResult.ok) {
-      return NextResponse.json({
-        ok: true,
-        verificationType: supabaseResult.verificationType ?? "email",
-        accountExists,
-        channel: "supabase",
+    try {
+      await sendEmailOtpEmail(email, data.properties.email_otp, { mode });
+    } catch (err) {
+      console.error("[email-otp] Resend send failed", {
+        message: err instanceof Error ? err.message : String(err),
       });
+      return NextResponse.json(
+        {
+          error:
+            "Der Code konnte gerade nicht per E-Mail gesendet werden. Bitte pruef deinen Spam-Ordner oder versuch es nochmal.",
+        },
+        { status: 502 },
+      );
     }
 
-    return NextResponse.json(
-      {
-        error:
-          "Der Code konnte gerade nicht gesendet werden. Bitte versuch es gleich nochmal oder nutze Google-Login.",
-      },
-      { status: 502 },
-    );
+    return NextResponse.json({
+      ok: true,
+      verificationType: data.properties.verification_type as EmailOtpType,
+      accountExists,
+    });
   } catch (err) {
     console.error("[email-otp] unhandled", {
       message: err instanceof Error ? err.message : String(err),
