@@ -91,6 +91,17 @@ export async function POST(request: Request) {
       const userId = await updateUserPlanByCustomerId(customerId, "free");
 
       if (userId) {
+        await recordServerEvent({
+          event: "pro_subscription_cancelled",
+          userId,
+          path: "/api/stripe/webhook",
+          props: {
+            customerId,
+            cancelAt: subscription.cancel_at,
+            cancelReason: (subscription as { cancellation_details?: { reason?: string | null } }).cancellation_details?.reason ?? null,
+            endedAt: subscription.ended_at,
+          },
+        });
         console.log(`User ${userId} downgraded to Free`);
       }
       break;
@@ -101,13 +112,48 @@ export async function POST(request: Request) {
       const customerId = subscription.customer as string;
       const status = subscription.status;
       const plan = status === "active" || status === "trialing" ? "pro" : "free";
-      await updateUserPlanByCustomerId(customerId, plan);
+      const userId = await updateUserPlanByCustomerId(customerId, plan);
+      if (userId) {
+        await recordServerEvent({
+          event: "pro_subscription_status_changed",
+          userId,
+          path: "/api/stripe/webhook",
+          props: {
+            status,
+            plan,
+            cancelAtPeriodEnd: (subscription as { cancel_at_period_end?: boolean }).cancel_at_period_end ?? false,
+            customerId,
+          },
+        });
+      }
       break;
     }
 
     case "invoice.payment_failed": {
       const invoice = event.data.object;
-      console.warn(`Payment failed for customer ${invoice.customer}`);
+      const customerId = invoice.customer as string;
+      // payment_failed can fire on a single attempt without canceling the subscription —
+      // never flip plan here. Stripe sends a separate subscription.updated when the
+      // dunning cycle eventually downgrades the user. We only fetch the userId for
+      // analytics purposes.
+      const { data: userRow } = await createAdminClient()
+        .from("users")
+        .select("id")
+        .eq("stripe_customer_id", customerId)
+        .maybeSingle();
+      if (userRow?.id) {
+        await recordServerEvent({
+          event: "pro_payment_failed",
+          userId: userRow.id,
+          path: "/api/stripe/webhook",
+          props: {
+            customerId,
+            amountDue: (invoice as { amount_due?: number }).amount_due ?? null,
+            attemptCount: (invoice as { attempt_count?: number }).attempt_count ?? null,
+          },
+        });
+      }
+      console.warn(`Payment failed for customer ${customerId}`);
       break;
     }
   }

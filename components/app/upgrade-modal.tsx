@@ -98,6 +98,28 @@ function getPromptCopy(locale: "de" | "en", source: UpgradePromptSource): Prompt
           "Perfekt für echte Menschen mit echten Tagen",
         ],
       },
+      goal_limit: {
+        badge: "Pro · Goals",
+        title: "Steck dir mehr als zwei Ziele",
+        sub: "Du hast das Free-Limit für Goals erreicht. Pro hält Job, Side-Hustle, Sport und Lernen parallel im Plan.",
+        bullets: [
+          "Unbegrenzte Goals und Themes",
+          "Mehr Verknüpfungen mit Tasks und Habits",
+          "Bessere Übersicht über parallele Lebensbereiche",
+          "Streak-Schutz für deine wichtigsten Routinen",
+        ],
+      },
+      partner_limit: {
+        badge: "Pro · Accountability",
+        title: "Bau dir ein echtes Accountability-Netzwerk",
+        sub: "Free reicht für einen Partner. Pro lässt dich mehrere Menschen verbinden — Trainingspartner, Mitgründer, Freunde.",
+        bullets: [
+          "Unbegrenzte Accountability-Partner",
+          "Push und In-App-Nudges in beide Richtungen",
+          "Live-Heatmap über deine ganze Crew",
+          "Streak-Schutz, damit Druck konstruktiv bleibt",
+        ],
+      },
     },
     en: {
       generic: {
@@ -175,6 +197,28 @@ function getPromptCopy(locale: "de" | "en", source: UpgradePromptSource): Prompt
           "One restore if your streak breaks",
           "History that keeps motivation visible",
           "Built for real people with real schedules",
+        ],
+      },
+      goal_limit: {
+        badge: "Pro · Goals",
+        title: "Run more than two goals at once",
+        sub: "You hit the free goal limit. Pro keeps job, side hustle, fitness and learning all on plan in parallel.",
+        bullets: [
+          "Unlimited goals and themes",
+          "More links to tasks and habits",
+          "Cleaner view across parallel life areas",
+          "Streak protection for the routines that matter",
+        ],
+      },
+      partner_limit: {
+        badge: "Pro · Accountability",
+        title: "Build a real accountability circle",
+        sub: "Free is fine for one partner. Pro lets you connect a whole crew — training buddy, co-founder, close friends.",
+        bullets: [
+          "Unlimited accountability partners",
+          "Push and in-app nudges both ways",
+          "Live heatmap across the whole crew",
+          "Streak protection so pressure stays constructive",
         ],
       },
     },

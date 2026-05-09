@@ -25,7 +25,10 @@ export async function POST(request: Request) {
   const result = await activatePartnership(admin, inviterId, user.id);
 
   if ("error" in result) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
+    const body: Record<string, unknown> = { error: result.error };
+    if ("paywall" in result && result.paywall) body.paywall = result.paywall;
+    if ("side" in result && result.side) body.side = result.side;
+    return NextResponse.json(body, { status: result.status });
   }
 
   return NextResponse.json({ success: true, ...result });

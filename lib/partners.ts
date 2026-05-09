@@ -2,6 +2,19 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 type AdminClient = SupabaseClient<any, any, any>;
 
+export const FREE_PARTNER_LIMIT = 1;
+
+async function countActivePartnerships(admin: AdminClient, userId: string) {
+  const { count, error } = await admin
+    .from("partnerships")
+    .select("id", { count: "exact", head: true })
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+    .eq("status", "active");
+
+  if (error) return { error: error.message };
+  return { count: count ?? 0 };
+}
+
 export async function activatePartnership(
   admin: AdminClient,
   inviterId: string,
@@ -17,7 +30,7 @@ export async function activatePartnership(
 
   const { data: inviter, error: inviterError } = await admin
     .from("users")
-    .select("id")
+    .select("id, plan")
     .eq("id", inviterId)
     .maybeSingle();
 
@@ -27,6 +40,16 @@ export async function activatePartnership(
 
   if (!inviter) {
     return { error: "Invite owner was not found", status: 404 };
+  }
+
+  const { data: currentProfile, error: currentError } = await admin
+    .from("users")
+    .select("plan")
+    .eq("id", currentUserId)
+    .maybeSingle();
+
+  if (currentError) {
+    return { error: currentError.message, status: 500 };
   }
 
   const { data: existing, error: existingError } = await admin
@@ -54,6 +77,38 @@ export async function activatePartnership(
     }
 
     return { partnershipId: existing.id, reactivated: true };
+  }
+
+  // Free-plan partner limit. Check both sides — either user being capped blocks
+  // the activation. Pro accounts are unlimited.
+  if (inviter.plan !== "pro") {
+    const inviterCount = await countActivePartnerships(admin, inviterId);
+    if ("error" in inviterCount) {
+      return { error: inviterCount.error, status: 500 };
+    }
+    if (inviterCount.count >= FREE_PARTNER_LIMIT) {
+      return {
+        error: "Inviter has reached the free partner limit",
+        status: 403,
+        paywall: "partner_limit" as const,
+        side: "inviter" as const,
+      };
+    }
+  }
+
+  if (currentProfile?.plan !== "pro") {
+    const currentCount = await countActivePartnerships(admin, currentUserId);
+    if ("error" in currentCount) {
+      return { error: currentCount.error, status: 500 };
+    }
+    if (currentCount.count >= FREE_PARTNER_LIMIT) {
+      return {
+        error: "You have reached the free partner limit",
+        status: 403,
+        paywall: "partner_limit" as const,
+        side: "current" as const,
+      };
+    }
   }
 
   const { data, error } = await admin
