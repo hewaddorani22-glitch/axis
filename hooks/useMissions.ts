@@ -117,6 +117,34 @@ export function useMissions(date?: string) {
       setMissions((prev) =>
         prev.map((m) => (m.id === id ? { ...m, status: mission.status } : m))
       );
+      return;
+    }
+
+    // Activation: fire `first_mission_completed` exactly once per user (server-stamped).
+    // Idempotency relies on the conditional update — only the row where
+    // first_mission_completed_at IS NULL will be touched, so the count we get back
+    // tells us whether *this* completion was the first.
+    if (newStatus === "done") {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: stamped, error: stampError } = await supabase
+          .from("users")
+          .update({ first_mission_completed_at: new Date().toISOString() })
+          .eq("id", user.id)
+          .is("first_mission_completed_at", null)
+          .select("id");
+        if (!stampError && stamped && stamped.length > 0) {
+          const signupAt = user.created_at ? new Date(user.created_at).getTime() : null;
+          const dayOffset = signupAt
+            ? Math.floor((Date.now() - signupAt) / 86_400_000)
+            : null;
+          trackEvent("first_mission_completed", {
+            day_offset: dayOffset,
+            mission_priority: mission.priority,
+            missions_total: missions.length,
+          });
+        }
+      }
     }
   };
 
