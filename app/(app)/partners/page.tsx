@@ -10,6 +10,8 @@ import { calculateFocusScore } from "@/lib/scoring";
 import { IconPartners, IconNudge, IconCheck, IconWarning, IconStreak } from "@/components/icons";
 import { getBrowserAppUrl } from "@/lib/env";
 import { useLocale } from "@/lib/i18n/provider";
+import { openUpgradePrompt } from "@/lib/upgrade-prompt";
+import { FREE_PARTNER_LIMIT } from "@/lib/partners";
 
 interface PartnerStats {
   missionsCompleted: number;
@@ -158,6 +160,10 @@ export default function PartnersPage() {
 
   const handleCopyInvite = () => {
     if (!user) return;
+    if (user.plan !== "pro" && activePartners.length >= FREE_PARTNER_LIMIT) {
+      openUpgradePrompt({ source: "partner_limit" });
+      return;
+    }
     const link = `${getBrowserAppUrl()}/signup?invite=${user.id}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
@@ -196,12 +202,18 @@ export default function PartnersPage() {
               </p>
               <button
                 onClick={async () => {
-                  // Accept: update partnership status via admin endpoint
-                  await fetch("/api/partners/invite", {
+                  const res = await fetch("/api/partners/invite", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ inviterId: p.partnerId }),
                   });
+                  if (res.status === 403) {
+                    const data = await res.json().catch(() => null);
+                    if (data?.paywall === "partner_limit") {
+                      openUpgradePrompt({ source: "partner_limit" });
+                      return;
+                    }
+                  }
                   refetch();
                 }}
                 className="text-xs font-semibold text-axis-accent hover:underline"

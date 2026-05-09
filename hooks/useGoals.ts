@@ -2,6 +2,9 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
+import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics";
+import { openUpgradePrompt } from "@/lib/upgrade-prompt";
 
 export interface Goal {
   id: string;
@@ -43,7 +46,13 @@ export function useGoals() {
 
     const { data: profile } = await supabase.from("users").select("plan").eq("id", user.id).maybeSingle();
     if (profile?.plan === "free" && goals.length >= 2) {
-      alert("Free plan limit reached: 2 goals maximum. Upgrade to Pro in Settings to unlock unlimited goals.");
+      const isDe = typeof document !== "undefined" && document.documentElement.lang === "de";
+      toast.error(isDe ? "Free-Plan-Limit erreicht" : "Free plan limit reached", {
+        description: isDe
+          ? "Maximal 2 Goals. Upgrade auf Pro fuer unbegrenzte Goals."
+          : "2 goals maximum. Upgrade to Pro to unlock unlimited goals.",
+      });
+      openUpgradePrompt({ source: "goal_limit" });
       return;
     }
 
@@ -59,7 +68,12 @@ export function useGoals() {
       .select()
       .single();
 
-    if (data) setGoals((prev) => [...prev, data as Goal]);
+    if (data) {
+      if (goals.length === 0) {
+        trackEvent("first_goal_created", { source: "goals" });
+      }
+      setGoals((prev) => [...prev, data as Goal]);
+    }
   };
 
   const updateGoalProgress = async (id: string, currentValue: number) => {

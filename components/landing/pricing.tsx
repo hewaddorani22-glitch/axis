@@ -55,6 +55,15 @@ export function Pricing() {
           <p className="text-lg text-axis-text2">{t("price.sub")}</p>
         </div>
 
+        {/* Anchor: replaces 6 apps — placed BEFORE pricing grid so the comparison
+            framing lands before the user sees the price. */}
+        <div className="mb-8 max-w-3xl mx-auto">
+          <div className="bg-axis-bg border border-axis-border rounded-2xl p-5 text-center">
+            <p className="text-sm font-semibold text-axis-text1 mb-1">{t("price.anchor.title")}</p>
+            <p className="text-sm text-axis-text2 leading-relaxed">{t("price.anchor.line")}</p>
+          </div>
+        </div>
+
         {/* Monthly / Yearly toggle */}
         <div className="flex justify-center mb-10">
           <div className="inline-flex items-center bg-axis-bg border border-axis-border rounded-full p-1">
@@ -155,7 +164,10 @@ export function Pricing() {
             >
               {proLoading ? t("sidebar.upgrade.opening") : t("price.pro.cta")}
             </button>
-            <p className="text-[11px] text-center text-white/40 mb-6">{t("price.refund")}</p>
+            <p className="text-xs text-center text-white/65 mb-6 font-medium">
+              <span aria-hidden className="mr-1">✓</span>
+              {t("price.refund")}
+            </p>
 
             <ul className="space-y-3">
               {[
@@ -176,14 +188,6 @@ export function Pricing() {
                 </li>
               ))}
             </ul>
-          </div>
-        </div>
-
-        {/* Anchor: replaces 6 apps */}
-        <div className="mt-12 max-w-3xl mx-auto">
-          <div className="bg-axis-bg border border-axis-border rounded-2xl p-6 text-center">
-            <p className="text-sm font-semibold text-axis-text1 mb-1">{t("price.anchor.title")}</p>
-            <p className="text-sm text-axis-text2 leading-relaxed">{t("price.anchor.line")}</p>
           </div>
         </div>
       </div>

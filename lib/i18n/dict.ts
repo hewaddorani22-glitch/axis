@@ -199,6 +199,7 @@ const de: Dict = {
   "price.toggle.monthly": "Monatlich",
   "price.toggle.yearly": "Jährlich",
   "price.toggle.save": "2 Monate gratis",
+  "price.toggle.save.short": "-18 %",
   "price.free.label": "Free",
   "price.free.amount": "0 €",
   "price.free.unit": "/ für immer",
@@ -514,6 +515,19 @@ const de: Dict = {
   "settings.upgrade.syncing": "Zahlung erfolgt, aber Pro wird noch synchronisiert. Bitte gleich nochmal aktualisieren.",
   "settings.upgrade.unverified": "Zahlung erfolgt, aber wir konnten sie noch nicht verifizieren. Bitte gleich nochmal aktualisieren.",
   "settings.upgrade.cancelled.long": "Upgrade abgebrochen. Du kannst es jederzeit nochmal probieren.",
+
+  // Achievement unlock modal
+  "ach.eyebrow": "Achievement freigeschaltet",
+  "ach.share": "Teilen",
+  "ach.continue": "Weiter geht's",
+  "ach.30_day_streak.title": "30 Tage am Stück.",
+  "ach.30_day_streak.sub": "Du hast 30 Tage in Folge sowohl eine Mission als auch ein Habit erledigt. Krass.",
+  "ach.perfect_week.title": "Perfekte Woche.",
+  "ach.perfect_week.sub": "7 von 7 Tagen — jede Mission, jedes Habit. Das ist die Form, die Resultate bringt.",
+  "ach.100_missions.title": "100 Missionen erledigt.",
+  "ach.100_missions.sub": "Hundert echte Erledigt-Häkchen. Das Volumen, an dem die meisten scheitern.",
+  "ach.first_10k.title": "Erste 10k.",
+  "ach.first_10k.sub": "Du hast in einem Monat 10.000 € getrackt. Stell dir vor, was die Konsistenz aus dem Rest macht.",
 };
 
 const en: Dict = {
@@ -699,6 +713,7 @@ const en: Dict = {
   "price.toggle.monthly": "Monthly",
   "price.toggle.yearly": "Yearly",
   "price.toggle.save": "2 months free",
+  "price.toggle.save.short": "-18%",
   "price.free.label": "Free",
   "price.free.amount": "$0",
   "price.free.unit": "/ forever",
@@ -1004,6 +1019,19 @@ const en: Dict = {
   "settings.upgrade.syncing": "Payment completed, but lomoura is still syncing your Pro access. Refresh in a moment.",
   "settings.upgrade.unverified": "Payment completed, but lomoura could not verify it yet. Refresh in a moment.",
   "settings.upgrade.cancelled.long": "Upgrade cancelled. You can upgrade anytime.",
+
+  // Achievement unlock modal
+  "ach.eyebrow": "Achievement unlocked",
+  "ach.share": "Share",
+  "ach.continue": "Keep going",
+  "ach.30_day_streak.title": "30 days straight.",
+  "ach.30_day_streak.sub": "You completed both a mission and a habit, 30 days in a row. That's not luck.",
+  "ach.perfect_week.title": "Perfect week.",
+  "ach.perfect_week.sub": "7 of 7 — every mission, every habit. This is the shape that produces results.",
+  "ach.100_missions.title": "100 missions done.",
+  "ach.100_missions.sub": "A hundred real check-marks. The volume most people quit before reaching.",
+  "ach.first_10k.title": "First 10k.",
+  "ach.first_10k.sub": "You logged €10,000 in a single month. Imagine what consistency does to the rest.",
 };
 
 export const dictionaries: Record<Locale, Dict> = { de, en };

@@ -6,6 +6,8 @@ export type UpgradePromptSource =
   | "habit_limit"
   | "revenue_limit"
   | "theme_limit"
+  | "goal_limit"
+  | "partner_limit"
   | "review_history"
   | "streak_risk";
 

@@ -8,17 +8,18 @@ import { trackEvent } from "@/lib/analytics";
 import { useLocale } from "@/lib/i18n/provider";
 
 function SettingsContent() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { user, loading, updateProfile, signOut, refetch } = useUser();
   const searchParams = useSearchParams();
   const upgradeStatus = searchParams.get("upgrade");
-  const checkoutInterval = searchParams.get("interval") === "yearly" ? "yearly" : "monthly";
+  const initialInterval = searchParams.get("interval") === "monthly" ? "monthly" : "yearly";
   const checkoutSessionId = searchParams.get("session_id");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [fieldValue, setFieldValue] = useState("");
   const [billingState, setBillingState] = useState<"idle" | "checkout" | "portal" | "confirming">("idle");
   const [upgradeMessage, setUpgradeMessage] = useState<{ tone: "success" | "warning" | "error"; text: string } | null>(null);
   const [autoCheckoutStarted, setAutoCheckoutStarted] = useState(false);
+  const [checkoutInterval, setCheckoutInterval] = useState<"monthly" | "yearly">(initialInterval);
 
   useEffect(() => {
     if (upgradeStatus !== "success") {
@@ -287,17 +288,75 @@ function SettingsContent() {
             {billingState === "portal" ? "Opening billing portal..." : "Manage Subscription"}
           </button>
         ) : (
-          <button
-            onClick={handleUpgrade}
-            disabled={billingState === "checkout" || billingState === "confirming"}
-            className="w-full text-center text-sm font-semibold bg-axis-accent text-axis-dark px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all"
-          >
-            {billingState === "checkout"
-              ? "Redirecting to checkout..."
-              : billingState === "confirming"
-                ? "Confirming payment..."
-                : "Upgrade to Pro: 9 €/Monat"}
-          </button>
+          <div className="space-y-3">
+            {/* Monthly / Yearly toggle */}
+            <div
+              role="tablist"
+              aria-label="Billing interval"
+              className="grid grid-cols-2 gap-1 rounded-xl p-1"
+              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}
+            >
+              <button
+                role="tab"
+                aria-selected={checkoutInterval === "monthly"}
+                onClick={() => setCheckoutInterval("monthly")}
+                className="rounded-lg py-2 text-xs font-semibold transition-all"
+                style={
+                  checkoutInterval === "monthly"
+                    ? { backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)" }
+                    : { color: "var(--text-tertiary)" }
+                }
+              >
+                {locale === "de" ? "Monatlich" : "Monthly"} · 9 €
+              </button>
+              <button
+                role="tab"
+                aria-selected={checkoutInterval === "yearly"}
+                onClick={() => setCheckoutInterval("yearly")}
+                className="relative rounded-lg py-2 text-xs font-semibold transition-all"
+                style={
+                  checkoutInterval === "yearly"
+                    ? { backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)" }
+                    : { color: "var(--text-tertiary)" }
+                }
+              >
+                {locale === "de" ? "Jaehrlich" : "Yearly"} · 89 €
+                <span className="ml-1.5 inline-flex items-center rounded bg-axis-accent px-1.5 py-0.5 text-[9px] font-mono font-bold text-axis-dark align-middle">
+                  -18 %
+                </span>
+              </button>
+            </div>
+
+            <p className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>
+              {checkoutInterval === "yearly"
+                ? (locale === "de"
+                    ? "Entspricht 7,42 €/Monat. 2 Monate gratis."
+                    : "Works out to €7.42/month. 2 months free.")
+                : (locale === "de"
+                    ? "Wechsle jaehrlich fuer 18 % weniger."
+                    : "Switch to yearly for 18% off.")}
+            </p>
+
+            <button
+              onClick={handleUpgrade}
+              disabled={billingState === "checkout" || billingState === "confirming"}
+              className="w-full text-center text-sm font-semibold bg-axis-accent text-axis-dark px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all disabled:opacity-60"
+            >
+              {billingState === "checkout"
+                ? (locale === "de" ? "Weiterleitung zum Checkout..." : "Redirecting to checkout...")
+                : billingState === "confirming"
+                  ? (locale === "de" ? "Zahlung wird bestaetigt..." : "Confirming payment...")
+                  : checkoutInterval === "yearly"
+                    ? (locale === "de" ? "Pro freischalten — 89 €/Jahr" : "Unlock Pro — €89/year")
+                    : (locale === "de" ? "Pro freischalten — 9 €/Monat" : "Unlock Pro — €9/month")}
+            </button>
+
+            <p className="text-[11px] text-center" style={{ color: "var(--text-tertiary)" }}>
+              {locale === "de"
+                ? "14 Tage Geld zurueck. Kuendigung jederzeit in einem Klick."
+                : "14-day money-back guarantee. Cancel any time in one click."}
+            </p>
+          </div>
         )}
       </div>
 
