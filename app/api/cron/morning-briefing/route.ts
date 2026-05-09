@@ -4,11 +4,15 @@ import { calculateFocusScore } from "@/lib/scoring";
 import { resend, FROM_EMAIL } from "@/lib/resend";
 import { getAppUrl, getCronSecret } from "@/lib/env";
 import { sendPushToUser } from "@/lib/push";
+import { getUserLocalContext, isInLocalHourWindow } from "@/lib/cron-tz";
+
+const TARGET_LOCAL_HOUR_START = 7;
+const TARGET_LOCAL_HOUR_END = 9;
 
 /**
  * GET /api/cron/morning-briefing
- * Runs at 8am UTC daily.
- * Sends a personalized morning briefing email to all users whose local time is ~8am.
+ * Runs hourly. Sends to users whose local time is between 7 and 9 and who have
+ * not received the briefing yet on their local date today.
  *
  * Email contains:
  * - Yesterday's grade + key stats
@@ -31,32 +35,58 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  const today = new Date().toISOString().split("T")[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+  const now = new Date();
 
-  // Get all users (timezones for 8am filtering: simplified: send to all for now)
-  const { data: users } = await admin
+  // Pull every onboarded user, then filter in-process by local-hour window.
+  // We could do this in SQL with `now() AT TIME ZONE u.timezone` but JS gives
+  // us a single source of truth shared with all the other cron jobs.
+  const { data: allUsers } = await admin
     .from("users")
-    .select("id, email, name, plan")
+    .select("id, email, name, plan, timezone, last_morning_briefing_on")
     .eq("onboarding_done", true);
 
-  if (!users?.length) return NextResponse.json({ sent: 0 });
+  if (!allUsers?.length) return NextResponse.json({ sent: 0, eligible: 0 });
 
+  const eligible = allUsers
+    .map((u) => ({ user: u, ctx: getUserLocalContext(u.timezone, now) }))
+    .filter(({ user, ctx }) =>
+      isInLocalHourWindow(ctx, TARGET_LOCAL_HOUR_START, TARGET_LOCAL_HOUR_END) &&
+      user.last_morning_briefing_on !== ctx.dateIso,
+    );
+
+  if (eligible.length === 0) return NextResponse.json({ sent: 0, eligible: 0 });
+
+  const users = eligible.map(({ user }) => user);
+  const localDateByUser = new Map(eligible.map(({ user, ctx }) => [user.id, ctx.dateIso]));
   const userIds = users.map((u) => u.id);
 
-  // Fetch yesterday's activity for all users
+  // Per-user "yesterday" derived from the user's local date minus one day. This
+  // matters for users in far-east timezones whose UTC-yesterday and local-yesterday
+  // are actually two different calendar dates.
+  const yesterdayByUser = new Map(
+    eligible.map(({ user, ctx }) => {
+      const d = new Date(`${ctx.dateIso}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - 1);
+      return [user.id, d.toISOString().split("T")[0]];
+    }),
+  );
+  const allYesterdays = Array.from(new Set(yesterdayByUser.values()));
+
+  // Fetch yesterday's activity. We pull both yesterdays observed in the cohort
+  // (most cohorts will land on the same day; far-east users may add a 2nd) and
+  // filter per-user below.
   const [yesterdayMissionsRes, yesterdayHabitLogsRes, streakMissionsRes, streakHabitLogsRes] =
     await Promise.all([
       admin
         .from("missions")
-        .select("user_id, status")
+        .select("user_id, status, date")
         .in("user_id", userIds)
-        .eq("date", yesterday),
+        .in("date", allYesterdays),
       admin
         .from("habit_logs")
         .select("user_id, date")
         .in("user_id", userIds)
-        .eq("date", yesterday)
+        .in("date", allYesterdays)
         .eq("completed", true),
       // Last 90 days for streak calc
       admin
@@ -79,15 +109,20 @@ export async function GET(request: Request) {
   const allHabits = streakHabitLogsRes.data || [];
 
   let sent = 0;
+  let pushed = 0;
+  let stamped = 0;
 
   for (const user of users) {
     const uid = user.id;
+    const localDate = localDateByUser.get(uid);
+    if (!localDate) continue;
 
-    // Yesterday's stats
-    const userYMissions = yMissions.filter((m) => m.user_id === uid);
+    // Yesterday's stats — filter on the user's *local* yesterday.
+    const userYesterday = yesterdayByUser.get(uid);
+    const userYMissions = yMissions.filter((m) => m.user_id === uid && m.date === userYesterday);
     const yDone = userYMissions.filter((m) => m.status === "done").length;
     const yTotal = userYMissions.length;
-    const yHabitsDone = yHabits.filter((h) => h.user_id === uid).length;
+    const yHabitsDone = yHabits.filter((h) => h.user_id === uid && h.date === userYesterday).length;
 
     // Streak
     const mDates = new Set(allMissions.filter((m) => m.user_id === uid).map((m) => m.date));
@@ -99,8 +134,13 @@ export async function GET(request: Request) {
       else break;
     }
 
-    // Skip if no activity at all (new user with no data)
-    if (yTotal === 0 && streak === 0) continue;
+    // Skip if no activity at all (new user with no data) but still stamp so we
+    // don't reconsider this user every hour for the rest of the day.
+    if (yTotal === 0 && streak === 0) {
+      await admin.from("users").update({ last_morning_briefing_on: localDate }).eq("id", uid);
+      stamped++;
+      continue;
+    }
 
     const score = calculateFocusScore({
       missionsCompleted: yDone,
@@ -203,18 +243,24 @@ export async function GET(request: Request) {
         streak > 0
           ? `Tag ${streak} 🔥 — was zählt heute?`
           : "Setz heute deinen ersten Streak.";
-      await sendPushToUser(uid, {
+      const delivered = await sendPushToUser(uid, {
         title: `Guten Morgen, ${name}`,
         body: pushBody,
         url: "/dashboard",
         tag: "morning-briefing",
       });
+      if (delivered > 0) pushed++;
     } catch {
       // Non-fatal — email is still the primary channel
     }
+
+    // Stamp last-sent-on with the user's local date so a re-run within the
+    // same hour does not double-send.
+    await admin.from("users").update({ last_morning_briefing_on: localDate }).eq("id", uid);
+    stamped++;
   }
 
-  return NextResponse.json({ sent, total: users.length });
+  return NextResponse.json({ sent, pushed, stamped, eligible: users.length });
 }
 
 function daysAgo(n: number): string {
