@@ -123,10 +123,14 @@ export default function OnboardingPage() {
     });
   }, []);
 
-  // Quiz pre-fill: if the user came from /start, seed userType + first mission
+  // Quiz pre-fill: if the user came from /start, seed userType + first mission.
+  // Also flips us into Quick-Start mode (1-tap confirm instead of 3-step wizard).
   useEffect(() => {
     const quiz = loadQuizAnswers();
-    if (!quiz) return;
+    if (!quiz) {
+      setQuickStart((prev) => ({ ...prev, examined: true }));
+      return;
+    }
     setUserType(suggestUserType(quiz.goal));
     const firstMission = suggestFirstMission(quiz.goal, locale);
     setMissions((prev) => {
@@ -134,6 +138,7 @@ export default function OnboardingPage() {
       next[0] = { title: firstMission, priority: "high" };
       return next;
     });
+    setQuickStart({ active: true, examined: true });
     // Keep quiz answers around until onboarding completes; clearQuizAnswers is called in handleComplete.
   }, [locale]);
 
@@ -184,6 +189,10 @@ export default function OnboardingPage() {
   const [name, setName] = useState("");
   const [userType, setUserType] = useState<UserType | null>(null);
   const [timezone, setTimezone] = useState("Europe/Berlin");
+  const [quickStart, setQuickStart] = useState<{
+    active: boolean;
+    examined: boolean;
+  }>({ active: false, examined: false });
   
   const [missions, setMissions] = useState([
     { title: "", priority: "high" as const },
@@ -219,6 +228,20 @@ export default function OnboardingPage() {
   const totalSteps = 3;
   const progressPct = (step / totalSteps) * 100;
 
+  // Tasks/habits we'll auto-apply when the user clicks Quick-Start
+  const quickTasks = missions.slice(0, 3).filter((m) => m.title.trim());
+  const quickHabits = userType
+    ? habitsBySegment[userType].slice(0, 2)
+    : habitsBySegment.professional.slice(0, 2);
+
+  const handleQuickConfirm = () => {
+    trackEvent("onboarding_quick_confirm", { userType, tasks: quickTasks.length });
+    void handleComplete({
+      missionsOverride: quickTasks.map((m) => ({ title: m.title, priority: m.priority })),
+      habitsOverride: quickHabits.map((h) => h.name),
+    });
+  };
+
   const stepTitles = [
     { title: t("onb.step1.title"), subtitle: t("onb.step1.sub"), icon: <IconUser size={20} className="text-axis-accent" /> },
     { title: t("onb.step2.title"), subtitle: t("onb.step2.sub"), icon: <IconTarget size={20} className="text-axis-accent" /> },
@@ -234,7 +257,15 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleComplete = async ({ skip = false }: { skip?: boolean } = {}) => {
+  const handleComplete = async ({
+    skip = false,
+    missionsOverride,
+    habitsOverride,
+  }: {
+    skip?: boolean;
+    missionsOverride?: { title: string; priority: "high" | "med" | "low" }[];
+    habitsOverride?: string[];
+  } = {}) => {
     setLoading(true);
     setSaveError("");
     const { data: { user } } = await supabase.auth.getUser();
@@ -273,7 +304,8 @@ export default function OnboardingPage() {
       if (profileError) throw profileError;
 
       const today = new Date().toISOString().split("T")[0];
-      const validMissions = skip ? [] : missions.filter((m) => m.title.trim());
+      const sourceMissions = missionsOverride ?? missions;
+      const validMissions = skip ? [] : sourceMissions.filter((m) => m.title.trim());
       if (validMissions.length > 0) {
         const { error: missionsError } = await supabase.from("missions").insert(
           validMissions.map((m, i) => ({
@@ -288,12 +320,13 @@ export default function OnboardingPage() {
         if (missionsError) throw missionsError;
       }
 
-      const allHabits = skip
-        ? []
+      const sourceHabits = habitsOverride
+        ? habitsOverride.map((habitName) => ({ name: habitName, icon: "IconHabits" }))
         : [
             ...selectedHabits.map((habitName) => ({ name: habitName, icon: "IconHabits" })),
             ...customHabits.map((habitName) => ({ name: habitName, icon: "IconHabits" })),
           ];
+      const allHabits = skip ? [] : sourceHabits;
       if (allHabits.length > 0) {
         const { error: habitsError } = await supabase.from("habits").insert(
           allHabits.map((h, i) => ({
@@ -308,18 +341,29 @@ export default function OnboardingPage() {
       }
 
       try {
-        await fetch("/api/email/welcome", {
+        const welcomeRes = await fetch("/api/email/welcome", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: finalName }),
         });
-      } catch {}
+        if (!welcomeRes.ok) {
+          // Surface telemetry but do not block the user from reaching the dashboard;
+          // a follow-up cron / next-day resend will pick this up.
+          trackEvent("welcome_email_client_failed", { status: welcomeRes.status });
+        }
+      } catch (err) {
+        trackEvent("welcome_email_client_failed", {
+          status: 0,
+          message: err instanceof Error ? err.message : "network",
+        });
+      }
 
       trackEvent("onboarding_completed", {
         skipped: skip,
         missionsCreated: validMissions.length,
         habitsCreated: allHabits.length,
         userType,
+        mode: missionsOverride || habitsOverride ? "quick_start" : "wizard",
       });
 
       clearQuizAnswers();
@@ -337,6 +381,129 @@ export default function OnboardingPage() {
   };
 
   const currentStep = stepTitles[step - 1];
+
+  // Quick-Start mode: 1-tap confirm screen for users who came through /start quiz.
+  // Falls through to the full 3-step wizard if user clicks "I'd rather pick myself"
+  // or if no quiz answers are present.
+  if (quickStart.active && quickStart.examined && userType) {
+    const greetingName = name.trim() || "there";
+    return (
+      <div className="mx-auto w-full max-w-2xl">
+        <div className="flex items-center gap-3 mb-6">
+          <AxisLogo size={24} />
+          <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{t("onb.setup")}</span>
+        </div>
+
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
+            {t("onb.quick.title", { name: greetingName })}
+          </h1>
+          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+            {t("onb.quick.sub")}
+          </p>
+        </div>
+
+        {saveError && (
+          <div className="mb-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {saveError}
+          </div>
+        )}
+
+        <div className="space-y-5">
+          <section
+            className="rounded-2xl border p-5"
+            style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-primary)" }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <IconTarget size={16} className="text-axis-accent" />
+              <h2 className="text-xs font-mono uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
+                {t("onb.quick.tasks")}
+              </h2>
+            </div>
+            <ul className="space-y-2">
+              {quickTasks.map((m, i) => (
+                <li
+                  key={i}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                  style={{ backgroundColor: "var(--bg-tertiary)" }}
+                >
+                  <span
+                    className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-mono font-bold flex-shrink-0 ${
+                      i === 0 ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={m.title}
+                    onChange={(e) => {
+                      const updated = [...missions];
+                      updated[i] = { ...updated[i], title: e.target.value };
+                      setMissions(updated);
+                    }}
+                    className="flex-1 bg-transparent text-sm outline-none"
+                    style={{ color: "var(--text-primary)" }}
+                    placeholder={t("onb.quick.task.edit")}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section
+            className="rounded-2xl border p-5"
+            style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-primary)" }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <IconHabits size={16} className="text-axis-accent" />
+              <h2 className="text-xs font-mono uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
+                {t("onb.quick.habits")}
+              </h2>
+            </div>
+            <ul className="space-y-2">
+              {quickHabits.map((habit) => (
+                <li
+                  key={habit.name}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                  style={{ backgroundColor: "var(--bg-tertiary)" }}
+                >
+                  <div className="w-7 h-7 rounded-md flex items-center justify-center bg-axis-accent/15 text-axis-accent flex-shrink-0">
+                    {habit.icon}
+                  </div>
+                  <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                    {habit.name}
+                  </span>
+                  <IconCheck size={14} className="text-axis-accent ml-auto" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+
+        <div className="mt-8 flex flex-col gap-3 pb-8">
+          <button
+            onClick={handleQuickConfirm}
+            disabled={loading || quickTasks.length === 0}
+            className="flex w-full items-center justify-center gap-2 bg-axis-accent text-axis-dark text-sm font-semibold px-6 py-4 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-axis-dark/30 border-t-axis-dark rounded-full animate-spin" />
+            ) : (
+              <>{t("onb.quick.cta.go")} <IconChevronRight size={16} /></>
+            )}
+          </button>
+          <button
+            onClick={() => setQuickStart({ active: false, examined: true })}
+            className="text-center text-sm transition-colors"
+            style={{ color: "var(--text-tertiary)" }}
+          >
+            {t("onb.quick.cta.edit")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-2xl">

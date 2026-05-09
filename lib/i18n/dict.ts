@@ -358,6 +358,15 @@ const de: Dict = {
   "onb.error.session": "Deine Session ist abgelaufen. Bitte melde dich neu an.",
   "onb.error.save": "Setup konnte nicht abgeschlossen werden. Bitte nochmal versuchen.",
 
+  // Quick-Start (when quiz answers exist)
+  "onb.quick.title": "Hi {name}, dein System ist fast fertig.",
+  "onb.quick.sub": "Wir haben aus deinem Quiz heute schon ein Setup vorbereitet. Ein Klick und du startest.",
+  "onb.quick.tasks": "Deine Tasks fuer heute",
+  "onb.quick.habits": "Deine Habits zum Locken",
+  "onb.quick.cta.go": "Los geht's",
+  "onb.quick.cta.edit": "Lieber selbst auswaehlen",
+  "onb.quick.task.edit": "Antippen zum Aendern",
+
   "onb.step1.title": "Dein Profil",
   "onb.step1.sub": "Sag uns kurz, was zu dir passt — wir richten Tag 1 fuer dich ein.",
   "onb.step1.name": "Dein Name",
@@ -838,6 +847,15 @@ const en: Dict = {
   "onb.launch": "Launch Dashboard",
   "onb.error.session": "Your session expired. Please log in again.",
   "onb.error.save": "We couldn't finish setup. Please try again.",
+
+  // Quick-Start (when quiz answers exist)
+  "onb.quick.title": "Hi {name}, your system is almost ready.",
+  "onb.quick.sub": "We prepared today's setup based on your quiz. One tap and you're rolling.",
+  "onb.quick.tasks": "Your tasks for today",
+  "onb.quick.habits": "Habits to lock in",
+  "onb.quick.cta.go": "Let's go",
+  "onb.quick.cta.edit": "I'd rather pick myself",
+  "onb.quick.task.edit": "Tap to edit",
 
   "onb.step1.title": "Your profile",
   "onb.step1.sub": "Tell us what fits your life so we can personalize day one.",
