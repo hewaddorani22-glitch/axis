@@ -28,6 +28,7 @@ Copy `.env.local.example` to `.env.local` and fill in:
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Public Web Push VAPID key
 - `VAPID_PRIVATE_KEY` | Private Web Push VAPID key
 - `VAPID_SUBJECT` | Mailto/contact for Web Push (for example `mailto:you@domain.com`)
+- `RATE_LIMIT_SALT` | Optional server-only salt for hashed anti-abuse keys
 
 ## Database
 
@@ -39,6 +40,12 @@ node scripts/run-schema.mjs
 
 For existing databases, also apply the incremental SQL files in `scripts/`,
 especially `scripts/005-streak-restore.sql` and `scripts/006-push-subscriptions.sql`.
+
+Run the production security/RLS audit with database credentials:
+
+```bash
+SUPABASE_DB_PASSWORD=... npm run security:audit
+```
 
 ## Deploy
 

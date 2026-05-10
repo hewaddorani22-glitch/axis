@@ -205,6 +205,17 @@ CREATE TABLE analytics_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Auth Rate Limits (service-role only)
+CREATE TABLE auth_rate_limits (
+  scope TEXT NOT NULL CHECK (scope IN ('email_otp_email', 'email_otp_ip')),
+  key_hash TEXT NOT NULL,
+  window_start TIMESTAMPTZ NOT NULL,
+  attempt_count INTEGER NOT NULL DEFAULT 1 CHECK (attempt_count >= 0),
+  last_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (scope, key_hash, window_start)
+);
+
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE objectives ENABLE ROW LEVEL SECURITY;
@@ -223,6 +234,7 @@ ALTER TABLE streak_freezes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streak_restores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auth_rate_limits ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: Users can only access their own data
 CREATE POLICY "Users read own data" ON users FOR SELECT USING (auth.uid() = id);

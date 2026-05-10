@@ -41,6 +41,13 @@ export function getCronSecret(): string {
   return cleanEnvValue(process.env.CRON_SECRET);
 }
 
+export function getRateLimitSalt(): string {
+  return cleanEnvValue(process.env.RATE_LIMIT_SALT)
+    || getCronSecret()
+    || getSupabaseServiceRoleKey()
+    || getResendApiKey();
+}
+
 export function getResendApiKey(): string {
   return cleanEnvValue(process.env.RESEND_API_KEY);
 }

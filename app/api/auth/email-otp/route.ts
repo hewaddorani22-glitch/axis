@@ -2,6 +2,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { sendEmailOtpEmail, resend as resendClient } from "@/lib/resend";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { checkEmailOtpRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 type Mode = "login" | "signup" | "auto";
 type OtpLocale = "de" | "en";
@@ -68,6 +69,30 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
+    const rateLimit = await checkEmailOtpRateLimit(admin, {
+      email,
+      ip: getClientIp(request),
+    });
+
+    if (!rateLimit.allowed) {
+      console.warn("[email-otp] rate limited", {
+        mode,
+        locale,
+        reason: rateLimit.reason,
+        recipientDomain: getEmailDomain(email),
+      });
+
+      return NextResponse.json(
+        { error: "Zu viele Code-Anfragen. Bitte warte kurz und versuch es dann nochmal." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.retryAfterSeconds ?? 600),
+          },
+        },
+      );
+    }
+
     const { data: existingProfile, error: profileError } = await admin
       .from("users")
       .select("id")
