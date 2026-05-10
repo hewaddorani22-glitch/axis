@@ -14,7 +14,8 @@ export function getSupabaseUrl(): string {
 }
 
 export function getSupabaseAnonKey(): string {
-  return cleanEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return cleanEnvValue(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
+    || cleanEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
 export function getSupabaseServiceRoleKey(): string {

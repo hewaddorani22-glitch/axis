@@ -16,7 +16,8 @@ Open [http://localhost:3000](http://localhost:3000).
 Copy `.env.local.example` to `.env.local` and fill in:
 
 - `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/publishable key
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Your Supabase publishable key for browser/client access
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Legacy fallback; can contain the same publishable key during migration
 - `NEXT_PUBLIC_APP_URL` | Public app URL used for billing redirects and metadata
 - `STRIPE_SECRET_KEY` | Stripe secret key (for Pro subscriptions)
 - `STRIPE_PRO_PRICE_ID` | Stripe recurring monthly price for lomoura Pro
