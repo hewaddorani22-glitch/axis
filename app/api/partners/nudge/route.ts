@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendNudgeEmail } from "@/lib/resend";
+import { sendPushToUser } from "@/lib/push";
 
 /**
  * POST /api/partners/nudge
@@ -53,6 +54,18 @@ export async function POST(request: Request) {
   const recipientEmail = recipientRes.data?.email;
   const recipientName = recipientRes.data?.name || "there";
 
+  let pushDelivered = 0;
+  try {
+    pushDelivered = await sendPushToUser(toUserId, {
+      title: `${senderName} hat dich angenudgt 👋`,
+      body: "Streak retten — 1 Habit reicht heute.",
+      url: "/dashboard",
+      tag: `nudge-${user.id}`,
+    });
+  } catch (error) {
+    console.warn("Nudge push failed:", error);
+  }
+
   if (recipientEmail) {
     try {
       await sendNudgeEmail(recipientEmail, senderName);
@@ -61,5 +74,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ success: true, to: recipientName });
+  return NextResponse.json({ success: true, to: recipientName, pushDelivered });
 }

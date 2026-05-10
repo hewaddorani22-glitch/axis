@@ -222,7 +222,7 @@ export async function sendWeeklyDigest(
   });
 }
 
-type ReengagementVariant = "day1" | "day3" | "day7";
+type ReengagementVariant = "day1" | "day3" | "day7" | "day14" | "day30";
 
 const REENGAGEMENT_COPY: Record<
   ReengagementVariant,
@@ -245,6 +245,18 @@ const REENGAGEMENT_COPY: Record<
     heading: (name) => `Eine Woche, ${name}. Wirklich.`,
     body: "Die meisten geben in der ersten Woche auf. Du nicht. Schau, was du in den nächsten 7 Tagen aufbauen kannst, wenn du dranbleibst.",
     cta: "Dashboard öffnen",
+  },
+  day14: {
+    subject: "Zwei Wochen weg. Dein Setup steht noch.",
+    heading: (name) => `${name}, dein Setup wartet noch auf dich.`,
+    body: "Du hast vor 2 Wochen angefangen, dann wurde es ruhig. Kein Stress — alles ist noch da. Dein Plan, deine Habits, dein Profil. Eine Mission heute, und du bist wieder drin.",
+    cta: "Da weitermachen, wo du warst",
+  },
+  day30: {
+    subject: "Letzte Erinnerung — sollen wir es lassen?",
+    heading: (name) => `${name}, ein Klick und du bist zurück.`,
+    body: "Vor einem Monat warst du bereit, dein System zu bauen. Wenn du raus bist, ist das ok — antworte einfach mit \"Stop\" und wir hören auf. Wenn nicht: 1 Mission heute, und alles startet wieder.",
+    cta: "1-Klick-Comeback",
   },
 };
 
