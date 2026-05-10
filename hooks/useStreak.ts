@@ -80,7 +80,15 @@ export function useStreak() {
     for (let i = 0; i < 365; i++) {
       const dateStr = getDateInTimezone(tz, i);
 
-      if (missionDates.has(dateStr) && habitDates.has(dateStr)) {
+      // Day-1-through-7 of a fresh streak only requires Mission OR Habit so the
+      // user can actually get the loop spinning. Once the user has 7+ days
+      // built up we tighten back to "Mission AND Habit" to keep the bar real.
+      const lenientWindow = currentStreak < 7;
+      const dayCounts = lenientWindow
+        ? (missionDates.has(dateStr) || habitDates.has(dateStr))
+        : (missionDates.has(dateStr) && habitDates.has(dateStr));
+
+      if (dayCounts) {
         currentStreak++;
       } else if (frozenDates.has(dateStr)) {
         currentStreak++;

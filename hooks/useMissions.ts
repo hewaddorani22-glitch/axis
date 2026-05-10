@@ -143,6 +143,28 @@ export function useMissions(date?: string) {
             mission_priority: mission.priority,
             missions_total: missions.length,
           });
+
+          // Activation hook: if the user has no habits yet, prompt them to pick
+          // one. The data shows 88% of users who complete their first mission
+          // never add a habit — and without a habit they can't sustain a streak,
+          // which kills every downstream Pro trigger. We only ask once, right
+          // after the first win, so the prompt rides the dopamine peak.
+          const { count: habitCount } = await supabase
+            .from("habits")
+            .select("id", { head: true, count: "exact" })
+            .eq("user_id", user.id);
+          if ((habitCount ?? 0) === 0) {
+            const { data: profile } = await supabase
+              .from("users")
+              .select("user_type")
+              .eq("id", user.id)
+              .maybeSingle();
+            window.dispatchEvent(
+              new CustomEvent("lomoura:habit-prompt", {
+                detail: { userType: profile?.user_type ?? null },
+              }),
+            );
+          }
         }
       }
     }
