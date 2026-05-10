@@ -11,6 +11,7 @@ import { StreakRestorePromptModal } from "@/components/app/streak-restore-prompt
 import { PushSubscribePrompt } from "@/components/app/push-subscribe-prompt";
 import { UpgradeModal } from "@/components/app/upgrade-modal";
 import { AchievementUnlockModal } from "@/components/app/achievement-unlock-modal";
+import { HabitPickModal } from "@/components/app/habit-pick-modal";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
@@ -35,6 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <StreakRestorePromptModal />
       <UpgradeModal />
       <AchievementUnlockModal />
+      <HabitPickModal />
       <PushSubscribePrompt vapidPublicKey={VAPID_PUBLIC_KEY} />
       <Sidebar />
       <div className="min-w-0 lg:pl-[260px]">

@@ -300,6 +300,36 @@ export default function ReviewPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6">
+      {/* Pro tease — power-user surface. 50% of onboarded users open the
+          weekly review but see no Pro CTA today; this banner closes that gap. */}
+      {!isPro && (
+        <button
+          onClick={() => openUpgradePrompt({ source: "review_history" })}
+          className="w-full text-left rounded-2xl border border-axis-accent/20 bg-axis-accent/5 hover:bg-axis-accent/10 transition-all p-4 sm:p-5"
+        >
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex w-10 h-10 rounded-xl bg-axis-accent/15 items-center justify-center">
+              <span className="text-axis-accent text-lg">★</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "var(--text-primary)" }}>
+                {locale === "de"
+                  ? "Pro: Volle Historie + AI-Wochen-Zusammenfassung"
+                  : "Pro: full history + AI weekly summary"}
+              </p>
+              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                {locale === "de"
+                  ? "Du machst die Reviews — Pro zeigt dir das Muster über alle Wochen, nicht nur die letzten 4."
+                  : "You do the reviews — Pro shows the pattern across every week, not just the last 4."}
+              </p>
+            </div>
+            <span className="hidden sm:inline-flex items-center justify-center text-axis-accent text-lg shrink-0">
+              →
+            </span>
+          </div>
+        </button>
+      )}
+
       <div className="axis-card">
         <div className="flex flex-col gap-2 mb-1 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>

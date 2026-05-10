@@ -113,6 +113,14 @@ export function useHabits() {
     fetchHabits();
   }, [fetchHabits]);
 
+  // Refresh when something outside this hook (e.g. the post-first-mission
+  // habit-pick modal) creates a habit.
+  useEffect(() => {
+    const onCreated = () => { void fetchHabits(); };
+    window.addEventListener("lomoura:habit-created", onCreated);
+    return () => window.removeEventListener("lomoura:habit-created", onCreated);
+  }, [fetchHabits]);
+
   const addHabit = async (
     name: string,
     icon: string = "IconHabits",

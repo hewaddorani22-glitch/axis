@@ -9,7 +9,10 @@ import { useMissions } from "@/hooks/useMissions";
 
 const DISMISS_KEY = "lomoura-push-prompt-dismissed-until";
 const DAY_MS = 24 * 60 * 60 * 1000;
-const REDISMISS_DAYS = 14;
+// Re-prompt every 7 days after a dismiss. The audit shows 2% subscription
+// rate today; halving the silence between asks gets us back in front of
+// users while their value perception of the app is highest.
+const REDISMISS_DAYS = 7;
 
 function dismissedUntil(): number {
   if (typeof window === "undefined") return 0;
@@ -76,7 +79,9 @@ export function PushSubscribePrompt({ vapidPublicKey }: { vapidPublicKey: string
     if (status !== "default") return; // unsupported / denied / already subscribed
     if (completedCount < 1) return; // wait for first aha-moment
     if (Date.now() < dismissedUntil()) return;
-    const timer = window.setTimeout(() => setOpen(true), 1200);
+    // 4s gives the post-first-mission HabitPickModal room to land first; the
+    // user picks a habit, the modal closes, then the push ask appears.
+    const timer = window.setTimeout(() => setOpen(true), 4000);
     return () => window.clearTimeout(timer);
   }, [user, vapidPublicKey, backendReady, status, completedCount]);
 
