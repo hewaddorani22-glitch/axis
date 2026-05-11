@@ -5,7 +5,7 @@ import { useHabits, HabitWithStatus } from "@/hooks/useHabits";
 import { useObjectives } from "@/hooks/useObjectives";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
-import { IconHabits, IconCheck, IconStreak, IconFreeze } from "@/components/icons";
+import { IconHabits, IconCheck, IconStreak } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
@@ -32,146 +32,149 @@ const WEEK_DAYS = {
   en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 };
 
+// Per-habit accent palette (CSS variables defined in globals.css).
+const HABIT_PALETTE = [
+  "var(--soft-lav)",
+  "var(--soft-plum)",
+  "var(--soft-warm)",
+  "var(--soft-green)",
+  "var(--soft-coral)",
+];
+
 const COPY = {
   de: {
-    done: "Erledigt",
-    skipped: "Übersprungen",
-    dayStreak: (n: number) => `${n} Tage Streak`,
-    skipToday: "Heute skippen",
     today: "Heute",
     bestStreak: "Bester Streak",
     days: "Tage",
+    done: "Erledigt",
+    skipped: "Übersprungen",
+    dayStreak: (n: number) => `${n}d Streak`,
+    skipToday: "Heute skippen",
     freezeTitle: "Streak-Freeze",
     freezeUsed: (date: string) => `Am ${date} genutzt. Wird nächsten Monat zurückgesetzt.`,
-    freezeBody: "Schütze deinen Streak an einem schlechten Tag. 1 Freipass pro Monat.",
+    freezeBody: "1 Freipass pro Monat",
     used: "Genutzt",
     freezing: "Friert ein...",
     useFreeze: "Freeze nutzen",
     unlock: "Freischalten",
     emptyTitle: "Welche Routine willst du fix machen?",
-    emptyBody: "Eine reicht zum Start. Workout, Lernblock, kein Handy nach 22 Uhr — du entscheidest. Leg sie unten an.",
+    emptyBody: "Eine reicht zum Start. Workout, Lernblock, kein Handy nach 22 Uhr — du entscheidest.",
     icon: "Icon",
     addHabit: "Neues Habit hinzufügen...",
     quantified: "Messbar",
     target: "+ Ziel",
     add: "Hinzufügen",
     targetPlaceholder: "Ziel (z. B. 5)",
-    unitPlaceholder: "Einheit (z. B. km, Liter)",
+    unitPlaceholder: "Einheit (z. B. km)",
     noTheme: "Kein Thema",
-    limit: "Free: 3 Habits. Pro schaltet unbegrenzt viele Habits frei.",
     upgrade: "Upgrade auf Pro",
   },
   en: {
-    done: "Done",
-    skipped: "Skipped",
-    dayStreak: (n: number) => `${n} day streak`,
-    skipToday: "Skip Today",
     today: "Today",
     bestStreak: "Best Streak",
     days: "days",
+    done: "Done",
+    skipped: "Skipped",
+    dayStreak: (n: number) => `${n}d streak`,
+    skipToday: "Skip Today",
     freezeTitle: "Streak Freeze",
     freezeUsed: (date: string) => `Used on ${date} this month. Resets next month.`,
-    freezeBody: "Protect your streak on an off day. 1 free pass per month.",
+    freezeBody: "1 free pass per month",
     used: "Used",
     freezing: "Freezing...",
     useFreeze: "Use Freeze",
     unlock: "Unlock",
     emptyTitle: "Which routine do you want to lock in?",
-    emptyBody: "One is enough to start. Workout, study block, no phone after 10pm — your call. Add it below.",
+    emptyBody: "One is enough to start. Workout, study block, no phone after 10pm — your call.",
     icon: "Icon",
     addHabit: "Add a new habit...",
     quantified: "Quantified",
     target: "+ Target",
     add: "Add",
     targetPlaceholder: "Target (e.g. 5)",
-    unitPlaceholder: "Unit (e.g. km, liters)",
+    unitPlaceholder: "Unit (e.g. km)",
     noTheme: "No theme",
-    limit: "Free: 3 habits. Pro unlocks unlimited habits.",
     upgrade: "Upgrade to Pro",
   },
 };
 
-function SortableHabitItem({
+function HabitCard({
   habit,
+  color,
   toggleHabit,
   copy,
   weekDays,
 }: {
   habit: HabitWithStatus;
+  color: string;
   toggleHabit: (id: string, action?: "done" | "skip" | "undo", val?: number) => void;
   copy: typeof COPY.de;
   weekDays: string[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 10 : 1,
   };
+  const tint = (pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
+  const todayIdx = 6;
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className={`axis-card transition-all ${isDragging ? "shadow-2xl scale-[1.02] border-axis-accent/50" : ""}`}
+      className={`rounded-[15px] p-5 transition-colors ${isDragging ? "shadow-2xl scale-[1.01]" : ""}`}
+      style={{
+        ...style,
+        backgroundColor: "var(--bg-secondary)",
+        border: "1px solid var(--border-primary)",
+      }}
     >
-      <div className="flex flex-wrap items-center gap-3 mb-4 sm:gap-4">
-        {/* Drag Handle */}
+      {/* Top row */}
+      <div className="mb-4 flex items-center gap-3.5">
+        {/* Drag handle (subtle) */}
         <button
-          className="flex p-2 flex-col items-center justify-center gap-[3px] text-axis-text3 hover:text-axis-text2 cursor-grab active:cursor-grabbing opacity-30 hover:opacity-100 transition-opacity"
+          className="flex shrink-0 cursor-grab flex-col items-center justify-center gap-[3px] opacity-0 transition-opacity hover:opacity-50 active:cursor-grabbing"
+          style={{ color: "var(--text-tertiary)" }}
           {...attributes}
           {...listeners}
         >
-          <div className="w-1 h-1 rounded-full bg-current" />
-          <div className="w-1 h-1 rounded-full bg-current" />
-          <div className="w-1 h-1 rounded-full bg-current" />
+          <div className="h-1 w-1 rounded-full bg-current" />
+          <div className="h-1 w-1 rounded-full bg-current" />
+          <div className="h-1 w-1 rounded-full bg-current" />
         </button>
 
+        {/* Color icon */}
         <button
           onClick={() => toggleHabit(habit.id, habit.todayDone || habit.todaySkipped ? "undo" : "done")}
-          className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-            habit.todaySkipped ? "opacity-70" : ""
-          }`}
-          style={{
-            backgroundColor: habit.todayDone
-              ? "var(--soft-green-dim)"
-              : habit.todaySkipped
-                ? "var(--soft-warm-dim)"
-                : "var(--bg-tertiary)",
-            boxShadow: habit.todayDone
-              ? "0 0 0 2px var(--soft-green-dim)"
-              : habit.todaySkipped
-                ? "0 0 0 2px var(--soft-warm-dim)"
-                : undefined,
-          }}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
+          style={{ backgroundColor: tint(12) }}
         >
           {habit.icon && habit.icon !== "IconHabits" ? (
             <span className="text-xl">{habit.icon}</span>
           ) : (
-            <IconHabits
-              size={20}
-              style={{
-                color: habit.todayDone
-                  ? "var(--soft-green)"
-                  : habit.todaySkipped
-                    ? "var(--soft-warm)"
-                    : "var(--text-tertiary)",
-              }}
+            <div
+              className="h-[18px] w-[18px] rounded-[5px] transition-colors"
+              style={{ backgroundColor: habit.todayDone ? color : tint(30) }}
             />
           )}
         </button>
+
+        {/* Name + meta */}
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3
-              className="min-w-0 text-base font-semibold transition-colors"
-              style={{ color: habit.todayDone || habit.todaySkipped ? "var(--text-tertiary)" : "var(--text-primary)", textDecoration: habit.todaySkipped ? "line-through" : "none" }}
+          <div className="flex items-center gap-2">
+            <span
+              className="truncate text-[15px] font-bold"
+              style={{
+                color: habit.todayDone || habit.todaySkipped ? "var(--text-tertiary)" : "var(--text-primary)",
+                textDecoration: habit.todaySkipped ? "line-through" : "none",
+              }}
             >
               {habit.name}
-            </h3>
+            </span>
             {habit.todayDone && (
               <span
-                className="text-xs font-mono px-2 py-0.5 rounded-md"
+                className="rounded font-mono text-[9px] font-bold uppercase tracking-wider px-2 py-0.5"
                 style={{ color: "var(--soft-green)", backgroundColor: "var(--soft-green-dim)" }}
               >
                 {copy.done}
@@ -179,82 +182,79 @@ function SortableHabitItem({
             )}
             {habit.todaySkipped && (
               <span
-                className="text-xs font-mono px-2 py-0.5 rounded-md"
+                className="rounded font-mono text-[9px] font-bold uppercase tracking-wider px-2 py-0.5"
                 style={{ color: "var(--soft-warm)", backgroundColor: "var(--soft-warm-dim)" }}
               >
                 {copy.skipped}
               </span>
             )}
           </div>
-
-          <div className="flex flex-wrap items-center gap-3 mt-0.5">
-            <p className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-              {copy.dayStreak(habit.streak)}
-            </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px]" style={{ color: "var(--text-tertiary)" }}>
             {habit.target_value && (
-               <div className="flex items-center gap-1">
-                 <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-tertiary)" }}>
-                   <div 
-                     className="h-full bg-axis-accent transition-all duration-300"
-                     style={{ width: `${Math.min(100, ((habit.todayValue || 0) / habit.target_value) * 100)}%` }} 
-                   />
-                 </div>
-                 <span className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-                   {habit.todayValue || 0}/{habit.target_value} {habit.unit || ""}
-                 </span>
-               </div>
+              <span className="font-mono">
+                {habit.todayValue || 0}/{habit.target_value} {habit.unit || ""}
+              </span>
             )}
+            <span>{copy.dayStreak(habit.streak)}</span>
             {!(habit.todayDone || habit.todaySkipped) && !habit.target_value && (
-               <button 
-                 onClick={() => toggleHabit(habit.id, "skip")}
-                 className="text-[10px] font-semibold text-axis-text2 hover:text-axis-text1 hover:bg-axis-hover px-2 rounded transition-colors"
-               >
-                 {copy.skipToday}
-               </button>
+              <button
+                onClick={() => toggleHabit(habit.id, "skip")}
+                className="rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors hover:bg-[var(--bg-tertiary)]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {copy.skipToday}
+              </button>
             )}
           </div>
         </div>
+
+        {/* Toggle */}
         <button
           onClick={() => toggleHabit(habit.id, habit.todayDone || habit.todaySkipped ? "undo" : "done")}
-          className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
+          className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] transition-all"
           style={{
             backgroundColor: habit.todayDone
               ? "var(--soft-green)"
               : habit.todaySkipped
                 ? "var(--soft-warm)"
                 : "var(--bg-tertiary)",
+            border: habit.todayDone || habit.todaySkipped ? "none" : "1px solid var(--border-primary)",
             color: habit.todayDone || habit.todaySkipped ? "var(--text-inverted)" : "var(--text-tertiary)",
           }}
         >
           {habit.todayDone ? (
-            <IconCheck size={18} />
+            <IconCheck size={16} />
           ) : habit.todaySkipped ? (
             <span className="text-sm font-bold">/</span>
           ) : (
-            <div className="w-3 h-3 rounded-full" style={{ borderWidth: 2, borderColor: "var(--border-secondary)" }} />
+            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--border-secondary)" }} />
           )}
         </button>
       </div>
-      {/* Weekly heatmap */}
-      <div className="grid grid-cols-7 gap-2 sm:flex sm:items-center sm:pl-10">
-        {habit.weekLog.map((status, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-            <div
-              className={`w-full h-8 rounded-lg transition-all ${status !== "missed" ? "scale-105 shadow-sm" : ""}`}
-              style={{
-                backgroundColor:
-                  status === "done"
-                    ? "var(--soft-green)"
-                    : status === "skipped"
-                      ? "var(--soft-warm-dim)"
-                      : "var(--bg-tertiary)",
-              }}
-            />
-            <span className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-              {weekDays[i]}
-            </span>
-          </div>
-        ))}
+
+      {/* Week heatmap */}
+      <div className="flex gap-1">
+        {habit.weekLog.map((status, i) => {
+          const active = status === "done";
+          const isToday = i === todayIdx;
+          return (
+            <div key={i} className="flex flex-1 flex-col items-center gap-1">
+              <div
+                className="h-[22px] w-full rounded-[5px] transition-colors"
+                style={{
+                  backgroundColor: active ? tint(isToday ? 55 : 30) : "var(--bg-tertiary)",
+                  border: isToday ? `1px solid ${tint(44)}` : "1px solid transparent",
+                }}
+              />
+              <span
+                className="font-mono text-[8px] font-semibold"
+                style={{ color: isToday ? color : "var(--text-tertiary)" }}
+              >
+                {weekDays[i]}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -283,9 +283,7 @@ export default function SystemsPage() {
   const supabase = createClient();
 
   const checkFreeze = useCallback(async () => {
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
       setFreezeLoading(false);
       return;
@@ -302,17 +300,14 @@ export default function SystemsPage() {
     setFreezeLoading(false);
   }, [supabase]);
 
-  useEffect(() => {
-    checkFreeze();
-  }, [checkFreeze]);
+  useEffect(() => { checkFreeze(); }, [checkFreeze]);
 
   useEffect(() => {
     setQuickAddRequested(new URLSearchParams(window.location.search).get("quickAdd") === "1");
   }, []);
 
   useEffect(() => {
-    if (!quickAddRequested) return;
-    habitInputRef.current?.focus();
+    if (quickAddRequested) habitInputRef.current?.focus();
   }, [quickAddRequested]);
 
   const handleFreeze = async () => {
@@ -326,12 +321,12 @@ export default function SystemsPage() {
     setFreezing(false);
   };
 
+  const isFreeAtHabitLimit = Boolean(user) && user?.plan !== "pro" && total >= 3;
+
   const handleAdd = async () => {
-    if (!newHabit.trim()) return;
-    if (isFreeAtHabitLimit) return;
+    if (!newHabit.trim() || isFreeAtHabitLimit) return;
     const targetVal = showQuantified && newTarget ? parseFloat(newTarget) : null;
     const unitVal = showQuantified && newUnit ? newUnit.trim() : null;
-    
     await addHabit(newHabit.trim(), newIcon || "IconHabits", targetVal, unitVal, newObjectiveId || null);
     setNewHabit("");
     setNewIcon("");
@@ -342,8 +337,6 @@ export default function SystemsPage() {
   };
 
   const bestStreak = habits.length > 0 ? Math.max(...habits.map((h) => h.streak)) : 0;
-  const isFreeAtHabitLimit = Boolean(user) && user?.plan !== "pro" && total >= 3;
-
   const Skeleton = ({ className = "" }: { className?: string }) => <div className={`axis-skeleton ${className}`} />;
 
   const sensors = useSensors(
@@ -359,101 +352,121 @@ export default function SystemsPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-2xl">
       {/* Stats */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
-          <IconHabits size={14} className="text-axis-accent" />
-          <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-            {copy.today}
-          </span>
-          <span className="text-sm font-bold">
+      <div className="mb-7 flex flex-wrap gap-2.5">
+        <div
+          className="flex items-center gap-2 rounded-[10px] px-4 py-2.5"
+          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+        >
+          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{copy.today}</span>
+          <span
+            className="text-[15px] font-extrabold"
+            style={{ color: total > 0 && completedToday === total ? "var(--soft-green)" : "var(--text-primary)" }}
+          >
             {completedToday}/{total}
           </span>
         </div>
-        <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
-          <IconStreak size={14} style={{ color: "var(--soft-warm)" }} />
-          <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-            {copy.bestStreak}
-          </span>
-          <span className="text-sm font-bold" style={{ color: "var(--soft-warm)" }}>
-            {bestStreak > 0 ? `${bestStreak} ${copy.days}` : "0"}
+        <div
+          className="flex items-center gap-2 rounded-[10px] px-4 py-2.5"
+          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+        >
+          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{copy.bestStreak}</span>
+          <span className="flex items-center gap-1 text-[15px] font-extrabold" style={{ color: "var(--soft-warm)" }}>
+            {bestStreak} {copy.days} <IconStreak size={11} />
           </span>
         </div>
       </div>
 
-      {/* Streak Freeze: Pro only */}
-      <div className="axis-card bg-gradient-to-r from-[var(--bg-secondary)] to-axis-accent/5 transition-all">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="mt-0.5"><IconFreeze size={18} style={{ color: "var(--soft-lav)" }} /></div>
-              <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                {copy.freezeTitle}
-              </h3>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-axis-accent text-axis-dark">
+      {/* Streak Freeze */}
+      <div
+        className="mb-5 flex items-center justify-between rounded-[13px] px-5 py-3.5"
+        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-base">❄️</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-semibold">{copy.freezeTitle}</span>
+              <span
+                className="rounded font-mono text-[9px] font-bold tracking-wide px-1.5 py-0.5"
+                style={{
+                  color: "var(--accent)",
+                  backgroundColor: "color-mix(in srgb, var(--accent) 18%, transparent)",
+                }}
+              >
                 PRO
               </span>
             </div>
-            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-              {freezeUsed
-                ? copy.freezeUsed(freezeUsed)
-                : copy.freezeBody}
-            </p>
+            <div className="mt-0.5 text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+              {freezeUsed ? copy.freezeUsed(freezeUsed) : copy.freezeBody}
+            </div>
           </div>
-          {!freezeLoading &&
-            (user?.plan === "pro" ? (
-              freezeUsed ? (
-                <span
-                  className="text-xs font-mono px-3 py-2 rounded-xl"
-                  style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }}
-                >
-                  {copy.used}
-                </span>
-              ) : (
-                <button
-                  onClick={handleFreeze}
-                  disabled={freezing || streak === 0}
-                  className="text-xs font-semibold px-4 py-2 rounded-xl transition-all disabled:opacity-50 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
-                  style={{
-                    backgroundColor: "var(--bg-tertiary)",
-                    border: "1px solid var(--border-primary)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {freezing ? copy.freezing : copy.useFreeze}
-                </button>
-              )
-            ) : (
-              <Link
-                href="/settings"
-                className="text-xs font-semibold text-axis-dark bg-axis-accent px-4 py-2 rounded-xl hover:bg-axis-accent/90 transition-all hover:-translate-y-0.5 hover:shadow-md"
-              >
-                {copy.unlock}
-              </Link>
-            ))}
         </div>
+        {!freezeLoading &&
+          (user?.plan === "pro" ? (
+            freezeUsed ? (
+              <span
+                className="rounded-lg px-3.5 py-1.5 text-[11px] font-bold font-mono"
+                style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }}
+              >
+                {copy.used}
+              </span>
+            ) : (
+              <button
+                onClick={handleFreeze}
+                disabled={freezing || streak === 0}
+                className="rounded-lg px-3.5 py-1.5 text-[11px] font-bold transition-opacity disabled:opacity-40"
+                style={{
+                  backgroundColor: "var(--bg-tertiary)",
+                  border: "1px solid var(--border-primary)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {freezing ? copy.freezing : copy.useFreeze}
+              </button>
+            )
+          ) : (
+            <Link
+              href="/settings"
+              className="rounded-lg px-3.5 py-1.5 text-[11px] font-bold transition-opacity"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border-primary)",
+                color: "var(--text-primary)",
+              }}
+            >
+              {copy.unlock}
+            </Link>
+          ))}
       </div>
 
       {/* Habits */}
       {loading ? (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-2.5">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+            <Skeleton key={i} className="h-[120px] w-full rounded-[15px]" />
           ))}
         </div>
       ) : habits.length === 0 ? (
         <EmptyState
-          icon={<IconHabits size={24} className="text-axis-accent" />}
+          icon={<IconHabits size={24} style={{ color: "var(--accent)" }} />}
           title={copy.emptyTitle}
           description={copy.emptyBody}
         />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={habits.map((h) => h.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-4">
-              {habits.map((h) => (
-                <SortableHabitItem key={h.id} habit={h} toggleHabit={toggleHabit} copy={copy} weekDays={weekDays} />
+            <div className="flex flex-col gap-2.5">
+              {habits.map((h, i) => (
+                <HabitCard
+                  key={h.id}
+                  habit={h}
+                  color={HABIT_PALETTE[i % HABIT_PALETTE.length]}
+                  toggleHabit={toggleHabit}
+                  copy={copy}
+                  weekDays={weekDays}
+                />
               ))}
             </div>
           </SortableContext>
@@ -461,14 +474,17 @@ export default function SystemsPage() {
       )}
 
       {/* Add habit */}
-      <div className="axis-card space-y-4 !border-dashed focus-within:border-axis-accent/50 focus-within:shadow-md transition-all">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div
+        className="mt-5 rounded-[13px] p-3"
+        style={{ backgroundColor: "var(--bg-secondary)", border: "1px dashed var(--border-secondary)" }}
+      >
+        <div className="flex items-center gap-2.5">
           <input
             type="text"
             placeholder={copy.icon}
             value={newIcon}
             onChange={(e) => setNewIcon(e.target.value)}
-            className="h-12 w-full rounded-xl text-center text-xl outline-none sm:w-12"
+            className="h-10 w-10 shrink-0 rounded-[10px] text-center text-lg outline-none"
             style={{ backgroundColor: "var(--bg-tertiary)" }}
             maxLength={2}
           />
@@ -479,39 +495,36 @@ export default function SystemsPage() {
             value={newHabit}
             onChange={(e) => setNewHabit(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none"
             style={{ color: "var(--text-primary)" }}
           />
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
-            <button
-              onClick={() => setShowQuantified(!showQuantified)}
-              className="text-[10px] font-mono px-3 py-2 rounded-lg transition-colors border"
-              style={{ 
-                backgroundColor: showQuantified ? "var(--bg-accent-soft)" : "transparent",
-                color: showQuantified ? "var(--text-primary)" : "var(--text-tertiary)",
-                borderColor: showQuantified ? "rgba(205,255,79,0.3)" : "var(--border-primary)"
-              }}
-            >
-              {showQuantified ? copy.quantified : copy.target}
-            </button>
-            <button
-              onClick={handleAdd}
-              disabled={isFreeAtHabitLimit || !newHabit.trim()}
-              className="bg-axis-accent text-axis-dark text-xs font-semibold px-4 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-95"
-            >
-              {copy.add}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowQuantified((s) => !s)}
+            className="rounded-md px-2.5 py-1.5 text-[10px] font-mono transition-colors"
+            style={{
+              backgroundColor: showQuantified ? "var(--bg-tertiary)" : "transparent",
+              color: showQuantified ? "var(--text-primary)" : "var(--text-tertiary)",
+            }}
+          >
+            {showQuantified ? copy.quantified : copy.target}
+          </button>
+          <button
+            onClick={handleAdd}
+            disabled={!newHabit.trim() || isFreeAtHabitLimit}
+            className="rounded-[7px] px-3.5 py-1.5 text-[11px] font-extrabold transition-opacity disabled:opacity-40"
+            style={{ backgroundColor: "var(--accent)", color: "var(--accent-text)" }}
+          >
+            {copy.add}
+          </button>
         </div>
-        
         {showQuantified && (
-          <div className="grid grid-cols-1 gap-3 animate-in fade-in slide-in-from-top-2 duration-300 sm:flex sm:flex-wrap sm:items-center sm:pl-14">
+          <div className="mt-3 flex flex-wrap items-center gap-2 pl-12">
             <input
               type="number"
               placeholder={copy.targetPlaceholder}
               value={newTarget}
               onChange={(e) => setNewTarget(e.target.value)}
-              className="w-full text-xs rounded-lg px-3 py-2 outline-none sm:w-32"
+              className="w-32 rounded-md px-3 py-2 text-xs outline-none"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
             />
             <input
@@ -519,19 +532,23 @@ export default function SystemsPage() {
               placeholder={copy.unitPlaceholder}
               value={newUnit}
               onChange={(e) => setNewUnit(e.target.value)}
-              className="w-full text-xs rounded-lg px-3 py-2 outline-none sm:w-48"
+              className="w-48 rounded-md px-3 py-2 text-xs outline-none"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
             />
             <select
               value={newObjectiveId}
               onChange={(e) => setNewObjectiveId(e.target.value)}
-              className="w-full text-xs font-mono rounded-lg px-3 py-2 outline-none sm:min-w-[170px] sm:w-auto"
-              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)", color: "var(--text-secondary)" }}
+              className="min-w-[170px] rounded-md px-3 py-2 text-xs font-mono outline-none"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border-primary)",
+                color: "var(--text-secondary)",
+              }}
             >
               <option value="">{copy.noTheme}</option>
-              {objectives.map((objective) => (
-                <option key={objective.id} value={objective.id}>
-                  {objective.title}
+              {objectives.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.title}
                 </option>
               ))}
             </select>
@@ -539,27 +556,17 @@ export default function SystemsPage() {
         )}
       </div>
 
-      {isFreeAtHabitLimit && (
-        <div className="rounded-xl border border-axis-accent/25 bg-axis-accent/5 px-4 py-3">
-          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-            {copy.limit}{" "}
-            <Link href="/settings" className="font-semibold text-axis-accent hover:underline">
+      {/* Limit */}
+      <div className="mt-3 py-2.5 text-center text-xs" style={{ color: "var(--text-tertiary)" }}>
+        {total}/3 Habits
+        {user?.plan !== "pro" && (
+          <>
+            {" · "}
+            <Link href="/settings" className="font-semibold hover:underline" style={{ color: "var(--accent)" }}>
               {copy.upgrade}
             </Link>
-          </p>
-        </div>
-      )}
-
-      <div
-        className="rounded-xl p-4 text-center"
-        style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}
-      >
-        <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-          {total}/3 Habits /{" "}
-          <Link href="/settings" className="text-axis-accent hover:underline">
-            {copy.upgrade}
-          </Link>{" "}
-        </p>
+          </>
+        )}
       </div>
     </div>
   );

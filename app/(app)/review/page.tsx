@@ -269,226 +269,233 @@ export default function ReviewPage() {
       label: copy.tasksDone,
       value: summary.missionsTotal > 0 ? `${summary.missionsCompleted}/${summary.missionsTotal}` : "0",
       sub: summary.missionsTotal > 0 ? copy.tasksCompleted : copy.noTasks,
-      accent: "text-axis-accent",
+      color: "var(--soft-green)",
     },
     {
       label: copy.habitsDone,
       value: `${summary.habitsCompleted}`,
       sub: summary.habitsCompleted > 0 ? copy.checkins : copy.noCheckins,
-      accent: "text-axis-accent2",
+      color: "var(--soft-lav)",
     },
     {
       label: copy.activeDays,
       value: `${summary.activeDays}/${summary.daysElapsed}`,
       sub: copy.activeDaysSub,
-      accent: "text-orange-500",
+      color: "var(--soft-warm)",
     },
     showRevenueSummary
       ? {
           label: copy.weekRevenue,
           value: formatCurrency(summary.revenueTotal),
           sub: copy.trackedThisWeek,
-          accent: "text-emerald-500",
+          color: "var(--soft-green)",
         }
       : {
           label: copy.dayStreak,
           value: `${streak}`,
           sub: streak > 0 ? copy.keepAlive : copy.startToday,
-          accent: "text-orange-500",
+          color: "var(--accent)",
         },
   ];
 
+  const inputStyle = {
+    backgroundColor: "var(--bg-secondary)",
+    border: "1px solid var(--border-primary)",
+    color: "var(--text-primary)",
+  } as const;
+
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6">
-      {/* Pro tease — power-user surface. 50% of onboarded users open the
-          weekly review but see no Pro CTA today; this banner closes that gap. */}
+    <div className="mx-auto w-full max-w-2xl">
+      {/* Pro upsell */}
       {!isPro && (
         <button
           onClick={() => openUpgradePrompt({ source: "review_history" })}
-          className="w-full text-left rounded-2xl border border-axis-accent/20 bg-axis-accent/5 hover:bg-axis-accent/10 transition-all p-4 sm:p-5"
+          className="mb-6 flex w-full items-center justify-between rounded-[13px] px-5 py-3.5 text-left transition-colors hover:opacity-95"
+          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
         >
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex w-10 h-10 rounded-xl bg-axis-accent/15 items-center justify-center">
-              <span className="text-axis-accent text-lg">★</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "var(--text-primary)" }}>
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">⭐</span>
+            <div>
+              <div className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>
                 {locale === "de"
-                  ? "Pro: Volle Historie + AI-Wochen-Zusammenfassung"
-                  : "Pro: full history + AI weekly summary"}
-              </p>
-              <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  ? "Volle Historie + AI-Zusammenfassung"
+                  : "Full history + AI summary"}
+              </div>
+              <div className="mt-0.5 text-[11px]" style={{ color: "var(--text-tertiary)" }}>
                 {locale === "de"
-                  ? "Du machst die Reviews — Pro zeigt dir das Muster über alle Wochen, nicht nur die letzten 4."
-                  : "You do the reviews — Pro shows the pattern across every week, not just the last 4."}
-              </p>
+                  ? "Pro zeigt Muster über alle Wochen."
+                  : "Pro shows patterns across every week."}
+              </div>
             </div>
-            <span className="hidden sm:inline-flex items-center justify-center text-axis-accent text-lg shrink-0">
-              →
-            </span>
           </div>
+          <span
+            className="rounded-lg px-3.5 py-1.5 text-[11px] font-bold"
+            style={{
+              backgroundColor: "var(--bg-tertiary)",
+              border: "1px solid var(--border-primary)",
+              color: "var(--text-primary)",
+            }}
+          >
+            {locale === "de" ? "Freischalten" : "Unlock"}
+          </span>
         </button>
       )}
 
-      <div className="axis-card">
-        <div className="flex flex-col gap-2 mb-1 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
+      {/* Week header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-xl font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>
             {copy.title}
           </h2>
           {isSunday() && (
-            <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-axis-accent/10 text-axis-accent">
+            <span
+              className="rounded font-mono text-[10px] font-bold px-2 py-1"
+              style={{
+                color: "var(--accent)",
+                backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)",
+              }}
+            >
               {copy.sunday}
             </span>
           )}
         </div>
-        <p className="text-xs font-mono mb-5" style={{ color: "var(--text-tertiary)" }}>
+        <div className="mt-1 font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>
           {formatWeekLabel(thisWeek, locale)}
-        </p>
-
-        <div className="grid grid-cols-2 gap-3 mb-5 sm:grid-cols-4">
-          {summaryCards.map((card) => (
-            <div
-              key={card.label}
-              className="rounded-xl p-3"
-              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border-primary)" }}
-            >
-              <p className={`text-xl font-bold ${card.accent}`}>{card.value}</p>
-              <p className="mt-0.5 text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-                {card.label}
-              </p>
-              <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                {card.sub}
-              </p>
-            </div>
-          ))}
         </div>
-
-        <div className="rounded-2xl px-4 py-3 mb-5" style={{ backgroundColor: "var(--bg-tertiary)" }}>
-          <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-            {copy.promptTitle}
-          </p>
-          <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-tertiary)" }}>
-            {copy.promptBody}
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              {copy.wins}
-            </label>
-            <textarea
-              value={wins}
-              onChange={(e) => setWins(e.target.value)}
-              placeholder={copy.winsPlaceholder}
-              rows={3}
-              className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                border: "1px solid var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(205,255,79,0.4)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-primary)")}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              {copy.struggles}
-            </label>
-            <textarea
-              value={struggles}
-              onChange={(e) => setStruggles(e.target.value)}
-              placeholder={copy.strugglesPlaceholder}
-              rows={3}
-              className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                border: "1px solid var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(205,255,79,0.4)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-primary)")}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
-              {copy.nextFocus}
-            </label>
-            <textarea
-              value={nextFocus}
-              onChange={(e) => setNextFocus(e.target.value)}
-              placeholder={copy.nextFocusPlaceholder}
-              rows={3}
-              className="w-full rounded-xl px-4 py-3 text-sm resize-none outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                border: "1px solid var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(205,255,79,0.4)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-primary)")}
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={handleSave}
-          disabled={saving || (!wins.trim() && !struggles.trim() && !nextFocus.trim())}
-          className="mt-5 w-full flex items-center justify-center text-sm font-semibold bg-axis-accent text-axis-dark px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {saving ? (
-            <div className="w-5 h-5 border-2 border-axis-dark/30 border-t-axis-dark rounded-full animate-spin" />
-          ) : saved ? (
-            copy.saved
-          ) : thisWeekReview ? (
-            copy.update
-          ) : (
-            copy.save
-          )}
-        </button>
       </div>
 
+      {/* Stat grid */}
+      <div className="mb-7 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {summaryCards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-[14px] px-4 py-[18px]"
+            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+          >
+            <div
+              className="mb-2.5 font-mono text-[9px] font-semibold uppercase tracking-wider"
+              style={{ color: "var(--text-tertiary)" }}
+            >
+              {card.label}
+            </div>
+            <div
+              className="text-[28px] font-black leading-none tracking-tight"
+              style={{ color: card.color }}
+            >
+              {card.value}
+            </div>
+            <div className="mt-1.5 text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+              {card.sub}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Intro card */}
+      <div
+        className="mb-6 rounded-[14px] px-5 py-[18px]"
+        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+      >
+        <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+          {copy.promptTitle}
+        </div>
+        <p className="mt-1 text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          {copy.promptBody}
+        </p>
+      </div>
+
+      {/* Textareas */}
+      {[
+        { label: copy.wins, placeholder: copy.winsPlaceholder, value: wins, set: setWins, hint: locale === "de" ? "Feiere deine Erfolge" : "Celebrate your wins" },
+        { label: copy.struggles, placeholder: copy.strugglesPlaceholder, value: struggles, set: setStruggles, hint: locale === "de" ? "Ehrlich reflektieren" : "Reflect honestly" },
+        { label: copy.nextFocus, placeholder: copy.nextFocusPlaceholder, value: nextFocus, set: setNextFocus, hint: locale === "de" ? "Ein Fokus, nicht zehn" : "One focus, not ten" },
+      ].map((field) => (
+        <div key={field.label} className="mb-5">
+          <div className="mb-2 flex items-baseline justify-between">
+            <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+              {field.label}
+            </span>
+            <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+              {field.hint}
+            </span>
+          </div>
+          <textarea
+            value={field.value}
+            onChange={(e) => field.set(e.target.value)}
+            placeholder={field.placeholder}
+            rows={3}
+            className="w-full resize-y rounded-xl px-4 py-3.5 text-[13px] leading-relaxed outline-none transition-colors"
+            style={inputStyle}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-primary)")}
+          />
+        </div>
+      ))}
+
+      {/* Save */}
+      <button
+        onClick={handleSave}
+        disabled={saving || (!wins.trim() && !struggles.trim() && !nextFocus.trim())}
+        className="mt-2 w-full rounded-xl py-3.5 text-sm font-bold transition-transform active:scale-[0.98] disabled:opacity-40"
+        style={{ backgroundColor: "var(--text-primary)", color: "var(--text-inverted)" }}
+      >
+        {saving ? (
+          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent align-middle" />
+        ) : saved ? (
+          copy.saved
+        ) : thisWeekReview ? (
+          copy.update
+        ) : (
+          copy.save
+        )}
+      </button>
+
       {!reviewsLoading && pastReviews.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold px-1" style={{ color: "var(--text-primary)" }}>
+        <div className="mt-9 space-y-2.5">
+          <h3 className="px-1 text-sm font-bold" style={{ color: "var(--text-primary)" }}>
             {copy.past}
           </h3>
           {pastReviews.map((review) => (
-            <details key={review.id} className="axis-card group">
-              <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
+            <details
+              key={review.id}
+              className="group rounded-[14px] px-5 py-4"
+              style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                 <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                   {formatWeekLabel(review.week_start, locale)}
                 </p>
-                <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
+                <span className="font-mono text-xs" style={{ color: "var(--text-tertiary)" }}>
                   {review.wins || review.struggles || review.next_week_focus ? copy.view : copy.empty}
                 </span>
               </summary>
-              <div className="mt-4 pt-4 space-y-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
+              <div className="mt-4 space-y-3 pt-4" style={{ borderTop: "1px solid var(--border-primary)" }}>
                 {review.wins && (
                   <div>
-                    <p className="text-[11px] font-mono font-semibold mb-1 text-axis-accent">{copy.winsShort}</p>
-                    <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
+                    <p className="mb-1 font-mono text-[11px] font-bold" style={{ color: "var(--soft-green)" }}>
+                      {copy.winsShort}
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm" style={{ color: "var(--text-secondary)" }}>
                       {review.wins}
                     </p>
                   </div>
                 )}
                 {review.struggles && (
                   <div>
-                    <p className="text-[11px] font-mono font-semibold mb-1 text-amber-500">{copy.strugglesShort}</p>
-                    <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
+                    <p className="mb-1 font-mono text-[11px] font-bold" style={{ color: "var(--soft-warm)" }}>
+                      {copy.strugglesShort}
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm" style={{ color: "var(--text-secondary)" }}>
                       {review.struggles}
                     </p>
                   </div>
                 )}
                 {review.next_week_focus && (
                   <div>
-                    <p className="text-[11px] font-mono font-semibold mb-1" style={{ color: "var(--text-tertiary)" }}>
+                    <p className="mb-1 font-mono text-[11px] font-bold" style={{ color: "var(--soft-lav)" }}>
                       {copy.nextShort}
                     </p>
-                    <p className="text-sm whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
+                    <p className="whitespace-pre-wrap text-sm" style={{ color: "var(--text-secondary)" }}>
                       {review.next_week_focus}
                     </p>
                   </div>
@@ -500,7 +507,7 @@ export default function ReviewPage() {
       )}
 
       {!reviewsLoading && reviews.length === 0 && (
-        <p className="text-center text-sm py-4" style={{ color: "var(--text-tertiary)" }}>
+        <p className="py-4 text-center text-sm" style={{ color: "var(--text-tertiary)" }}>
           {copy.firstReview}
         </p>
       )}
@@ -508,7 +515,8 @@ export default function ReviewPage() {
       {!isPro && hiddenPastCount > 0 && (
         <button
           onClick={() => openUpgradePrompt({ source: "review_history" })}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-axis-accent/25 bg-axis-accent/5 px-4 py-3 text-left transition-all hover:bg-axis-accent/10"
+          className="mt-5 flex w-full items-center justify-between gap-3 rounded-[14px] px-5 py-3.5 text-left transition-colors hover:opacity-95"
+          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
         >
           <div className="min-w-0">
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
@@ -518,7 +526,10 @@ export default function ReviewPage() {
               {copy.archiveSub}
             </p>
           </div>
-          <span className="shrink-0 text-xs font-mono font-bold rounded-md bg-axis-accent text-axis-dark px-2.5 py-1">
+          <span
+            className="shrink-0 rounded-md px-2.5 py-1 font-mono text-xs font-bold"
+            style={{ backgroundColor: "var(--accent)", color: "var(--accent-text)" }}
+          >
             {copy.upgrade}
           </span>
         </button>

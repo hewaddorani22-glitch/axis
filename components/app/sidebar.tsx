@@ -4,17 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { trackEvent } from "@/lib/analytics";
 import { useUser } from "@/hooks/useUser";
 import { useStreak } from "@/hooks/useStreak";
-import { useAxisScore } from "@/hooks/useAxisScore";
 import { useLocale } from "@/lib/i18n/provider";
-import { AxisScoreWidget } from "@/components/app/axis-score-widget";
 import { getPrimaryNavItems, getSecondaryNavItems } from "@/components/app/navigation";
 import { SUPPORT_MAILTO } from "@/lib/support";
 import {
-  AxisLogo,
-  IconUpgrade,
   IconLogout,
   IconStreak,
   IconSettings,
@@ -25,15 +20,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useUser();
   const { streak } = useStreak();
-  const axisScore = useAxisScore();
   const { t } = useLocale();
 
   const displayName = user?.name || user?.email?.split("@")[0] || "User";
   const initials = displayName.charAt(0).toUpperCase();
-  const [startingCheckout, setStartingCheckout] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const hasStreak = streak > 0;
   const primaryNavItems = getPrimaryNavItems({ pathname, userType: user?.user_type });
   const secondaryNavItems = getSecondaryNavItems({
     pathname,
@@ -43,156 +35,127 @@ export function Sidebar() {
   const mobileMoreItems = primaryNavItems.slice(4);
   const isMoreActive = [...mobileMoreItems, ...secondaryNavItems].some((item) => pathname === item.href);
 
+  // Desktop narrow rail: primary + settings only. Other secondary items live in mobile More.
+  const railItems = [...primaryNavItems, ...secondaryNavItems.filter((i) => i.href === "/settings" || i.href === "/goals")];
+
   return (
     <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-[260px] h-screen overflow-hidden bg-axis-dark border-r border-white/[0.06] fixed left-0 top-0 z-40">
-        {/* Logo + Streak */}
-        <div className="flex shrink-0 items-center justify-between px-6 h-16 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <AxisLogo size={28} />
-            <span className="text-base font-bold text-white tracking-tight">lomoura</span>
-          </div>
-          {hasStreak && (
-            <Link
-              href="/systems"
-              title={t("sidebar.streak.title", { n: String(streak) })}
-              className="flex items-center gap-1 bg-orange-500/10 border border-orange-500/20 rounded-lg px-2 py-1 hover:bg-orange-500/20 transition-all"
+      {/* Desktop narrow sidebar — icon-only */}
+      <aside
+        className="hidden lg:flex flex-col w-[72px] h-screen fixed left-0 top-0 z-40 py-7 items-center"
+        style={{
+          backgroundColor: "var(--bg-secondary)",
+          borderRight: "1px solid var(--border-primary)",
+        }}
+      >
+        {/* Logo */}
+        <Link
+          href="/dashboard"
+          className="mb-9 flex h-9 w-9 items-center justify-center rounded-[11px] text-lg font-black leading-none"
+          style={{ backgroundColor: "var(--accent)", color: "var(--accent-text)" }}
+          title="lomoura"
+        >
+          +
+        </Link>
+
+        {/* Nav rail */}
+        <nav className="flex flex-col items-center gap-1">
+          {railItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                className={cn(
+                  "relative flex h-10 w-10 items-center justify-center rounded-[11px] transition-colors",
+                )}
+                style={{
+                  backgroundColor: isActive ? "var(--bg-tertiary)" : "transparent",
+                  color: isActive ? "var(--text-primary)" : "var(--text-tertiary)",
+                }}
+              >
+                <Icon size={17} />
+                {isActive && (
+                  <span
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-[2px]"
+                    style={{ backgroundColor: "var(--accent)" }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="flex-1" />
+
+        {/* Streak chip */}
+        {streak > 0 && (
+          <Link
+            href="/systems"
+            title={t("sidebar.streak.title", { n: String(streak) })}
+            className="mb-3 flex h-10 w-10 flex-col items-center justify-center rounded-[11px] transition-colors hover:opacity-90"
+            style={{
+              backgroundColor: "var(--bg-tertiary)",
+              border: "1px solid var(--border-primary)",
+            }}
+          >
+            <span className="text-[13px] font-extrabold leading-none" style={{ color: "var(--accent)" }}>
+              {streak}
+            </span>
+            <IconStreak size={9} style={{ color: "var(--soft-warm)" }} />
+          </Link>
+        )}
+
+        {/* Avatar */}
+        <div className="group relative">
+          <Link
+            href="/settings"
+            title={displayName}
+            className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] text-xs font-extrabold"
+            style={{
+              background: "linear-gradient(135deg, var(--soft-lav), var(--soft-plum))",
+              color: "var(--text-inverted)",
+            }}
+          >
+            {initials}
+          </Link>
+          {user && (
+            <button
+              onClick={signOut}
+              className="absolute -top-1 -right-1 hidden h-4 w-4 items-center justify-center rounded-full opacity-0 group-hover:flex group-hover:opacity-100 transition-opacity"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border-primary)",
+                color: "var(--text-tertiary)",
+              }}
+              title={t("sidebar.signout")}
             >
-              <IconStreak size={12} className="text-orange-400" />
-              <span className="text-xs font-mono font-bold text-orange-400">{streak}</span>
-            </Link>
+              <IconLogout size={9} />
+            </button>
           )}
-        </div>
-
-        <div className="flex-1 min-h-0 axis-scrollbar overflow-y-auto">
-          <div className="flex min-h-full flex-col px-3 py-3">
-            <AxisScoreWidget {...axisScore} compact className="bg-white/[0.03] shadow-none" />
-
-            {/* Navigation */}
-            <nav className="mt-4 space-y-1">
-              {primaryNavItems.map((item) => {
-                const isActive = pathname === item.href;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
-                      isActive
-                        ? "bg-white/[0.08] text-white"
-                        : "text-white/50 hover:text-white/80 hover:bg-white/[0.04]"
-                    )}
-                  >
-                    <Icon size={18} className={cn("w-5 flex-shrink-0", isActive ? "text-axis-accent" : "")} />
-                    <span>{item.label}</span>
-                    {isActive && (
-                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-axis-accent" />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            {/* Bottom section */}
-            <div className="mt-auto space-y-1 border-t border-white/[0.06] pt-4">
-
-              {secondaryNavItems.map((item) => {
-                const isActive = pathname === item.href;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
-                      isActive
-                        ? "bg-white/[0.08] text-white"
-                        : "text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
-                    )}
-                  >
-                    <Icon size={18} className={cn("w-5 flex-shrink-0", isActive ? "text-axis-accent" : "")} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-
-              {/* Upgrade CTA */}
-              {user?.plan !== "pro" && (
-                <div className="mt-3 rounded-2xl border border-axis-accent/20 bg-axis-accent/10 p-3.5">
-                  <div className="mb-1 flex items-center gap-2">
-                    <IconUpgrade size={13} className="text-axis-accent" />
-                    <p className="text-xs font-semibold text-axis-accent">{t("sidebar.upgrade.title")}</p>
-                  </div>
-                  <p className="mb-3 text-[11px] leading-relaxed text-white/45">{t("sidebar.upgrade.sub")}</p>
-                  <button
-                    onClick={async () => {
-                      try {
-                        trackEvent("pro_cta_clicked", { source: "sidebar" });
-                        setStartingCheckout(true);
-                        const res = await fetch("/api/stripe/checkout", { method: "POST" });
-                        const data = await res.json();
-                        if (data.url) {
-                          window.location.href = data.url;
-                          return;
-                        }
-
-                        alert(data.error || t("sidebar.upgrade.failed"));
-                      } catch {
-                        alert(t("sidebar.upgrade.network"));
-                      } finally {
-                        setStartingCheckout(false);
-                      }
-                    }}
-                    disabled={startingCheckout}
-                    className="block w-full rounded-xl bg-axis-accent px-4 py-2.5 text-center text-xs font-semibold text-axis-dark transition-all hover:bg-axis-accent/90"
-                  >
-                    {startingCheckout ? t("sidebar.upgrade.opening") : t("sidebar.upgrade.cta")}
-                  </button>
-                </div>
-              )}
-
-              {user?.plan === "pro" && (
-                <div className="mt-3 px-3 py-2">
-                  <span className="rounded-md bg-axis-accent px-2.5 py-1 text-[10px] font-mono font-bold text-axis-dark">
-                    PRO
-                  </span>
-                </div>
-              )}
-
-              {/* User */}
-              <div className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-3 group hover:bg-white/[0.03] transition-all">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-axis-accent/20">
-                  <span className="text-xs font-bold font-mono text-axis-accent">{initials}</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-white">{displayName}</p>
-                  <p className="truncate text-[11px] text-white/30">{user?.email}</p>
-                </div>
-                <button
-                  onClick={signOut}
-                  className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-white/60 transition-all"
-                  title={t("sidebar.signout")}
-                >
-                  <IconLogout size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </aside>
 
-      {/* Mobile More Menu */}
+      {/* Mobile More menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
             aria-label="Close navigation menu"
-            className="absolute inset-0 bg-axis-dark/55 backdrop-blur-sm"
+            className="absolute inset-0 backdrop-blur-sm"
+            style={{ backgroundColor: "rgba(13,13,17,0.55)" }}
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="absolute inset-x-3 bottom-[calc(72px+env(safe-area-inset-bottom))] rounded-2xl border border-white/[0.08] bg-axis-dark p-3 shadow-2xl">
+          <div
+            className="absolute inset-x-3 rounded-2xl p-3 shadow-2xl"
+            style={{
+              bottom: "calc(72px + env(safe-area-inset-bottom))",
+              backgroundColor: "var(--bg-secondary)",
+              border: "1px solid var(--border-primary)",
+            }}
+          >
             <div className="grid grid-cols-2 gap-2">
               {[...mobileMoreItems, ...secondaryNavItems].map((item) => {
                 const isActive = pathname === item.href;
@@ -202,10 +165,11 @@ export function Sidebar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all",
-                      isActive ? "bg-white/[0.08] text-axis-accent" : "text-white/55 hover:bg-white/[0.04] hover:text-white/85"
-                    )}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors"
+                    style={{
+                      backgroundColor: isActive ? "var(--bg-tertiary)" : "transparent",
+                      color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+                    }}
                   >
                     <Icon size={18} className="shrink-0" />
                     <span className="truncate">{item.label}</span>
@@ -215,7 +179,8 @@ export function Sidebar() {
               <a
                 href={SUPPORT_MAILTO}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/55 transition-all hover:bg-white/[0.04] hover:text-white/85"
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors"
+                style={{ color: "var(--text-secondary)" }}
               >
                 <IconMail size={18} className="shrink-0" />
                 <span className="truncate">{t("sidebar.support")}</span>
@@ -226,7 +191,8 @@ export function Sidebar() {
                     setMobileMenuOpen(false);
                     signOut();
                   }}
-                  className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-white/55 transition-all hover:bg-white/[0.04] hover:text-white/85"
+                  className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
                 >
                   <IconLogout size={18} className="shrink-0" />
                   <span className="truncate">{t("sidebar.signout")}</span>
@@ -237,8 +203,15 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Mobile Bottom Tabs: streak badge on Habits tab */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 axis-glass border-t-0 border-b-0 border-x-0 border-white/[0.06] rounded-none px-2 pb-[env(safe-area-inset-bottom)]" style={{ background: "rgba(11, 11, 15, 0.8)", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+      {/* Mobile bottom tabs */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-2 pb-[env(safe-area-inset-bottom)]"
+        style={{
+          backgroundColor: "rgba(13,13,17,0.82)",
+          backdropFilter: "blur(14px)",
+          borderTop: "1px solid var(--border-primary)",
+        }}
+      >
         <div className="flex items-center justify-around h-16">
           {mobileMainItems.map((item) => {
             const isActive = pathname === item.href;
@@ -248,15 +221,21 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
-                  isActive ? "text-axis-accent" : "text-white/40"
-                )}
+                className="relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors"
+                style={{
+                  color: isActive ? "var(--accent)" : "var(--text-tertiary)",
+                }}
               >
                 <div className="relative">
                   <Icon size={18} />
                   {showStreakBadge && (
-                    <span className="absolute -top-1 -right-2 flex items-center justify-center bg-orange-500 text-axis-dark text-[9px] font-mono font-bold leading-none w-4 h-4 rounded-full">
+                    <span
+                      className="absolute -top-1 -right-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-mono font-bold leading-none"
+                      style={{
+                        backgroundColor: "var(--soft-warm)",
+                        color: "var(--text-inverted)",
+                      }}
+                    >
                       {streak >= 7 ? <IconStreak size={8} /> : streak}
                     </span>
                   )}
@@ -268,10 +247,10 @@ export function Sidebar() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className={cn(
-              "relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all",
-              isMoreActive || mobileMenuOpen ? "text-axis-accent" : "text-white/40"
-            )}
+            className="relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors"
+            style={{
+              color: isMoreActive || mobileMenuOpen ? "var(--accent)" : "var(--text-tertiary)",
+            }}
             aria-expanded={mobileMenuOpen}
             aria-label="Open more navigation"
           >

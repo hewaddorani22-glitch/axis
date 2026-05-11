@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <HabitPickModal />
       <PushSubscribePrompt vapidPublicKey={VAPID_PUBLIC_KEY} />
       <Sidebar />
-      <div className="min-w-0 lg:pl-[260px]">
+      <div className="min-w-0 lg:pl-[72px]">
         <Topbar />
         <main className="min-w-0 overflow-x-hidden px-4 py-4 pb-28 sm:p-6 sm:pb-28 lg:pb-6">{children}</main>
       </div>
