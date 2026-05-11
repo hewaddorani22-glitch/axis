@@ -109,9 +109,12 @@ function SortableMissionItem({
       <button
         onClick={() => toggleMission(mission.id)}
         className={`w-6 h-6 rounded-lg border-2 flex flex-shrink-0 items-center justify-center transition-all relative ${
-          mission.status === "done" ? "bg-axis-accent border-axis-accent axis-check" : "hover:border-axis-accent/50"
+          mission.status === "done" ? "axis-check" : ""
         }`}
-        style={mission.status !== "done" ? { borderColor: "var(--border-secondary)" } : undefined}
+        style={{
+          backgroundColor: mission.status === "done" ? "var(--soft-green)" : "transparent",
+          borderColor: mission.status === "done" ? "var(--soft-green)" : "var(--border-secondary)",
+        }}
       >
         <AnimatePresence>
           {mission.status === "done" && (
@@ -122,7 +125,7 @@ function SortableMissionItem({
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
               className="absolute inset-0 flex items-center justify-center"
             >
-              <IconCheck size={14} className="text-axis-dark" />
+              <IconCheck size={14} style={{ color: "var(--text-inverted)" }} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -155,17 +158,25 @@ function SortableMissionItem({
         )}
         {mission.energy_level && (
           <span className="text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
-            <IconEnergy size={10} className="text-amber-500" /> {mission.energy_level}
+            <IconEnergy size={10} style={{ color: "var(--soft-warm)" }} /> {mission.energy_level}
           </span>
         )}
         <span
-          className={`text-[10px] font-mono px-2.5 py-1 rounded-lg ${
-            mission.priority === "high"
-              ? "bg-red-500/10 text-red-500"
-              : mission.priority === "med"
-              ? "bg-amber-500/10 text-amber-500"
-              : "bg-gray-500/10 text-gray-400"
-          }`}
+          className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg"
+          style={{
+            color:
+              mission.priority === "high"
+                ? "var(--soft-coral)"
+                : mission.priority === "med"
+                  ? "var(--soft-warm)"
+                  : "var(--text-tertiary)",
+            backgroundColor:
+              mission.priority === "high"
+                ? "var(--soft-coral-dim)"
+                : mission.priority === "med"
+                  ? "var(--soft-warm-dim)"
+                  : "var(--bg-tertiary)",
+          }}
         >
           {mission.priority}
         </span>

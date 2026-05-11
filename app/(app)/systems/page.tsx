@@ -131,17 +131,33 @@ function SortableHabitItem({
         <button
           onClick={() => toggleHabit(habit.id, habit.todayDone || habit.todaySkipped ? "undo" : "done")}
           className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-            habit.todayDone ? "ring-2 ring-axis-accent/30" : habit.todaySkipped ? "ring-2 ring-amber-500/30 opacity-70" : ""
+            habit.todaySkipped ? "opacity-70" : ""
           }`}
-          style={{ backgroundColor: habit.todayDone ? "var(--bg-accent-soft)" : habit.todaySkipped ? "rgba(245, 158, 11, 0.1)" : "var(--bg-tertiary)" }}
+          style={{
+            backgroundColor: habit.todayDone
+              ? "var(--soft-green-dim)"
+              : habit.todaySkipped
+                ? "var(--soft-warm-dim)"
+                : "var(--bg-tertiary)",
+            boxShadow: habit.todayDone
+              ? "0 0 0 2px var(--soft-green-dim)"
+              : habit.todaySkipped
+                ? "0 0 0 2px var(--soft-warm-dim)"
+                : undefined,
+          }}
         >
           {habit.icon && habit.icon !== "IconHabits" ? (
             <span className="text-xl">{habit.icon}</span>
           ) : (
             <IconHabits
               size={20}
-              className={habit.todayDone ? "text-axis-accent" : habit.todaySkipped ? "text-amber-500" : ""}
-              style={!(habit.todayDone || habit.todaySkipped) ? { color: "var(--text-tertiary)" } : undefined}
+              style={{
+                color: habit.todayDone
+                  ? "var(--soft-green)"
+                  : habit.todaySkipped
+                    ? "var(--soft-warm)"
+                    : "var(--text-tertiary)",
+              }}
             />
           )}
         </button>
@@ -155,16 +171,16 @@ function SortableHabitItem({
             </h3>
             {habit.todayDone && (
               <span
-                className="text-xs font-mono text-axis-accent px-2 py-0.5 rounded-md"
-                style={{ backgroundColor: "var(--bg-accent-soft)" }}
+                className="text-xs font-mono px-2 py-0.5 rounded-md"
+                style={{ color: "var(--soft-green)", backgroundColor: "var(--soft-green-dim)" }}
               >
                 {copy.done}
               </span>
             )}
             {habit.todaySkipped && (
               <span
-                className="text-xs font-mono text-amber-500 px-2 py-0.5 rounded-md"
-                style={{ backgroundColor: "rgba(245, 158, 11, 0.1)" }}
+                className="text-xs font-mono px-2 py-0.5 rounded-md"
+                style={{ color: "var(--soft-warm)", backgroundColor: "var(--soft-warm-dim)" }}
               >
                 {copy.skipped}
               </span>
@@ -200,15 +216,20 @@ function SortableHabitItem({
         </div>
         <button
           onClick={() => toggleHabit(habit.id, habit.todayDone || habit.todaySkipped ? "undo" : "done")}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-            habit.todayDone ? "bg-axis-accent text-axis-dark" : habit.todaySkipped ? "bg-amber-500 text-axis-dark" : "hover:bg-axis-hover"
-          }`}
-          style={!(habit.todayDone || habit.todaySkipped) ? { backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" } : undefined}
+          className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
+          style={{
+            backgroundColor: habit.todayDone
+              ? "var(--soft-green)"
+              : habit.todaySkipped
+                ? "var(--soft-warm)"
+                : "var(--bg-tertiary)",
+            color: habit.todayDone || habit.todaySkipped ? "var(--text-inverted)" : "var(--text-tertiary)",
+          }}
         >
           {habit.todayDone ? (
             <IconCheck size={18} />
           ) : habit.todaySkipped ? (
-            <span className="text-sm font-bold text-axis-dark">/</span>
+            <span className="text-sm font-bold">/</span>
           ) : (
             <div className="w-3 h-3 rounded-full" style={{ borderWidth: 2, borderColor: "var(--border-secondary)" }} />
           )}
@@ -220,7 +241,14 @@ function SortableHabitItem({
           <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
             <div
               className={`w-full h-8 rounded-lg transition-all ${status !== "missed" ? "scale-105 shadow-sm" : ""}`}
-              style={{ backgroundColor: status === "done" ? "var(--accent)" : status === "skipped" ? "rgba(245, 158, 11, 0.4)" : "var(--bg-tertiary)" }}
+              style={{
+                backgroundColor:
+                  status === "done"
+                    ? "var(--soft-green)"
+                    : status === "skipped"
+                      ? "var(--soft-warm-dim)"
+                      : "var(--bg-tertiary)",
+              }}
             />
             <span className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>
               {weekDays[i]}
@@ -344,11 +372,13 @@ export default function SystemsPage() {
           </span>
         </div>
         <div className="axis-card !p-2.5 !px-4 flex items-center gap-2">
-          <IconStreak size={14} className="text-orange-500" />
+          <IconStreak size={14} style={{ color: "var(--soft-warm)" }} />
           <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
             {copy.bestStreak}
           </span>
-          <span className="text-sm font-bold text-orange-500">{bestStreak > 0 ? `${bestStreak} ${copy.days}` : "0"}</span>
+          <span className="text-sm font-bold" style={{ color: "var(--soft-warm)" }}>
+            {bestStreak > 0 ? `${bestStreak} ${copy.days}` : "0"}
+          </span>
         </div>
       </div>
 
@@ -357,7 +387,7 @@ export default function SystemsPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <div className="mt-0.5"><IconFreeze size={18} className="text-blue-400" /></div>
+              <div className="mt-0.5"><IconFreeze size={18} style={{ color: "var(--soft-lav)" }} /></div>
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                 {copy.freezeTitle}
               </h3>
