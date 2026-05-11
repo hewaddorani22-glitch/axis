@@ -21,11 +21,12 @@
   --text-inverted: #FFFFFF;
   --accent: #76A300; /* Darker lime/green for excellent readability on white */
   --accent-text: #0B0B0F;
-  --status-emerald: #059669; /* emerald-600 */
-  --status-orange: #D97706; /* amber-600 */
-  --status-amber: #B45309; /* amber-700 */
-  --status-red: #DC2626; /* red-600 */
-  --status-violet: #6D28D9; /* violet-700 */
+  /* Status colors — aliased to soft palette so legacy red/amber/orange utilities pick up the warmer tones. */
+  --status-emerald: #059669;
+  --status-orange: #D97706;
+  --status-amber: #D97706;
+  --status-red: #E2725B;
+  --status-violet: #6D5BD0;
   --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --card-shadow-hover: 0 10px 40px rgba(0, 0, 0, 0.08);
   --stat-card-bg: #FFFFFF;
@@ -61,11 +62,12 @@
   --text-inverted: #0B0B0F;
   --accent: #CDFF4F; /* Bright neon lime */
   --accent-text: #0B0B0F;
-  --status-emerald: #10B981; /* emerald-500 */
-  --status-orange: #F97316; /* orange-500 */
-  --status-amber: #F59E0B; /* amber-500 */
-  --status-red: #EF4444; /* red-500 */
-  --status-violet: #8B5CF6; /* violet-500 */
+  /* Status colors aliased to soft palette in dark mode too. */
+  --status-emerald: #6EE7B7;
+  --status-orange: #F6C872;
+  --status-amber: #F6C872;
+  --status-red: #F0A0A0;
+  --status-violet: #B0B4E8;
   --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.4);
   --stat-card-bg: #1C1C22;
