@@ -9,10 +9,39 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        emerald: { 500: "var(--status-emerald)" },
-        orange: { 500: "var(--status-orange)" },
-        amber: { 500: "var(--status-amber)" },
-        red: { 500: "var(--status-red)" },
+        emerald: {
+          50: "var(--soft-green-dim)",
+          200: "var(--soft-green-dim)",
+          400: "var(--status-emerald)",
+          500: "var(--status-emerald)",
+          600: "var(--status-emerald)",
+          700: "var(--status-emerald)",
+        },
+        orange: {
+          400: "var(--status-orange)",
+          500: "var(--status-orange)",
+          600: "var(--status-orange)",
+        },
+        amber: {
+          400: "var(--status-amber)",
+          500: "var(--status-amber)",
+          600: "var(--status-amber)",
+          700: "var(--status-amber)",
+        },
+        red: {
+          50: "var(--soft-coral-dim)",
+          200: "var(--soft-coral-dim)",
+          300: "var(--status-red)",
+          400: "var(--status-red)",
+          500: "var(--status-red)",
+          600: "var(--status-red)",
+          700: "var(--status-red)",
+        },
+        blue: {
+          400: "var(--soft-lav)",
+          500: "var(--soft-lav)",
+          600: "var(--soft-lav)",
+        },
         violet: { 500: "var(--status-violet)" },
         axis: {
           accent: "var(--accent)",
