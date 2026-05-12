@@ -4,862 +4,414 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
-import { useLocale } from "@/lib/i18n/provider";
-import {
-  loadQuizAnswers,
-  clearQuizAnswers,
-  suggestUserType,
-  suggestFirstMission,
-} from "@/lib/quiz";
-import {
-  AxisLogo,
-  IconUser,
-  IconTarget,
-  IconHabits,
-  IconCheck,
-  IconChevronRight,
-  IconChevronLeft,
-  IconGlobe,
-  IconFocus,
-  IconEdit,
-  IconEnergy,
-  IconReview,
-  IconBriefing,
-  IconLink,
-} from "@/components/icons";
 
-type UserType = "entrepreneur" | "student" | "creator" | "professional";
+const SERIF = "'Cormorant Garamond', serif";
 
-const userTypesByLocale: Record<"de" | "en", { value: UserType; label: string; desc: string }[]> = {
-  de: [
-    { value: "entrepreneur", label: "Side-Hustle / Selbststaendig", desc: "Ich verdiene oder will online verdienen" },
-    { value: "professional", label: "Angestellt — aber will mehr", desc: "9-to-5, aber raus aus dem Standby" },
-    { value: "creator", label: "Creator / online aktiv", desc: "Posten, Reichweite, dranbleiben" },
-    { value: "student", label: "Student / Schueler mit Plan", desc: "Studium + Disziplin + Side-Stuff" },
-  ],
-  en: [
-    { value: "entrepreneur", label: "Side-hustle / self-employed", desc: "I earn online or want to" },
-    { value: "professional", label: "Employed — but want more", desc: "9-to-5, but ready to break out" },
-    { value: "creator", label: "Creator / online", desc: "Posting, building reach, staying consistent" },
-    { value: "student", label: "Student with a plan", desc: "Studies + discipline + side stuff" },
-  ],
-};
+type Program = "foundation" | "builder" | "scholar";
 
-const timezones = [
-  { value: "Europe/Berlin", label: "Berlin (CET)" },
-  { value: "Europe/London", label: "London (GMT)" },
-  { value: "America/New_York", label: "New York (EST)" },
-  { value: "America/Chicago", label: "Chicago (CST)" },
-  { value: "America/Denver", label: "Denver (MST)" },
-  { value: "America/Los_Angeles", label: "Los Angeles (PST)" },
-  { value: "Asia/Tokyo", label: "Tokyo (JST)" },
-  { value: "Asia/Dubai", label: "Dubai (GST)" },
-  { value: "UTC", label: "UTC" },
+interface ProgramOption {
+  id: Program;
+  title: string;
+  subtitle: string;
+  detail: string;
+  weight: string;
+}
+
+const PROGRAMS: ProgramOption[] = [
+  {
+    id: "foundation",
+    title: "The Foundation",
+    subtitle: "Balanced across all three",
+    detail:
+      "Equal pull on body, mind, intellect. For the man building the base. Most begin here.",
+    weight: "1 · 1 · 1",
+  },
+  {
+    id: "builder",
+    title: "The Builder",
+    subtitle: "Body-weighted protocol",
+    detail:
+      "Heavier on physical training. Body becomes the engine for everything else.",
+    weight: "2 · 1 · 1",
+  },
+  {
+    id: "scholar",
+    title: "The Scholar",
+    subtitle: "Intellect-weighted protocol",
+    detail:
+      "Heavier on reading, deep work, skill. For the man whose body is in order but his mind is starving.",
+    weight: "1 · 1 · 2",
+  },
 ];
 
-// Segment-aware habit suggestions. Each user sees the 8 most relevant
-// habits for their flow first; the union is shown with their picks at top.
-const habitsBySegment: Record<UserType, { name: string; icon: React.ReactNode }[]> = {
-  entrepreneur: [
-    { name: "Deep Work", icon: <IconFocus size={16} /> },
-    { name: "Outreach", icon: <IconGlobe size={16} /> },
-    { name: "Sport", icon: <IconEnergy size={16} /> },
-    { name: "Cold Calling", icon: <IconLink size={16} /> },
-    { name: "Content Creation", icon: <IconEdit size={16} /> },
-    { name: "Reading", icon: <IconReview size={16} /> },
-    { name: "Journaling", icon: <IconBriefing size={16} /> },
-    { name: "Meditation", icon: <IconHabits size={16} /> },
-  ],
-  professional: [
-    { name: "Sport", icon: <IconEnergy size={16} /> },
-    { name: "Side-Project (30 Min)", icon: <IconFocus size={16} /> },
-    { name: "Reading / Lernen", icon: <IconReview size={16} /> },
-    { name: "Kein Handy nach 22 Uhr", icon: <IconHabits size={16} /> },
-    { name: "Journaling", icon: <IconBriefing size={16} /> },
-    { name: "Meditation", icon: <IconHabits size={16} /> },
-    { name: "Outreach", icon: <IconGlobe size={16} /> },
-    { name: "Content Creation", icon: <IconEdit size={16} /> },
-  ],
-  creator: [
-    { name: "Posten", icon: <IconEdit size={16} /> },
-    { name: "Engagement (30 Min)", icon: <IconGlobe size={16} /> },
-    { name: "Content schneiden", icon: <IconFocus size={16} /> },
-    { name: "Sport", icon: <IconEnergy size={16} /> },
-    { name: "Reading", icon: <IconReview size={16} /> },
-    { name: "Journaling", icon: <IconBriefing size={16} /> },
-    { name: "Cold DMs", icon: <IconLink size={16} /> },
-    { name: "Meditation", icon: <IconHabits size={16} /> },
-  ],
-  student: [
-    { name: "Lernblock (60 Min)", icon: <IconFocus size={16} /> },
-    { name: "Sport", icon: <IconEnergy size={16} /> },
-    { name: "Lesen / Buch", icon: <IconReview size={16} /> },
-    { name: "Schlaf vor 23 Uhr", icon: <IconHabits size={16} /> },
-    { name: "Journaling", icon: <IconBriefing size={16} /> },
-    { name: "Side-Project (30 Min)", icon: <IconEdit size={16} /> },
-    { name: "Meditation", icon: <IconHabits size={16} /> },
-    { name: "Kein Handy beim Lernen", icon: <IconLink size={16} /> },
-  ],
-};
-
-export default function OnboardingPage() {
+export default function ForgeOnboardingPage() {
   const router = useRouter();
-  const supabaseCheck = createClient();
-  const { locale, t } = useLocale();
   const supabase = createClient();
-  const userTypes = userTypesByLocale[locale] ?? userTypesByLocale.de;
-  const [plan, setPlan] = useState<"free" | "pro">("free");
-  const habitMax = plan === "pro" ? 10 : 3;
+
+  const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const [name, setName] = useState("");
+  const [vow, setVow] = useState("");
+  const [program, setProgram] = useState<Program | null>(null);
+  const [bodyIntent, setBodyIntent] = useState("");
+  const [mindIntent, setMindIntent] = useState("");
+  const [intellectIntent, setIntellectIntent] = useState("");
 
   useEffect(() => {
-    supabaseCheck.from("users").select("onboarding_done").single().then(({ data }) => {
-      if (data?.onboarding_done) router.replace("/dashboard");
-    });
-  }, []); // eslint-disable-line
-
-  useEffect(() => {
-    trackEvent("onboarding_started", {
-      source: loadQuizAnswers() ? "start_funnel" : "direct",
-    });
-  }, []);
-
-  // Quiz pre-fill: if the user came from /start, seed userType + first mission.
-  // Also flips us into Quick-Start mode (1-tap confirm instead of 3-step wizard).
-  useEffect(() => {
-    const quiz = loadQuizAnswers();
-    if (!quiz) {
-      setQuickStart((prev) => ({ ...prev, examined: true }));
-      return;
-    }
-    setUserType(suggestUserType(quiz.goal));
-    const firstMission = suggestFirstMission(quiz.goal, locale);
-    setMissions((prev) => {
-      const next = [...prev];
-      next[0] = { title: firstMission, priority: "high" };
-      return next;
-    });
-    setQuickStart({ active: true, examined: true });
-    // Keep quiz answers around until onboarding completes; clearQuizAnswers is called in handleComplete.
-  }, [locale]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const hydrateProfile = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user || cancelled) return;
-
-      const profileName =
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split("@")[0] ||
-        "";
-      const browserTimezone =
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        router.push("/login");
+        return;
+      }
       const { data: profile } = await supabase
         .from("users")
-        .select("name, user_type, timezone, plan")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      setName((prev) => prev || profile?.name || profileName);
-      if (!userType && profile?.user_type) {
-        setUserType(profile.user_type as UserType);
+        .select("name, onboarding_done")
+        .eq("id", authUser.id)
+        .single();
+      if (profile?.onboarding_done) {
+        router.replace("/dashboard");
+        return;
       }
-      setTimezone(profile?.timezone || browserTimezone);
-      if (profile?.plan === "pro" || profile?.plan === "free") {
-        setPlan(profile.plan);
-      }
-    };
+      if (profile?.name) setName(profile.name);
+    })();
+  }, [router, supabase]);
 
-    void hydrateProfile();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const [step, setStep] = useState(1);
-  const [name, setName] = useState("");
-  const [userType, setUserType] = useState<UserType | null>(null);
-  const [timezone, setTimezone] = useState("Europe/Berlin");
-  const [quickStart, setQuickStart] = useState<{
-    active: boolean;
-    examined: boolean;
-  }>({ active: false, examined: false });
-  
-  const [missions, setMissions] = useState([
-    { title: "", priority: "high" as const },
-    { title: "", priority: "med" as const },
-    { title: "", priority: "med" as const },
-    { title: "", priority: "low" as const },
-    { title: "", priority: "low" as const },
-  ]);
-
-  useEffect(() => {
-    if (!userType) return;
-    const examples: Record<UserType, string[]> = {
-      entrepreneur: ["Eine Sache, die heute Umsatz bringt", "3 Cold-DMs / Outreach", "1 h am Hauptprojekt", "Workout 30 Min", "Inbox auf Null"],
-      professional: ["30 Min am Side-Project", "Workout 30 Min", "1 wichtige Sache im Job fertig", "30 Min lernen / lesen", "Kein Handy nach 22 Uhr"],
-      creator: ["1 Post / Reel rausschicken", "30 Min Engagement", "Nächsten Content-Block schneiden", "Workout 30 Min", "Idee für nächste Woche notiert"],
-      student: ["60 Min fokussiert lernen — ohne Handy", "Workout 30 Min", "Aufgabe X bearbeitet", "30 Min Side-Project", "Schlaf vor 23 Uhr planen"],
-    };
-    const titles = examples[userType] || [];
-    setMissions((prev) =>
-      titles.map((t, i) => ({
-        title: i === 0 && prev[0]?.title.trim() ? prev[0].title : t,
-        priority: i === 0 ? "high" : i < 3 ? "med" : "low",
-      }))
-    );
-  }, [userType]);
-
-  const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
-  const [customHabits, setCustomHabits] = useState<string[]>([]);
-  const [customInput, setCustomInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saveError, setSaveError] = useState("");
-
-  const totalSteps = 3;
-  const progressPct = (step / totalSteps) * 100;
-
-  // Tasks/habits we'll auto-apply when the user clicks Quick-Start
-  const quickTasks = missions.slice(0, 3).filter((m) => m.title.trim());
-  const quickHabits = userType
-    ? habitsBySegment[userType].slice(0, 2)
-    : habitsBySegment.professional.slice(0, 2);
-
-  const handleQuickConfirm = () => {
-    trackEvent("onboarding_quick_confirm", { userType, tasks: quickTasks.length });
-    void handleComplete({
-      missionsOverride: quickTasks.map((m) => ({ title: m.title, priority: m.priority })),
-      habitsOverride: quickHabits.map((h) => h.name),
-    });
+  const canAdvance = () => {
+    if (step === 0) return name.trim().length > 0 && vow.trim().length >= 10;
+    if (step === 1) return Boolean(program);
+    if (step === 2) return bodyIntent.trim() && mindIntent.trim() && intellectIntent.trim();
+    return true;
   };
 
-  const stepTitles = [
-    { title: t("onb.step1.title"), subtitle: t("onb.step1.sub"), icon: <IconUser size={20} className="text-axis-accent" /> },
-    { title: t("onb.step2.title"), subtitle: t("onb.step2.sub"), icon: <IconTarget size={20} className="text-axis-accent" /> },
-    { title: t("onb.step3.title"), subtitle: t("onb.step3.sub"), icon: <IconHabits size={20} className="text-axis-accent" /> },
-  ];
-
-  const canProceed = () => {
-    switch (step) {
-      case 1: return name.trim().length > 0 && userType !== null;
-      case 2: return missions.some((m) => m.title.trim().length > 0);
-      case 3: return selectedHabits.length + customHabits.length >= 1;
-      default: return true;
-    }
-  };
-
-  const handleComplete = async ({
-    skip = false,
-    missionsOverride,
-    habitsOverride,
-  }: {
-    skip?: boolean;
-    missionsOverride?: { title: string; priority: "high" | "med" | "low" }[];
-    habitsOverride?: string[];
-  } = {}) => {
+  const takeTheVow = async () => {
+    if (!program) return;
     setLoading(true);
-    setSaveError("");
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setSaveError(t("onb.error.session"));
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) {
       setLoading(false);
       return;
     }
 
-    const fallbackName =
-      user.user_metadata?.full_name ||
-      user.user_metadata?.name ||
-      user.email?.split("@")[0] ||
-      "there";
-    const finalName = name.trim() || fallbackName;
+    await supabase
+      .from("users")
+      .update({
+        name: name.trim(),
+        onboarding_done: true,
+        user_type: "entrepreneur",
+      })
+      .eq("id", authUser.id);
 
+    const enrollment = {
+      user_id: authUser.id,
+      program,
+      vow: vow.trim(),
+      pillars: {
+        body: bodyIntent.trim(),
+        mind: mindIntent.trim(),
+        intellect: intellectIntent.trim(),
+      },
+      started_at: new Date().toISOString(),
+    };
     try {
-      const { error: authError } = await supabase.auth.updateUser({
-        data: { full_name: finalName, name: finalName },
-      });
-
-      if (authError) throw authError;
-
-      const { error: profileError } = await supabase
-        .from("users")
-        .update({
-          name: finalName,
-          user_type: userType,
-          timezone,
-          onboarding_done: true,
-          prove_it_username: null,
-          prove_it_bio: null,
-        })
-        .eq("id", user.id);
-
-      if (profileError) throw profileError;
-
-      const today = new Date().toISOString().split("T")[0];
-      const sourceMissions = missionsOverride ?? missions;
-      const validMissions = skip ? [] : sourceMissions.filter((m) => m.title.trim());
-      if (validMissions.length > 0) {
-        const { error: missionsError } = await supabase.from("missions").insert(
-          validMissions.map((m, i) => ({
-            user_id: user.id,
-            title: m.title.trim(),
-            priority: m.priority,
-            date: today,
-            sort_order: i,
-          }))
-        );
-
-        if (missionsError) throw missionsError;
-      }
-
-      const sourceHabits = habitsOverride
-        ? habitsOverride.map((habitName) => ({ name: habitName, icon: "IconHabits" }))
-        : [
-            ...selectedHabits.map((habitName) => ({ name: habitName, icon: "IconHabits" })),
-            ...customHabits.map((habitName) => ({ name: habitName, icon: "IconHabits" })),
-          ];
-      const allHabits = skip ? [] : sourceHabits;
-      if (allHabits.length > 0) {
-        const { error: habitsError } = await supabase.from("habits").insert(
-          allHabits.map((h, i) => ({
-            user_id: user.id,
-            name: h.name,
-            icon: h.icon,
-            sort_order: i,
-          }))
-        );
-
-        if (habitsError) throw habitsError;
-      }
-
-      try {
-        const welcomeRes = await fetch("/api/email/welcome", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: finalName }),
-        });
-        if (!welcomeRes.ok) {
-          // Surface telemetry but do not block the user from reaching the dashboard;
-          // a follow-up cron / next-day resend will pick this up.
-          trackEvent("welcome_email_client_failed", { status: welcomeRes.status });
-        }
-      } catch (err) {
-        trackEvent("welcome_email_client_failed", {
-          status: 0,
-          message: err instanceof Error ? err.message : "network",
-        });
-      }
-
-      trackEvent("onboarding_completed", {
-        skipped: skip,
-        missionsCreated: validMissions.length,
-        habitsCreated: allHabits.length,
-        userType,
-        mode: missionsOverride || habitsOverride ? "quick_start" : "wizard",
-      });
-
-      clearQuizAnswers();
-      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-      const next = params?.get("next");
-      const interval = params?.get("interval") === "yearly" ? "yearly" : "monthly";
-      router.push(next === "upgrade" ? `/settings?upgrade=start&interval=${interval}` : "/dashboard");
-      router.refresh();
-    } catch (error: any) {
-      setSaveError(error?.message || t("onb.error.save"));
-      setLoading(false);
-      return;
+      localStorage.setItem(`forge:enrollment:${authUser.id}`, JSON.stringify(enrollment));
+    } catch {
+      /* private mode */
     }
 
+    trackEvent("vow_taken", { program });
+
+    router.push("/dashboard");
   };
-
-  const currentStep = stepTitles[step - 1];
-
-  // Quick-Start mode: 1-tap confirm screen for users who came through /start quiz.
-  // Falls through to the full 3-step wizard if user clicks "I'd rather pick myself"
-  // or if no quiz answers are present.
-  if (quickStart.active && quickStart.examined && userType) {
-    const greetingName = name.trim() || "there";
-    return (
-      <div className="mx-auto w-full max-w-2xl">
-        <div className="flex items-center gap-3 mb-6">
-          <AxisLogo size={24} />
-          <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{t("onb.setup")}</span>
-        </div>
-
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
-            {t("onb.quick.title", { name: greetingName })}
-          </h1>
-          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-            {t("onb.quick.sub")}
-          </p>
-        </div>
-
-        {saveError && (
-          <div className="mb-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {saveError}
-          </div>
-        )}
-
-        <div className="space-y-5">
-          <section
-            className="rounded-2xl border p-5"
-            style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-primary)" }}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <IconTarget size={16} className="text-axis-accent" />
-              <h2 className="text-xs font-mono uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
-                {t("onb.quick.tasks")}
-              </h2>
-            </div>
-            <ul className="space-y-2">
-              {quickTasks.map((m, i) => (
-                <li
-                  key={i}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                  style={{ backgroundColor: "var(--bg-tertiary)" }}
-                >
-                  <span
-                    className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-mono font-bold flex-shrink-0 ${
-                      i === 0 ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"
-                    }`}
-                  >
-                    {i + 1}
-                  </span>
-                  <input
-                    type="text"
-                    value={m.title}
-                    onChange={(e) => {
-                      const updated = [...missions];
-                      updated[i] = { ...updated[i], title: e.target.value };
-                      setMissions(updated);
-                    }}
-                    className="flex-1 bg-transparent text-sm outline-none"
-                    style={{ color: "var(--text-primary)" }}
-                    placeholder={t("onb.quick.task.edit")}
-                  />
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section
-            className="rounded-2xl border p-5"
-            style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border-primary)" }}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <IconHabits size={16} className="text-axis-accent" />
-              <h2 className="text-xs font-mono uppercase tracking-wider" style={{ color: "var(--text-tertiary)" }}>
-                {t("onb.quick.habits")}
-              </h2>
-            </div>
-            <ul className="space-y-2">
-              {quickHabits.map((habit) => (
-                <li
-                  key={habit.name}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                  style={{ backgroundColor: "var(--bg-tertiary)" }}
-                >
-                  <div className="w-7 h-7 rounded-md flex items-center justify-center bg-axis-accent/15 text-axis-accent flex-shrink-0">
-                    {habit.icon}
-                  </div>
-                  <span className="text-sm" style={{ color: "var(--text-primary)" }}>
-                    {habit.name}
-                  </span>
-                  <IconCheck size={14} className="text-axis-accent ml-auto" />
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-
-        <div className="mt-8 flex flex-col gap-3 pb-8">
-          <button
-            onClick={handleQuickConfirm}
-            disabled={loading || quickTasks.length === 0}
-            className="flex w-full items-center justify-center gap-2 bg-axis-accent text-axis-dark text-sm font-semibold px-6 py-4 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-axis-dark/30 border-t-axis-dark rounded-full animate-spin" />
-            ) : (
-              <>{t("onb.quick.cta.go")} <IconChevronRight size={16} /></>
-            )}
-          </button>
-          <button
-            onClick={() => setQuickStart({ active: false, examined: true })}
-            className="text-center text-sm transition-colors"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            {t("onb.quick.cta.edit")}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <div className="flex items-center gap-3 mb-2">
-        <AxisLogo size={24} />
-        <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{t("onb.setup")}</span>
-      </div>
-
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-            {t("onb.step", { n: String(step), total: String(totalSteps) })}
-          </span>
-          <button
-            onClick={() => {
-              if (confirm(t("onb.skip.confirm"))) {
-                void handleComplete({ skip: true });
-              }
-            }}
-            className="text-xs transition-colors"
-            style={{ color: "var(--text-tertiary)" }}
+    <div
+      className="min-h-screen px-5 py-10 sm:px-8 sm:py-16"
+      style={{ backgroundColor: "var(--forge-void)", color: "var(--forge-bone)" }}
+    >
+      <div className="mx-auto max-w-2xl">
+        <header className="mb-12 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-[9px]"
+              style={{
+                backgroundColor: "var(--forge-iron)",
+                border: "1px solid var(--forge-gold)",
+                color: "var(--forge-gold)",
+                fontFamily: SERIF,
+                fontSize: "18px",
+                fontWeight: 600,
+              }}
+            >
+              L
+            </span>
+            <span
+              className="tracking-wider"
+              style={{ fontFamily: SERIF, color: "var(--forge-bone)", fontWeight: 500 }}
+            >
+              lomoura
+            </span>
+          </div>
+          <span
+            className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em]"
+            style={{ color: "var(--forge-shadow)" }}
           >
-            {t("onb.skip")}
-          </button>
-        </div>
-        <div className="h-1 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-tertiary)" }}>
-          <div className="h-full bg-axis-accent rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
-        </div>
-        <div className="flex items-center justify-between mt-3">
-          {stepTitles.map((_, i) => (
+            Step {step + 1} of 3
+          </span>
+        </header>
+
+        <div className="mb-12 flex gap-1.5">
+          {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
-                i + 1 < step ? "bg-axis-accent text-axis-dark" :
-                i + 1 === step ? "bg-axis-accent/20 text-axis-accent border border-axis-accent/40" :
-                ""
-              }`}
-              style={
-                i + 1 > step
-                  ? { backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }
-                  : undefined
-              }
-            >
-              {i + 1 < step ? <IconCheck size={12} /> : i + 1}
-            </div>
+              className="h-[3px] flex-1 rounded-full transition-colors"
+              style={{
+                backgroundColor: i <= step ? "var(--forge-gold)" : "var(--forge-iron)",
+              }}
+            />
           ))}
         </div>
-      </div>
 
-      {saveError && (
-        <div className="mb-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {saveError}
-        </div>
-      )}
+        {step === 0 && (
+          <section>
+            <p
+              className="mb-5 font-mono text-[10px] font-semibold uppercase tracking-[0.32em]"
+              style={{ color: "var(--forge-gold)" }}
+            >
+              The vow
+            </p>
+            <h1
+              className="mb-6 text-balance text-4xl leading-tight tracking-tight sm:text-5xl"
+              style={{ fontFamily: SERIF, color: "var(--forge-bone)", fontWeight: 500 }}
+            >
+              Who will you be
+              <br />
+              <em style={{ color: "var(--forge-gold)" }}>in ninety days?</em>
+            </h1>
+            <p className="mb-10 text-sm leading-relaxed" style={{ color: "var(--forge-ash)" }}>
+              One sentence. Specific. This becomes the contract. The app will hold you to it.
+            </p>
 
-      <div className="flex items-start gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-axis-accent/10 border border-axis-accent/20 flex items-center justify-center">
-          {currentStep.icon}
-        </div>
-        <div>
-          <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{currentStep.title}</h2>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{currentStep.subtitle}</p>
-        </div>
-      </div>
+            <label className="mb-6 block">
+              <span
+                className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-[0.24em]"
+                style={{ color: "var(--forge-ash)" }}
+              >
+                Name
+              </span>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="What you would be called"
+                className="w-full rounded-[10px] px-4 py-3 text-base outline-none transition-colors"
+                style={{
+                  backgroundColor: "var(--forge-stone)",
+                  border: "1px solid var(--forge-edge)",
+                  color: "var(--forge-bone)",
+                }}
+              />
+            </label>
 
-      {step === 1 && (
-        <div className="space-y-6 animate-fade-in">
-          <div>
-            <label className="text-xs font-mono block mb-2" style={{ color: "var(--text-tertiary)" }}>{t("onb.step1.name")}</label>
-            <input
-              type="text"
-              placeholder={t("onb.step1.name.placeholder")}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full text-base rounded-xl px-5 py-4 outline-none focus:border-axis-accent/50 focus:ring-2 focus:ring-axis-accent/10 transition-all border"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                borderColor: "var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-              autoFocus
-            />
-          </div>
+            <label className="block">
+              <span
+                className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-[0.24em]"
+                style={{ color: "var(--forge-ash)" }}
+              >
+                The vow
+              </span>
+              <textarea
+                value={vow}
+                onChange={(e) => setVow(e.target.value)}
+                placeholder='e.g. "I will wake before the sun, train daily, read with intent, and own the silence."'
+                rows={4}
+                className="w-full resize-none rounded-[10px] px-4 py-3 text-base leading-relaxed outline-none transition-colors"
+                style={{
+                  backgroundColor: "var(--forge-stone)",
+                  border: "1px solid var(--forge-edge)",
+                  color: "var(--forge-bone)",
+                  fontFamily: SERIF,
+                }}
+              />
+              <span
+                className="mt-2 block text-xs"
+                style={{ color: vow.trim().length >= 10 ? "var(--forge-pulse)" : "var(--forge-shadow)" }}
+              >
+                {vow.trim().length >= 10
+                  ? "Specific enough."
+                  : `Be more specific. ${vow.trim().length}/10 characters minimum.`}
+              </span>
+            </label>
+          </section>
+        )}
 
-          <div>
-            <label className="text-xs font-mono block mb-2" style={{ color: "var(--text-tertiary)" }}>{t("onb.step1.type")}</label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {userTypes.map((type) => {
-                const isSelected = userType === type.value;
+        {step === 1 && (
+          <section>
+            <p
+              className="mb-5 font-mono text-[10px] font-semibold uppercase tracking-[0.32em]"
+              style={{ color: "var(--forge-gold)" }}
+            >
+              The path
+            </p>
+            <h1
+              className="mb-6 text-balance text-4xl leading-tight tracking-tight sm:text-5xl"
+              style={{ fontFamily: SERIF, color: "var(--forge-bone)", fontWeight: 500 }}
+            >
+              Choose your <em style={{ color: "var(--forge-gold)" }}>weight.</em>
+            </h1>
+            <p className="mb-10 text-sm leading-relaxed" style={{ color: "var(--forge-ash)" }}>
+              Three protocols. Same duration. Different emphasis. You cannot change this for 90 days.
+            </p>
+
+            <div className="space-y-3">
+              {PROGRAMS.map((p) => {
+                const selected = program === p.id;
                 return (
                   <button
-                    key={type.value}
-                    onClick={() => setUserType(type.value)}
-                    className={`p-4 rounded-xl text-left transition-all border ${
-                      isSelected ? "bg-axis-accent/10 border-axis-accent/30" : ""
-                    }`}
-                    style={
-                      isSelected
-                        ? undefined
-                        : { backgroundColor: "var(--bg-tertiary)", borderColor: "var(--border-primary)" }
-                    }
+                    key={p.id}
+                    onClick={() => setProgram(p.id)}
+                    className="w-full rounded-[12px] p-6 text-left transition-all"
+                    style={{
+                      backgroundColor: selected ? "var(--forge-iron)" : "var(--forge-stone)",
+                      border: `1px solid ${selected ? "var(--forge-gold)" : "var(--forge-edge)"}`,
+                    }}
                   >
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{type.label}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{type.desc}</p>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span
+                        className="text-2xl tracking-tight"
+                        style={{
+                          fontFamily: SERIF,
+                          color: selected ? "var(--forge-gold)" : "var(--forge-bone)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {p.title}
+                      </span>
+                      <span
+                        className="font-mono text-[10px] tracking-[0.24em]"
+                        style={{ color: "var(--forge-shadow)" }}
+                      >
+                        {p.weight}
+                      </span>
+                    </div>
+                    <div
+                      className="mb-2 text-xs font-medium"
+                      style={{ color: selected ? "var(--forge-gold)" : "var(--forge-ash)" }}
+                    >
+                      {p.subtitle}
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--forge-ash)" }}>
+                      {p.detail}
+                    </p>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </section>
+        )}
 
-          <div>
-            <label className="text-xs font-mono block mb-2 flex items-center gap-1.5" style={{ color: "var(--text-tertiary)" }}>
-              <IconGlobe size={12} /> {t("onb.step1.tz")}
-            </label>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="w-full text-sm rounded-xl px-4 py-3 outline-none border"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                borderColor: "var(--border-primary)",
-                color: "var(--text-secondary)",
-              }}
+        {step === 2 && (
+          <section>
+            <p
+              className="mb-5 font-mono text-[10px] font-semibold uppercase tracking-[0.32em]"
+              style={{ color: "var(--forge-gold)" }}
             >
-              {timezones.map((tz) => (
-                <option key={tz.value} value={tz.value}>{tz.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
+              The three pillars
+            </p>
+            <h1
+              className="mb-6 text-balance text-4xl leading-tight tracking-tight sm:text-5xl"
+              style={{ fontFamily: SERIF, color: "var(--forge-bone)", fontWeight: 500 }}
+            >
+              Define each <em style={{ color: "var(--forge-gold)" }}>by name.</em>
+            </h1>
+            <p className="mb-10 text-sm leading-relaxed" style={{ color: "var(--forge-ash)" }}>
+              In one phrase, write what each pillar means for you. These become the daily targets.
+            </p>
 
-      {step === 2 && (
-        <div className="space-y-3 animate-fade-in">
-          <p
-            className="text-xs rounded-xl px-4 py-3 border"
-            style={{
-              color: "var(--text-secondary)",
-              backgroundColor: "var(--bg-tertiary)",
-              borderColor: "var(--border-primary)",
-            }}
-          >
-            {t("onb.step2.hint")}
-          </p>
-          {missions.map((mission, i) => {
-            const placeholder =
-              i === 0 ? t("onb.step2.placeholder.1")
-              : i === 1 ? t("onb.step2.placeholder.2")
-              : i === 2 ? t("onb.step2.placeholder.3")
-              : t("onb.step2.placeholder.n", { n: String(i + 1) });
-            return (
-              <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    i === 0 ? "bg-red-500/10 text-red-500"
-                    : i < 3 ? "bg-amber-500/10 text-amber-500"
-                    : ""
-                  }`}
-                  style={
-                    i >= 3
-                      ? { backgroundColor: "var(--bg-tertiary)", color: "var(--text-tertiary)" }
-                      : undefined
-                  }
+            {[
+              { label: "Body", value: bodyIntent, set: setBodyIntent, placeholder: "e.g. lift, run, sleep eight, eat clean" },
+              { label: "Mind", value: mindIntent, set: setMindIntent, placeholder: "e.g. silent ten, journal nightly, breath when angry" },
+              { label: "Intellect", value: intellectIntent, set: setIntellectIntent, placeholder: "e.g. read thirty pages, write to clarify, learn one thing" },
+            ].map((field) => (
+              <label key={field.label} className="mb-5 block">
+                <span
+                  className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-[0.24em]"
+                  style={{ color: "var(--forge-gold)" }}
                 >
-                  <span className="text-xs font-mono font-bold">{i + 1}</span>
-                </div>
+                  {field.label}
+                </span>
                 <input
                   type="text"
-                  placeholder={placeholder}
-                  value={mission.title}
-                  onChange={(e) => {
-                    const updated = [...missions];
-                    updated[i].title = e.target.value;
-                    setMissions(updated);
-                  }}
-                  className="w-full flex-1 text-sm rounded-xl px-4 py-3 outline-none focus:border-axis-accent/50 transition-all border"
+                  value={field.value}
+                  onChange={(e) => field.set(e.target.value)}
+                  placeholder={field.placeholder}
+                  className="w-full rounded-[10px] px-4 py-3 text-base outline-none transition-colors"
                   style={{
-                    backgroundColor: "var(--bg-tertiary)",
-                    borderColor: "var(--border-primary)",
-                    color: "var(--text-primary)",
+                    backgroundColor: "var(--forge-stone)",
+                    border: "1px solid var(--forge-edge)",
+                    color: "var(--forge-bone)",
                   }}
-                  autoFocus={i === 0}
                 />
-                <select
-                  value={mission.priority}
-                  onChange={(e) => {
-                    const updated = [...missions];
-                    updated[i].priority = e.target.value as "high" | "med" | "low";
-                    setMissions(updated);
-                  }}
-                  className="w-full text-xs font-mono rounded-lg px-2 py-2 outline-none sm:w-auto border"
-                  style={{
-                    backgroundColor: "var(--bg-tertiary)",
-                    borderColor: "var(--border-primary)",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  <option value="high">{t("onb.priority.high")}</option>
-                  <option value="med">{t("onb.priority.med")}</option>
-                  <option value="low">{t("onb.priority.low")}</option>
-                </select>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              </label>
+            ))}
 
-      {step === 3 && (
-        <div className="space-y-4 animate-fade-in">
-          <p
-            className="text-xs rounded-xl px-4 py-3 border"
-            style={{
-              color: "var(--text-secondary)",
-              backgroundColor: "var(--bg-tertiary)",
-              borderColor: "var(--border-primary)",
-            }}
-          >
-            {t("onb.step3.hint")}
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {(userType ? habitsBySegment[userType] : habitsBySegment.professional).map((habit) => {
-              const isSelected = selectedHabits.includes(habit.name);
-              const total = selectedHabits.length + customHabits.length;
-              const atCap = !isSelected && total >= habitMax;
-              return (
-                <button
-                  key={habit.name}
-                  disabled={atCap}
-                  onClick={() => {
-                    setSelectedHabits((prev) =>
-                      isSelected ? prev.filter((h) => h !== habit.name) :
-                      prev.length + customHabits.length < habitMax ? [...prev, habit.name] : prev
-                    );
-                  }}
-                  className={`flex min-w-0 items-center gap-3 p-4 rounded-xl transition-all border ${
-                    isSelected ? "bg-axis-accent/10 border-axis-accent/30"
-                    : atCap ? "opacity-40 cursor-not-allowed"
-                    : ""
-                  }`}
-                  style={
-                    isSelected
-                      ? undefined
-                      : { backgroundColor: "var(--bg-tertiary)", borderColor: "var(--border-primary)" }
-                  }
-                >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      isSelected ? "bg-axis-accent/20" : ""
-                    }`}
-                    style={isSelected ? undefined : { backgroundColor: "var(--bg-secondary)" }}
-                  >
-                    <div style={{ color: isSelected ? "var(--accent)" : "var(--text-tertiary)" }}>
-                      {habit.icon}
-                    </div>
-                  </div>
-                  <span className="min-w-0 flex-1 text-left text-sm" style={{ color: "var(--text-primary)" }}>{habit.name}</span>
-                  {isSelected && <IconCheck size={14} className="text-axis-accent ml-auto" />}
-                </button>
-              );
-            })}
-          </div>
-
-          {customHabits.map((h, i) => (
-            <div key={i} className="flex items-center gap-2 bg-axis-accent/5 border border-axis-accent/15 rounded-xl px-4 py-3">
-              <IconCheck size={14} className="text-axis-accent" />
-              <span className="text-sm flex-1" style={{ color: "var(--text-primary)" }}>{h}</span>
-              <button
-                onClick={() => setCustomHabits(customHabits.filter((_, j) => j !== i))}
-                className="text-xs"
-                style={{ color: "var(--text-tertiary)" }}
-              >x</button>
-            </div>
-          ))}
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              type="text"
-              placeholder={t("onb.step3.custom.placeholder")}
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && customInput.trim() && selectedHabits.length + customHabits.length < habitMax) {
-                  setCustomHabits([...customHabits, customInput.trim()]);
-                  setCustomInput("");
-                }
-              }}
-              className="min-w-0 flex-1 text-sm rounded-xl px-4 py-3 outline-none border"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                borderColor: "var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-            />
-            <button
-              onClick={() => {
-                if (customInput.trim() && selectedHabits.length + customHabits.length < habitMax) {
-                  setCustomHabits([...customHabits, customInput.trim()]);
-                  setCustomInput("");
-                }
-              }}
-              disabled={selectedHabits.length + customHabits.length >= habitMax}
-              className="w-full text-sm px-4 py-3 rounded-xl transition-all sm:w-auto disabled:opacity-40 disabled:cursor-not-allowed border"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                borderColor: "var(--border-primary)",
-                color: "var(--text-secondary)",
-              }}
+            <div
+              className="mt-8 rounded-[14px] p-6"
+              style={{ backgroundColor: "var(--forge-stone)", border: "1px solid var(--forge-edge)" }}
             >
-              {t("onb.step3.add")}
+              <p
+                className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.24em]"
+                style={{ color: "var(--forge-shadow)" }}
+              >
+                Your vow
+              </p>
+              <p
+                className="italic leading-relaxed"
+                style={{ fontFamily: SERIF, color: "var(--forge-bone)", fontWeight: 500 }}
+              >
+                &ldquo;{vow || "—"}&rdquo;
+              </p>
+              <p className="mt-3 text-xs" style={{ color: "var(--forge-ash)" }}>
+                — {name || "you"}, day one of ninety
+              </p>
+            </div>
+          </section>
+        )}
+
+        <div className="mt-12 flex items-center justify-between gap-3">
+          {step > 0 ? (
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              className="rounded-[10px] px-5 py-3 text-sm font-medium transition-colors"
+              style={{ border: "1px solid var(--forge-edge)", color: "var(--forge-ash)" }}
+            >
+              Back
             </button>
-          </div>
-          <p className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-            {t("onb.step3.count", { n: String(selectedHabits.length + customHabits.length), max: String(habitMax) })}
-          </p>
-          {plan === "free" && (
-            <p className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-              {t("onb.step3.limit.free")}
-            </p>
+          ) : (
+            <span />
+          )}
+
+          {step < 2 ? (
+            <button
+              onClick={() => canAdvance() && setStep((s) => s + 1)}
+              disabled={!canAdvance()}
+              className="rounded-[10px] px-7 py-3 text-sm font-semibold transition-opacity disabled:opacity-30"
+              style={{ backgroundColor: "var(--forge-gold)", color: "var(--forge-void)" }}
+            >
+              Continue
+            </button>
+          ) : (
+            <button
+              onClick={takeTheVow}
+              disabled={!canAdvance() || loading}
+              className="rounded-[10px] px-7 py-3 text-sm font-semibold transition-opacity disabled:opacity-30"
+              style={{ backgroundColor: "var(--forge-gold)", color: "var(--forge-void)" }}
+            >
+              {loading ? "Beginning…" : "Take the vow"}
+            </button>
           )}
         </div>
-      )}
-
-      <div className="flex items-center justify-between gap-3 mt-10 pb-8">
-        {step > 1 ? (
-          <button
-            onClick={() => setStep(step - 1)}
-            className="flex items-center gap-1.5 text-sm transition-colors"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            <IconChevronLeft size={16} /> {t("onb.back")}
-          </button>
-        ) : (
-          <div />
-        )}
-
-        {step < totalSteps ? (
-          <button
-            onClick={() => canProceed() && setStep(step + 1)}
-            disabled={!canProceed()}
-            className="flex min-w-[132px] items-center justify-center gap-1.5 bg-axis-accent text-axis-dark text-sm font-semibold px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed sm:px-8"
-          >
-            {t("onb.continue")} <IconChevronRight size={16} />
-          </button>
-        ) : (
-          <button
-            onClick={() => void handleComplete()}
-            disabled={loading}
-            className="flex min-w-[156px] items-center justify-center gap-2 bg-axis-accent text-axis-dark text-sm font-semibold px-6 py-3 rounded-xl hover:bg-axis-accent/90 transition-all active:scale-[0.98] disabled:opacity-50 sm:px-8"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-axis-dark/30 border-t-axis-dark rounded-full animate-spin" />
-            ) : (
-              <>{t("onb.launch")} <IconChevronRight size={16} /></>
-            )}
-          </button>
-        )}
       </div>
     </div>
   );

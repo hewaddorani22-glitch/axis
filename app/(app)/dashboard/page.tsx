@@ -2,637 +2,463 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useUser } from "@/hooks/useUser";
 import { useMissions } from "@/hooks/useMissions";
 import { useHabits } from "@/hooks/useHabits";
-import { useRevenue } from "@/hooks/useRevenue";
 import { useStreak } from "@/hooks/useStreak";
-import { useLocale } from "@/lib/i18n/provider";
-import { useAxisScore } from "@/hooks/useAxisScore";
-import {
-  IconCheck, IconHabits, IconTarget, IconWarning, IconStreak,
-} from "@/components/icons";
-import { EmptyState } from "@/components/app/empty-state";
-import { AxisScoreWidget } from "@/components/app/axis-score-widget";
-import { WelcomeCeremony } from "@/components/app/welcome-ceremony";
-import { StreakShare } from "@/components/app/streak-share";
-import { openUpgradePrompt } from "@/lib/upgrade-prompt";
+import { useForgeEnrollment, computeDayIndex } from "@/hooks/useForgeEnrollment";
 
-type DayPart = "morning" | "afternoon" | "evening";
+const SERIF = "'Cormorant Garamond', serif";
 
-function getDayPart(): DayPart {
-  const h = new Date().getHours();
-  if (h < 12) return "morning";
-  if (h < 17) return "afternoon";
-  return "evening";
+interface PillarMeta {
+  key: "body" | "mind" | "intellect";
+  label: string;
+  index: number; // 0-100
+  weakest: boolean;
+  intent: string;
 }
 
-function Ring({
-  value, max, size, stroke, color, children,
-}: {
-  value: number; max: number; size: number; stroke: number; color: string;
-  children?: React.ReactNode;
-}) {
-  const [animated, setAnimated] = useState(false);
+function Bar({ value, color }: { value: number; color: string }) {
+  return (
+    <div
+      className="h-[6px] w-full overflow-hidden rounded-full"
+      style={{ backgroundColor: "var(--forge-iron)" }}
+    >
+      <div
+        className="h-full rounded-full transition-all"
+        style={{
+          width: `${Math.min(100, Math.max(0, value))}%`,
+          backgroundColor: color,
+          transition: "width 1.2s cubic-bezier(0.16,1,0.3,1)",
+        }}
+      />
+    </div>
+  );
+}
+
+export default function ForgePage() {
+  const { user, loading: userLoading } = useUser();
+  const { enrollment, loading: enrollLoading } = useForgeEnrollment();
+  const {
+    missions,
+    completedCount,
+    total: missionsTotal,
+    toggleMission,
+    loading: missionsLoading,
+  } = useMissions();
+  const {
+    habits,
+    toggleHabit,
+    completedToday: habitsCompleted,
+    total: habitsTotal,
+    loading: habitsLoading,
+  } = useHabits();
+  const { streak } = useStreak();
+
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 300);
+    const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
-  const r = (size - stroke * 2) / 2;
-  const c = 2 * Math.PI * r;
-  const pct = max > 0 ? value / max : 0;
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-          stroke="var(--bg-tertiary)" strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-          stroke={color} strokeWidth={stroke} strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={animated ? c * (1 - pct) : c}
-          style={{ transition: "stroke-dashoffset 1.4s cubic-bezier(0.16,1,0.3,1)" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        {children}
-      </div>
-    </div>
-  );
-}
 
-function Pill({ text, color, dim, icon }: { text: string; color: string; dim: string; icon?: React.ReactNode }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.12em]"
-      style={{ backgroundColor: dim, color }}
-    >
-      {icon}
-      {text}
-    </span>
-  );
-}
+  const isLoading = userLoading || enrollLoading || missionsLoading || habitsLoading;
 
-function useScoreCounter(target: number) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    if (!target) { setN(0); return; }
-    let start: number | null = null;
-    let raf = 0;
-    const dur = 1400;
-    const ease = (t: number) => 1 - Math.pow(1 - t, 4);
-    const tick = (ts: number) => {
-      if (start === null) start = ts;
-      const p = Math.min((ts - start) / dur, 1);
-      setN(Math.round(ease(p) * target));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    const to = setTimeout(() => { raf = requestAnimationFrame(tick); }, 300);
-    return () => { clearTimeout(to); cancelAnimationFrame(raf); };
-  }, [target]);
-  return n;
-}
+  const day = enrollment ? computeDayIndex(enrollment.started_at) : 1;
+  const totalDays = 90;
+  const dayLabel = `Day ${day} of ${totalDays}`;
 
-export default function DashboardPage() {
-  const { user, loading: userLoading } = useUser();
-  const { missions, completedCount, total: missionsTotal, toggleMission, loading: missionsLoading } = useMissions();
-  const { habits, toggleHabit, completedToday: habitsCompleted, total: habitsTotal, loading: habitsLoading } = useHabits();
-  const { mtdTotal, loading: revenueLoading } = useRevenue();
-  const { streak, loading: streakLoading } = useStreak();
-  const axisScore = useAxisScore();
-  const { t } = useLocale();
+  // Pillar scoring — for the visible Forge shell we derive provisional scores
+  // from existing data: completion ratio on missions/habits, plus streak.
+  // (Real pillar scoring comes with the Programs/Enrollments migration.)
+  const missionRatio = missionsTotal > 0 ? completedCount / missionsTotal : 0;
+  const habitRatio = habitsTotal > 0 ? habitsCompleted / habitsTotal : 0;
+  const streakLift = Math.min(1, streak / 30);
 
-  const [dayPart, setDayPart] = useState<DayPart>("morning");
-  useEffect(() => { setDayPart(getDayPart()); }, []);
+  const bodyScore = Math.round(40 + habitRatio * 40 + streakLift * 20);
+  const mindScore = Math.round(30 + habitRatio * 30 + missionRatio * 25 + streakLift * 15);
+  const intellectScore = Math.round(30 + missionRatio * 50 + streakLift * 20);
 
-  const isLoading =
-    userLoading || missionsLoading || habitsLoading || revenueLoading || streakLoading || axisScore.loading;
+  const pillarScores = [
+    { key: "body" as const, value: bodyScore },
+    { key: "mind" as const, value: mindScore },
+    { key: "intellect" as const, value: intellectScore },
+  ];
+  const minScore = Math.min(...pillarScores.map((p) => p.value));
 
-  const userType = user?.user_type;
-  const showRevenue =
-    userType === "entrepreneur" || userType === "creator" || mtdTotal > 0;
-
-  const tasksLeft = Math.max(missionsTotal - completedCount, 0);
-  const habitsLeft = Math.max(habitsTotal - habitsCompleted, 0);
-  const allDone =
-    missionsTotal > 0 && habitsTotal > 0 &&
-    completedCount === missionsTotal && habitsCompleted === habitsTotal;
-
-  const hasStarted =
-    missionsTotal > 0 || habitsTotal > 0 ||
-    completedCount > 0 || habitsCompleted > 0 || streak > 0;
-
-  const currentHour = new Date().getHours();
-  const isLate = currentHour >= 20;
-  const streakAtRisk = streak >= 3 && habitsCompleted === 0 && isLate;
-
-  // Soft semantic colors (from globals.css tokens)
-  const SOFT_GREEN = "var(--soft-green)";
-  const SOFT_GREEN_DIM = "var(--soft-green-dim)";
-  const WARM = "var(--soft-warm)";
-  const WARM_DIM = "var(--soft-warm-dim)";
-  const CORAL = "var(--soft-coral)";
-  const LAV = "var(--soft-lav)";
-  const PLUM = "var(--soft-plum)";
-  const ACCENT = "var(--accent)";
-
-  const score = axisScore.score ?? 0;
-  const scoreAnimated = useScoreCounter(score);
-  const scoreColor =
-    score >= 70 ? SOFT_GREEN : score >= 40 ? WARM : score >= 1 ? CORAL : "var(--text-tertiary)";
-
-  const displayName = user?.name || "there";
-
-  const greetings: Record<DayPart, { h: string; sub: string }> = {
-    morning: {
-      h: "Good morning",
-      sub: "Your day is waiting. What do you want to ship today?",
+  const pillars: PillarMeta[] = [
+    {
+      key: "body",
+      label: "Body",
+      index: bodyScore,
+      weakest: bodyScore === minScore,
+      intent: enrollment?.pillars.body || "—",
     },
-    afternoon: {
-      h: completedCount > 0 ? "Keep going" : "Let's pick it up",
-      sub: missionsTotal > 0
-        ? `${completedCount} of ${missionsTotal} tasks done. You're on track.`
-        : "Add a task to get the day moving.",
+    {
+      key: "mind",
+      label: "Mind",
+      index: mindScore,
+      weakest: mindScore === minScore,
+      intent: enrollment?.pillars.mind || "—",
     },
-    evening: {
-      h: allDone ? "Strong day" : "Almost there",
-      sub: allDone
-        ? "Everything done. Plan tomorrow and keep the flow."
-        : tasksLeft > 0
-          ? `${tasksLeft} task${tasksLeft === 1 ? "" : "s"} left. Last chance today.`
-          : "Wrap up your habits to lock in the day.",
+    {
+      key: "intellect",
+      label: "Intellect",
+      index: intellectScore,
+      weakest: intellectScore === minScore,
+      intent: enrollment?.pillars.intellect || "—",
     },
-  };
-  const g = greetings[dayPart];
+  ];
 
-  const Skeleton = ({ className = "" }: { className?: string }) => (
-    <div className={`axis-skeleton ${className}`} />
-  );
+  const forgeScore = Math.round((bodyScore + mindScore + intellectScore) / 3);
 
-  const priColors: Record<string, string> = {
-    high: CORAL,
-    med: WARM,
-    low: "var(--text-tertiary)",
+  // Today's stack: top 1 task and up to 2 habits, formatted as the daily prescription.
+  const todayMission = missions.find((m) => m.status !== "done") || missions[0];
+  const todayHabits = habits.slice(0, 2);
+
+  const dispatchPillarLabel = (idx: number) => {
+    if (idx === 0) return "Body";
+    if (idx === 1) return "Mind";
+    return "Intellect";
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5">
-      <WelcomeCeremony name={user?.name || ""} />
-
-      {/* Greeting */}
-      <div className="flex items-start gap-4 sm:items-center">
-        <div className="min-w-0">
-          {isLoading ? (
-            <><Skeleton className="h-7 w-56 mb-2" /><Skeleton className="h-4 w-32" /></>
-          ) : (
-            <>
-              <p className="text-[11px] font-mono mb-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.04em" }}>
-                {formatDate(new Date())}
-              </p>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                {g.h}, <span style={{ color: ACCENT }}>{displayName}</span>
-              </h2>
-              <p className="text-sm mt-1.5" style={{ color: "var(--text-secondary)" }}>{g.sub}</p>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Streak at risk */}
-      {!isLoading && streakAtRisk && (
-        <div
-          className="rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-          style={{ backgroundColor: "var(--soft-coral-dim)", border: "1px solid var(--soft-coral)" }}
+    <div className="mx-auto w-full max-w-3xl pb-10">
+      {/* Vow header */}
+      <header
+        className="mb-10"
+        style={{
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? "translateY(0)" : "translateY(8px)",
+          transition: "all 0.5s cubic-bezier(0.16,1,0.3,1)",
+        }}
+      >
+        <p
+          className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.32em]"
+          style={{ color: "var(--forge-gold)" }}
         >
-          <div className="flex items-start gap-4">
-            <IconWarning size={26} style={{ color: CORAL }} />
-            <div>
-              <p className="font-bold mb-1" style={{ color: CORAL }}>
-                {t("dash.streak.risk.title", { streak: String(streak) })}
-              </p>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                {t("dash.streak.risk.desc")}
-              </p>
-            </div>
-          </div>
-          <div className="flex w-full flex-col gap-2 md:w-auto">
-            <Link href="/systems" className="w-full text-xs font-semibold px-4 py-2 rounded-lg text-center md:w-auto"
-              style={{ backgroundColor: "var(--text-primary)", color: "var(--text-inverted)" }}>
-              Complete Habit
-            </Link>
-            {user?.plan !== "pro" && (
-              <button
-                onClick={() => openUpgradePrompt({ source: "streak_risk" })}
-                className="w-full text-xs font-semibold px-4 py-2 rounded-lg text-center hover:scale-105 transition-all md:w-auto"
-                style={{ backgroundColor: ACCENT, color: "var(--accent-text)" }}
-              >
-                Unlock Freeze (Pro)
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Hero card — adapts to time of day */}
-      {!isLoading && dayPart === "morning" && hasStarted && (
-        <div className="rounded-2xl px-7 py-6 flex items-center justify-between gap-6"
-          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}>
-          <div className="flex items-center gap-5 min-w-0">
-            <Ring value={Math.min(streak, 30)} max={30} size={60} stroke={4} color={WARM}>
-              <span className="text-xl font-extrabold" style={{ color: WARM }}>{streak}</span>
-            </Ring>
-            <div className="min-w-0">
-              <div className="text-base font-semibold">
-                {streak === 0 ? "Start your streak today" : `${streak}-day streak`}
-              </div>
-              <div className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                {streak === 0
-                  ? "Finish 1 task + 1 habit to begin."
-                  : "Finish at least 1 task + 1 habit to keep it."}
-              </div>
-            </div>
-          </div>
-          {streak > 0 && (
-            <div className="shrink-0">
-              <Pill text={streak >= 30 ? "Legendary" : streak >= 14 ? "16 → 30" : "Day by day"}
-                color={WARM} dim={WARM_DIM} icon={<IconStreak size={12} />} />
-            </div>
-          )}
-        </div>
-      )}
-
-      {!isLoading && dayPart === "afternoon" && missionsTotal > 0 && (
-        <div className="rounded-2xl px-7 py-6 flex items-center gap-7"
-          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}>
-          <Ring value={completedCount} max={missionsTotal} size={76} stroke={5}
-            color={completedCount === missionsTotal ? SOFT_GREEN : WARM}>
-            <span className="text-2xl font-extrabold">{completedCount}</span>
-            <span className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>/{missionsTotal}</span>
-          </Ring>
-          <div className="flex-1 min-w-0">
-            <div className="text-base font-semibold mb-1">
-              {tasksLeft === 0 ? "All tasks done" : `${tasksLeft} task${tasksLeft === 1 ? "" : "s"} left`}
-            </div>
-            <div className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              {streak > 0 ? `Your ${streak}-day streak is safe — finish strong.` : "Knock out the rest and lock in the day."}
-            </div>
-          </div>
-          {hasStarted && score > 0 && (
-            <div className="rounded-xl px-5 py-3 text-center hidden sm:block"
-              style={{ backgroundColor: "var(--bg-tertiary)" }}>
-              <span className="text-[10px] font-mono" style={{ color: "var(--text-tertiary)" }}>SCORE</span>
-              <div className="text-2xl font-extrabold" style={{ color: scoreColor }}>{scoreAnimated}</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!isLoading && dayPart === "evening" && hasStarted && (
-        <div className="rounded-2xl px-8 py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
-          style={{
-            backgroundColor: "var(--bg-secondary)",
-            border: `1px solid ${allDone ? "var(--soft-green)" : "var(--border-primary)"}`,
-          }}>
-          <div className="max-w-md">
-            <Pill
-              text={allDone ? "Day complete" : "Open"}
-              color={allDone ? SOFT_GREEN : WARM}
-              dim={allDone ? SOFT_GREEN_DIM : WARM_DIM}
-            />
-            <h3 className="text-xl font-bold tracking-tight mt-3 mb-2">
-              {allDone ? "Perfect day. Streak locked." : tasksLeft > 0 ? `${tasksLeft} task${tasksLeft === 1 ? "" : "s"} left.` : "Wrap up your habits."}
-            </h3>
-            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              {allDone
-                ? `Day ${streak} is in the books. Plan tomorrow.`
-                : "Every task you finish lifts your score."}
+          {dayLabel}
+        </p>
+        {enrollment ? (
+          <>
+            <p
+              className="text-2xl leading-snug sm:text-3xl"
+              style={{
+                fontFamily: SERIF,
+                color: "var(--forge-bone)",
+                fontStyle: "italic",
+                fontWeight: 500,
+              }}
+            >
+              &ldquo;{enrollment.vow}&rdquo;
             </p>
-            <div className="flex gap-2 mt-5">
-              <Link href="/review" className="text-sm font-semibold px-5 py-2.5 rounded-xl"
-                style={{ backgroundColor: "var(--text-primary)", color: "var(--text-inverted)" }}>
-                Plan tomorrow
-              </Link>
-              <Link href="/review" className="text-sm font-semibold px-5 py-2.5 rounded-xl"
-                style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}>
-                Weekly Review
-              </Link>
-            </div>
+            <p className="mt-3 text-xs" style={{ color: "var(--forge-shadow)" }}>
+              — {user?.name || "you"}, your vow on day one
+            </p>
+          </>
+        ) : (
+          <>
+            <h1
+              className="text-3xl tracking-tight"
+              style={{ fontFamily: SERIF, color: "var(--forge-bone)", fontWeight: 500 }}
+            >
+              The forge awaits.
+            </h1>
+            <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--forge-ash)" }}>
+              Take your vow to begin the ninety days.
+            </p>
+            <Link
+              href="/onboarding"
+              className="mt-5 inline-block rounded-[10px] px-6 py-3 text-sm font-semibold"
+              style={{ backgroundColor: "var(--forge-gold)", color: "var(--forge-void)" }}
+            >
+              Take the vow
+            </Link>
+          </>
+        )}
+      </header>
+
+      {/* Pillar bars */}
+      <section
+        className="mb-10 rounded-[14px] p-6 sm:p-7"
+        style={{
+          backgroundColor: "var(--forge-stone)",
+          border: "1px solid var(--forge-edge)",
+          opacity: mounted ? 1 : 0,
+          transition: "opacity 0.6s ease 0.1s",
+        }}
+      >
+        <div className="mb-5 flex items-center justify-between">
+          <p
+            className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em]"
+            style={{ color: "var(--forge-shadow)" }}
+          >
+            The Pillars
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: "var(--forge-shadow)" }}>
+              Forge score
+            </span>
+            <span
+              className="text-2xl font-bold tracking-tight"
+              style={{ color: "var(--forge-gold)", fontFamily: SERIF }}
+            >
+              {forgeScore}
+            </span>
           </div>
-          <Ring value={score} max={100} size={120} stroke={6} color={scoreColor}>
-            <span className="text-4xl font-extrabold">{scoreAnimated}</span>
-            <span className="text-[9px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)", letterSpacing: "0.08em" }}>SCORE</span>
-          </Ring>
         </div>
-      )}
 
-      {/* Empty-state hero */}
-      {!isLoading && !hasStarted && (
-        <div className="rounded-2xl p-7"
-          style={{ backgroundColor: "var(--bg-accent-soft)", border: "1px solid var(--border-primary)" }}>
-          <Pill text={t("dash.kick.s1.eyebrow")} color={ACCENT} dim="var(--bg-accent-soft)" />
-          <h3 className="text-xl font-bold tracking-tight mt-3 mb-1">{t("dash.kick.s1.title")}</h3>
-          <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>{t("dash.kick.s1.desc")}</p>
-          <div className="flex gap-2">
-            <Link href="/missions?quickAdd=1" className="text-sm font-semibold px-5 py-2.5 rounded-xl"
-              style={{ backgroundColor: ACCENT, color: "var(--accent-text)" }}>
-              {t("dash.kick.s1.primary")}
-            </Link>
-            <Link href="/systems?quickAdd=1" className="text-sm font-semibold px-5 py-2.5 rounded-xl border"
-              style={{ borderColor: "var(--border-primary)", color: "var(--text-primary)" }}>
-              {t("dash.kick.s1.secondary")}
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Metric trio */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          showRevenue
-            ? {
-                label: "MTD Revenue",
-                value: formatCurrency(mtdTotal),
-                num: mtdTotal, total: 0,
-                color: mtdTotal > 0 ? SOFT_GREEN : "var(--text-tertiary)",
-                sub: mtdTotal > 0 ? "This month" : "No entries yet",
-                pill: mtdTotal > 0 ? "Live" : "—",
-                progress: 0,
-              }
-            : {
-                label: "Habits",
-                value: `${habitsCompleted}`,
-                num: habitsCompleted, total: habitsTotal,
-                color: habitsTotal && habitsCompleted === habitsTotal
-                  ? SOFT_GREEN
-                  : habitsCompleted > 0 ? LAV : "var(--text-tertiary)",
-                sub: habitsTotal === 0 ? "Add habits" : habitsCompleted === habitsTotal
-                  ? "All done" : `${habitsLeft} open`,
-                pill: `${habitsCompleted}/${habitsTotal || 0}`,
-                progress: habitsTotal > 0 ? habitsCompleted / habitsTotal : 0,
-              },
-          {
-            label: "Tasks",
-            value: `${completedCount}`,
-            num: completedCount, total: missionsTotal,
-            color: missionsTotal && completedCount === missionsTotal
-              ? SOFT_GREEN : completedCount > 0 ? SOFT_GREEN : "var(--text-tertiary)",
-            sub: missionsTotal === 0 ? "Add tasks" : completedCount === missionsTotal
-              ? "Complete" : "In progress",
-            pill: `${completedCount}/${missionsTotal || 0}`,
-            progress: missionsTotal > 0 ? completedCount / missionsTotal : 0,
-          },
-          {
-            label: t("preview.streak"),
-            value: `${streak}`,
-            num: streak, total: 30,
-            color: WARM,
-            sub: streak >= 30 ? "Legendary" : `${30 - streak} to milestone`,
-            pill: `${streak}d`,
-            isStreak: true,
-            progress: Math.min(streak / 30, 1),
-            extra: <StreakShare streak={streak} name={displayName} score={axisScore.score} />,
-          },
-        ].map((m, i) => (
-          <div key={i} className="axis-stat-card-dark">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-mono font-semibold uppercase tracking-wider"
-                style={{ color: "var(--text-secondary)" }}>{m.label}</span>
-              <span
-                className="text-[9px] font-mono font-bold px-2 py-0.5 rounded"
-                style={{
-                  color: m.color,
-                  backgroundColor: m.color.startsWith("var(") ? "var(--bg-tertiary)" : `${m.color}1f`,
-                }}
-              >
-                {m.pill}
-              </span>
-            </div>
-            {isLoading ? <Skeleton className="h-9 w-24 mb-2" /> : (
-              <div className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-none flex items-baseline gap-1">
-                {m.value}
-                {!("isStreak" in m && m.isStreak) && m.total > 0 && (
-                  <span className="text-base font-medium" style={{ color: "var(--text-tertiary)" }}>
-                    /{m.total}
-                  </span>
-                )}
-                {"isStreak" in m && m.isStreak && streak > 0 && (
-                  <span className="text-base ml-1">🔥</span>
-                )}
-              </div>
-            )}
-            <div className="flex items-center justify-between gap-2 mt-2">
-              <p className="text-xs font-medium" style={{ color: m.color }}>{m.sub}</p>
-              {!isLoading && "extra" in m && m.extra}
-            </div>
-            <div className="mt-3 h-1 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-tertiary)" }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.round((m.progress || 0) * 100)}%` }}
-                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.3 + i * 0.08 }}
-                className="h-full rounded-full"
-                style={{ backgroundColor: m.color }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tasks + Habits */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-4">
-        {/* Tasks */}
-        <div className="axis-card">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-semibold flex items-center gap-2">
-                <IconTarget size={16} style={{ color: ACCENT }} /> Today&apos;s Tasks
-              </h3>
-              <span className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-                {missionsTotal === 0
-                  ? "Plan your day"
-                  : `${completedCount}/${missionsTotal} done`}
-              </span>
-            </div>
-            <Link href="/missions" className="text-xs font-mono hover:underline" style={{ color: ACCENT }}>
-              View all →
-            </Link>
-          </div>
-          {missionsLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-11 w-full" />)}</div>
-          ) : missions.length === 0 ? (
-            <EmptyState
-              icon={<IconTarget size={20} style={{ color: ACCENT }} />}
-              title={t("dash.empty.missions.title")}
-              description={t("dash.empty.missions.desc")}
-              actions={[{ label: t("dash.empty.missions.cta"), href: "/missions?quickAdd=1" }]}
-              compact
-            />
-          ) : (
-            <div className="space-y-1.5">
-              {missions.slice(0, 5).map((m) => (
-                <div key={m.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors cursor-pointer"
-                  style={{ backgroundColor: "var(--bg-tertiary)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-hover)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}>
-                  <button
-                    onClick={() => toggleMission(m.id)}
-                    className={cn(
-                      "w-5 h-5 rounded-md flex items-center justify-center transition-all relative",
-                    )}
-                    style={{
-                      backgroundColor: m.status === "done" ? SOFT_GREEN : "transparent",
-                      border: `2px solid ${m.status === "done" ? SOFT_GREEN : "var(--border-secondary)"}`,
-                    }}
-                  >
-                    <AnimatePresence>
-                      {m.status === "done" && (
-                        <motion.div
-                          initial={{ scale: 0, rotate: -45 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          className="absolute inset-0 flex items-center justify-center"
-                        >
-                          <IconCheck size={12} style={{ color: "var(--text-inverted)" }} />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </button>
+        <div className="space-y-5">
+          {pillars.map((p) => (
+            <div key={p.key}>
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <div className="flex items-center gap-2">
                   <span
-                    className={cn("min-w-0 flex-1 truncate text-sm", m.status === "done" && "line-through")}
-                    style={{ color: m.status === "done" ? "var(--text-tertiary)" : "var(--text-primary)" }}
+                    className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    style={{ color: p.weakest ? "var(--forge-gold)" : "var(--forge-ash)" }}
                   >
-                    {m.title}
+                    {p.label}
                   </span>
-                  <span
-                    className="shrink-0 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded"
-                    style={{
-                      color: priColors[m.priority] || "var(--text-tertiary)",
-                      backgroundColor: m.priority === "high"
-                        ? "var(--soft-coral-dim)"
-                        : m.priority === "med"
-                          ? "var(--soft-warm-dim)"
-                          : "var(--bg-secondary)",
-                    }}
-                  >
-                    {m.priority}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Habits */}
-        <div className="axis-card">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-semibold flex items-center gap-2">
-                <IconHabits size={16} style={{ color: ACCENT }} /> Habits
-              </h3>
-              <span className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-                {habitsTotal === 0
-                  ? "Start your routines"
-                  : `${habitsCompleted}/${habitsTotal} today`}
-              </span>
-            </div>
-            <Link href="/systems" className="text-xs font-mono hover:underline" style={{ color: ACCENT }}>
-              View all →
-            </Link>
-          </div>
-
-          {habitsLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
-          ) : habits.length === 0 ? (
-            <EmptyState
-              icon={<IconHabits size={20} style={{ color: ACCENT }} />}
-              title={t("dash.empty.habits.title")}
-              description={t("dash.empty.habits.desc")}
-              actions={[{ label: t("dash.empty.habits.cta"), href: "/systems?quickAdd=1" }]}
-              compact
-            />
-          ) : (
-            <div className="space-y-2">
-              {habits.map((h, i) => {
-                const habitColor = i % 3 === 0 ? LAV : i % 3 === 1 ? SOFT_GREEN : PLUM;
-                const done = h.todayDone;
-                return (
-                  <div key={h.id}
-                    className="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors cursor-pointer"
-                    style={{
-                      backgroundColor: "var(--bg-tertiary)",
-                      border: done ? `1px solid ${habitColor}` : "1px solid transparent",
-                    }}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: done ? `${habitColor}` : "var(--bg-secondary)" }}>
-                      <div className="w-5 h-5 rounded-md flex items-center justify-center"
-                        style={{ backgroundColor: done ? "var(--text-inverted)" : "transparent" }}>
-                        {done && <IconCheck size={12} style={{ color: habitColor }} />}
-                      </div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold"
-                        style={{ color: done ? "var(--text-tertiary)" : "var(--text-primary)" }}>
-                        {h.name}
-                      </p>
-                      <p className="text-[11px] font-mono" style={{ color: "var(--text-tertiary)" }}>
-                        {h.streak} day streak
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => toggleHabit(h.id, h.todayDone || h.todaySkipped ? "undo" : "done")}
-                      className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded"
-                      style={{
-                        color: done ? SOFT_GREEN : WARM,
-                        backgroundColor: done ? SOFT_GREEN_DIM : WARM_DIM,
-                      }}
+                  {p.weakest && (
+                    <span
+                      className="font-mono text-[9px] tracking-[0.18em]"
+                      style={{ color: "var(--forge-gold)" }}
                     >
-                      {done ? "Done" : "Open"}
-                    </button>
-                  </div>
-                );
-              })}
+                      · weak
+                    </span>
+                  )}
+                </div>
+                <span className="font-mono text-sm font-bold" style={{ color: "var(--forge-bone)" }}>
+                  {p.index}
+                </span>
+              </div>
+              <Bar value={p.index} color={p.weakest ? "var(--forge-gold)" : "var(--forge-bone)"} />
+              <p
+                className="mt-2 truncate text-[12px]"
+                style={{ color: "var(--forge-shadow)" }}
+                title={p.intent}
+              >
+                {p.intent}
+              </p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Today's stack */}
+      <section
+        style={{
+          opacity: mounted ? 1 : 0,
+          transition: "opacity 0.6s ease 0.2s",
+        }}
+      >
+        <div className="mb-5 flex items-baseline justify-between">
+          <h2
+            className="text-2xl tracking-tight"
+            style={{ fontFamily: SERIF, color: "var(--forge-bone)", fontWeight: 500 }}
+          >
+            Today&rsquo;s stack
+          </h2>
+          <span
+            className="font-mono text-[10px] uppercase tracking-[0.24em]"
+            style={{ color: "var(--forge-shadow)" }}
+          >
+            Three acts
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          {/* Slot 1: Body — derived from first habit */}
+          {todayHabits[0] ? (
+            <StackRow
+              pillarLabel="Body"
+              title={todayHabits[0].name}
+              detail={enrollment?.pillars.body || `${todayHabits[0].streak} day streak`}
+              done={todayHabits[0].todayDone}
+              onToggle={() =>
+                toggleHabit(
+                  todayHabits[0].id,
+                  todayHabits[0].todayDone || todayHabits[0].todaySkipped ? "undo" : "done"
+                )
+              }
+            />
+          ) : (
+            <EmptySlot pillarLabel="Body" href="/systems?quickAdd=1" />
           )}
 
-          {/* Week strip */}
-          {habits.length > 0 && (
-            <div className="mt-5 pt-4" style={{ borderTop: "1px solid var(--border-primary)" }}>
-              <div className="flex gap-1.5">
-                {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day, i) => {
-                  const todayIdx = (new Date().getDay() + 6) % 7;
-                  const isToday = i === todayIdx;
-                  // Use first habit's weekLog if available
-                  const log = habits[0]?.weekLog?.[i];
-                  const intensity = log === "done" ? 0.75 : log === "skipped" ? 0.3 : 0;
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                      <div
-                        className="w-full h-6 rounded-md"
-                        style={{
-                          backgroundColor: intensity > 0
-                            ? `rgba(110, 231, 183, ${intensity})`
-                            : "var(--bg-tertiary)",
-                          border: isToday ? `1px solid ${SOFT_GREEN}` : "none",
-                        }}
-                      />
-                      <span className="text-[9px] font-mono font-semibold"
-                        style={{ color: isToday ? SOFT_GREEN : "var(--text-tertiary)" }}>
-                        {day}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          {/* Slot 2: Mind — second habit, or task */}
+          {todayHabits[1] ? (
+            <StackRow
+              pillarLabel="Mind"
+              title={todayHabits[1].name}
+              detail={enrollment?.pillars.mind || `${todayHabits[1].streak} day streak`}
+              done={todayHabits[1].todayDone}
+              onToggle={() =>
+                toggleHabit(
+                  todayHabits[1].id,
+                  todayHabits[1].todayDone || todayHabits[1].todaySkipped ? "undo" : "done"
+                )
+              }
+            />
+          ) : (
+            <EmptySlot pillarLabel="Mind" href="/systems?quickAdd=1" />
+          )}
+
+          {/* Slot 3: Intellect — pulled from missions */}
+          {todayMission ? (
+            <StackRow
+              pillarLabel="Intellect"
+              title={todayMission.title}
+              detail={enrollment?.pillars.intellect || "Today's task"}
+              done={todayMission.status === "done"}
+              onToggle={() => toggleMission(todayMission.id)}
+            />
+          ) : (
+            <EmptySlot pillarLabel="Intellect" href="/missions?quickAdd=1" />
           )}
         </div>
-      </div>
 
-      {hasStarted && (
-        <AxisScoreWidget {...axisScore} loading={axisScore.loading} />
+        {/* Manage drawer */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs" style={{ color: "var(--forge-shadow)" }}>
+            {isLoading
+              ? "Loading the day…"
+              : `${completedCount + habitsCompleted} of ${missionsTotal + habitsTotal} acts held today`}
+          </p>
+          <div className="flex gap-2">
+            <Link
+              href="/missions"
+              className="rounded-[8px] px-3 py-1.5 text-[11px] font-medium transition-colors"
+              style={{ border: "1px solid var(--forge-edge)", color: "var(--forge-ash)" }}
+            >
+              Manage Tasks
+            </Link>
+            <Link
+              href="/systems"
+              className="rounded-[8px] px-3 py-1.5 text-[11px] font-medium transition-colors"
+              style={{ border: "1px solid var(--forge-edge)", color: "var(--forge-ash)" }}
+            >
+              Manage Habits
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Streak whisper */}
+      {streak > 0 && (
+        <div
+          className="mt-10 rounded-[12px] px-5 py-4 text-sm"
+          style={{
+            backgroundColor: "var(--forge-stone)",
+            border: "1px solid var(--forge-edge)",
+            color: "var(--forge-ash)",
+          }}
+        >
+          <span className="font-mono text-[10px] uppercase tracking-[0.24em]" style={{ color: "var(--forge-gold)" }}>
+            Held
+          </span>{" "}
+          <span style={{ color: "var(--forge-bone)" }}>{streak} days in a row.</span>{" "}
+          <span>{streak < 7 ? "Most stop before the seventh." : streak < 30 ? "The path continues." : "Few reach this. Fewer still pass it."}</span>
+        </div>
       )}
     </div>
+  );
+}
+
+function StackRow({
+  pillarLabel,
+  title,
+  detail,
+  done,
+  onToggle,
+}: {
+  pillarLabel: string;
+  title: string;
+  detail: string;
+  done: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex w-full items-center gap-4 rounded-[12px] px-5 py-4 text-left transition-colors"
+      style={{
+        backgroundColor: "var(--forge-stone)",
+        border: "1px solid var(--forge-edge)",
+        opacity: done ? 0.55 : 1,
+      }}
+      onMouseEnter={(e) => {
+        if (!done) e.currentTarget.style.backgroundColor = "var(--forge-iron)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = "var(--forge-stone)";
+      }}
+    >
+      <span
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] border-2 transition-all"
+        style={{
+          backgroundColor: done ? "var(--forge-gold)" : "transparent",
+          borderColor: done ? "var(--forge-gold)" : "var(--forge-edge)",
+        }}
+      >
+        {done && (
+          <span className="text-xs font-extrabold" style={{ color: "var(--forge-void)" }}>
+            ✓
+          </span>
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span
+          className="block font-mono text-[10px] font-semibold uppercase tracking-[0.24em]"
+          style={{ color: "var(--forge-gold)" }}
+        >
+          {pillarLabel}
+        </span>
+        <span
+          className="block truncate text-base font-medium"
+          style={{
+            color: done ? "var(--forge-shadow)" : "var(--forge-bone)",
+            textDecoration: done ? "line-through" : "none",
+          }}
+        >
+          {title}
+        </span>
+        <span className="block truncate text-[11px]" style={{ color: "var(--forge-shadow)" }}>
+          {detail}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function EmptySlot({ pillarLabel, href }: { pillarLabel: string; href: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-4 rounded-[12px] px-5 py-4 text-left transition-colors"
+      style={{
+        backgroundColor: "transparent",
+        border: "1px dashed var(--forge-edge)",
+        color: "var(--forge-shadow)",
+      }}
+    >
+      <span
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] border-2"
+        style={{ borderColor: "var(--forge-edge)" }}
+      />
+      <span className="min-w-0 flex-1">
+        <span
+          className="block font-mono text-[10px] font-semibold uppercase tracking-[0.24em]"
+          style={{ color: "var(--forge-shadow)" }}
+        >
+          {pillarLabel}
+        </span>
+        <span className="block text-sm font-medium" style={{ color: "var(--forge-ash)" }}>
+          Set the act for this pillar
+        </span>
+      </span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: "var(--forge-gold)" }}>
+        Add →
+      </span>
+    </Link>
   );
 }

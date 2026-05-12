@@ -8,7 +8,9 @@ import {
   IconRevenue,
   IconReview,
   IconSettings,
+  IconStreak,
   IconTarget,
+  IconUser,
 } from "@/components/icons";
 
 export type NavigationItem = {
@@ -20,25 +22,43 @@ export type NavigationItem = {
 };
 
 export const pageTitles: Record<string, string> = {
-  "/dashboard": "Today",
+  "/dashboard": "Forge",
+  "/path": "The Path",
+  "/self": "Self",
   "/missions": "Tasks",
   "/revenue": "Revenue Tracker",
   "/systems": "Habits",
   "/goals": "Themes",
   "/network": "Network Grid",
   "/partners": "Partners",
-  "/review": "Weekly Review",
+  "/review": "Review",
   "/prove": "Public Profile",
-  "/settings": "Settings",
-  "/onboarding": "Setup",
+  "/settings": "Counsel",
+  "/onboarding": "The Vow",
 };
 
 const dashboardNavItem: NavigationItem = {
   href: "/dashboard",
-  label: "Today",
+  label: "Forge",
   icon: IconCommand,
-  shortLabel: "Today",
-  shortcutKey: "d",
+  shortLabel: "Forge",
+  shortcutKey: "f",
+};
+
+const pathNavItem: NavigationItem = {
+  href: "/path",
+  label: "Path",
+  icon: IconStreak,
+  shortLabel: "Path",
+  shortcutKey: "p",
+};
+
+const selfNavItem: NavigationItem = {
+  href: "/self",
+  label: "Self",
+  icon: IconUser,
+  shortLabel: "Self",
+  shortcutKey: "u",
 };
 
 const tasksNavItem: NavigationItem = {
@@ -125,7 +145,9 @@ export function getPrimaryNavItems({
   userType?: string | null;
 } = {}): NavigationItem[] {
   if (FORGE_MODE) {
-    return [dashboardNavItem, tasksNavItem, habitsNavItem, reviewNavItem];
+    // The 4-tab architecture per LOMOURA-FORGE.md §6: Forge · Path · Self · Counsel.
+    // Tasks / Habits / Review remain reachable for power users but live off the rail.
+    return [dashboardNavItem, pathNavItem, selfNavItem];
   }
 
   const showRevenue = userType === "entrepreneur" || userType === "creator" || pathname === "/revenue";
