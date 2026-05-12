@@ -236,17 +236,17 @@ export default function DashboardPage() {
 
       {/* Hero card — adapts to time of day */}
       {!isLoading && dayPart === "morning" && hasStarted && (
-        <div className="rounded-2xl px-7 py-6 flex items-center justify-between gap-6"
+        <div className="rounded-2xl px-4 sm:px-7 py-5 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6"
           style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}>
-          <div className="flex items-center gap-5 min-w-0">
-            <Ring value={Math.min(streak, 30)} max={30} size={60} stroke={4} color={WARM}>
-              <span className="text-xl font-extrabold" style={{ color: WARM }}>{streak}</span>
+          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+            <Ring value={Math.min(streak, 30)} max={30} size={52} stroke={4} color={WARM}>
+              <span className="text-lg sm:text-xl font-extrabold" style={{ color: WARM }}>{streak}</span>
             </Ring>
             <div className="min-w-0">
-              <div className="text-base font-semibold">
+              <div className="text-sm sm:text-base font-semibold">
                 {streak === 0 ? "Start your streak today" : `${streak}-day streak`}
               </div>
-              <div className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
+              <div className="text-xs sm:text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
                 {streak === 0
                   ? "Finish 1 task + 1 habit to begin."
                   : "Finish at least 1 task + 1 habit to keep it."}
@@ -263,18 +263,18 @@ export default function DashboardPage() {
       )}
 
       {!isLoading && dayPart === "afternoon" && missionsTotal > 0 && (
-        <div className="rounded-2xl px-7 py-6 flex items-center gap-7"
+        <div className="rounded-2xl px-4 sm:px-7 py-5 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-7"
           style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}>
-          <Ring value={completedCount} max={missionsTotal} size={76} stroke={5}
+          <Ring value={completedCount} max={missionsTotal} size={64} stroke={5}
             color={completedCount === missionsTotal ? SOFT_GREEN : WARM}>
-            <span className="text-2xl font-extrabold">{completedCount}</span>
+            <span className="text-xl sm:text-2xl font-extrabold">{completedCount}</span>
             <span className="text-[9px] font-mono" style={{ color: "var(--text-tertiary)" }}>/{missionsTotal}</span>
           </Ring>
           <div className="flex-1 min-w-0">
-            <div className="text-base font-semibold mb-1">
+            <div className="text-sm sm:text-base font-semibold mb-1">
               {tasksLeft === 0 ? "All tasks done" : `${tasksLeft} task${tasksLeft === 1 ? "" : "s"} left`}
             </div>
-            <div className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            <div className="text-xs sm:text-sm" style={{ color: "var(--text-secondary)" }}>
               {streak > 0 ? `Your ${streak}-day streak is safe — finish strong.` : "Knock out the rest and lock in the day."}
             </div>
           </div>
@@ -289,7 +289,7 @@ export default function DashboardPage() {
       )}
 
       {!isLoading && dayPart === "evening" && hasStarted && (
-        <div className="rounded-2xl px-8 py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+        <div className="rounded-2xl px-5 sm:px-8 py-6 sm:py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6"
           style={{
             backgroundColor: "var(--bg-secondary)",
             border: `1px solid ${allDone ? "var(--soft-green)" : "var(--border-primary)"}`,
@@ -300,7 +300,7 @@ export default function DashboardPage() {
               color={allDone ? SOFT_GREEN : WARM}
               dim={allDone ? SOFT_GREEN_DIM : WARM_DIM}
             />
-            <h3 className="text-xl font-bold tracking-tight mt-3 mb-2">
+            <h3 className="text-lg sm:text-xl font-bold tracking-tight mt-3 mb-2">
               {allDone ? "Perfect day. Streak locked." : tasksLeft > 0 ? `${tasksLeft} task${tasksLeft === 1 ? "" : "s"} left.` : "Wrap up your habits."}
             </h3>
             <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
@@ -308,7 +308,7 @@ export default function DashboardPage() {
                 ? `Day ${streak} is in the books. Plan tomorrow.`
                 : "Every task you finish lifts your score."}
             </p>
-            <div className="flex gap-2 mt-5">
+            <div className="flex flex-wrap gap-2 mt-5">
               <Link href="/review" className="text-sm font-semibold px-5 py-2.5 rounded-xl"
                 style={{ backgroundColor: "var(--text-primary)", color: "var(--text-inverted)" }}>
                 Plan tomorrow
@@ -319,8 +319,8 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
-          <Ring value={score} max={100} size={120} stroke={6} color={scoreColor}>
-            <span className="text-4xl font-extrabold">{scoreAnimated}</span>
+          <Ring value={score} max={100} size={100} stroke={6} color={scoreColor}>
+            <span className="text-3xl sm:text-4xl font-extrabold">{scoreAnimated}</span>
             <span className="text-[9px] font-mono mt-0.5" style={{ color: "var(--text-tertiary)", letterSpacing: "0.08em" }}>SCORE</span>
           </Ring>
         </div>
@@ -409,7 +409,7 @@ export default function DashboardPage() {
               </span>
             </div>
             {isLoading ? <Skeleton className="h-9 w-24 mb-2" /> : (
-              <div className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-none flex items-baseline gap-1">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-none flex items-baseline gap-1">
                 {m.value}
                 {!("isStreak" in m && m.isStreak) && m.total > 0 && (
                   <span className="text-base font-medium" style={{ color: "var(--text-tertiary)" }}>
@@ -471,7 +471,7 @@ export default function DashboardPage() {
             <div className="space-y-1.5">
               {missions.slice(0, 5).map((m) => (
                 <div key={m.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors cursor-pointer"
+                  className="flex items-center gap-3 px-3 py-3 sm:py-2.5 rounded-xl transition-colors cursor-pointer"
                   style={{ backgroundColor: "var(--bg-tertiary)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-hover)")}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}>

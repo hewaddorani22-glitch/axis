@@ -31,9 +31,12 @@ export function Sidebar() {
     pathname,
     hasPublicProfile: Boolean(user?.prove_it_username),
   });
+  // Mobile: show only the first 4 primary nav items in the bottom bar
+  // Everything else goes into the "More" sheet (remaining primary + all secondary)
   const mobileMainItems = primaryNavItems.slice(0, 4);
   const mobileMoreItems = primaryNavItems.slice(4);
-  const isMoreActive = [...mobileMoreItems, ...secondaryNavItems].some((item) => pathname === item.href);
+  const allMoreItems = [...mobileMoreItems, ...secondaryNavItems];
+  const isMoreActive = allMoreItems.some((item) => pathname === item.href);
 
   // Desktop narrow rail: primary + settings only. Other secondary items live in mobile More.
   const railItems = [...primaryNavItems, ...secondaryNavItems.filter((i) => i.href === "/settings" || i.href === "/goals")];
@@ -149,15 +152,17 @@ export function Sidebar() {
             onClick={() => setMobileMenuOpen(false)}
           />
           <div
-            className="absolute inset-x-3 rounded-2xl p-3 shadow-2xl"
+            className="absolute inset-x-3 rounded-2xl p-4 shadow-2xl"
             style={{
-              bottom: "calc(72px + env(safe-area-inset-bottom))",
+              bottom: "calc(76px + env(safe-area-inset-bottom))",
               backgroundColor: "var(--bg-secondary)",
               border: "1px solid var(--border-primary)",
+              maxHeight: "60vh",
+              overflowY: "auto",
             }}
           >
-            <div className="grid grid-cols-2 gap-2">
-              {[...mobileMoreItems, ...secondaryNavItems].map((item) => {
+            <div className="grid grid-cols-2 gap-1.5">
+              {allMoreItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
                 return (
@@ -165,13 +170,13 @@ export function Sidebar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors"
+                    className="flex items-center gap-3 rounded-xl px-3.5 py-3.5 text-[13px] font-medium transition-colors"
                     style={{
                       backgroundColor: isActive ? "var(--bg-tertiary)" : "transparent",
                       color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
                     }}
                   >
-                    <Icon size={18} className="shrink-0" />
+                    <Icon size={20} className="shrink-0" />
                     <span className="truncate">{item.label}</span>
                   </Link>
                 );
@@ -179,10 +184,10 @@ export function Sidebar() {
               <a
                 href={SUPPORT_MAILTO}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors"
+                className="flex items-center gap-3 rounded-xl px-3.5 py-3.5 text-[13px] font-medium transition-colors"
                 style={{ color: "var(--text-secondary)" }}
               >
-                <IconMail size={18} className="shrink-0" />
+                <IconMail size={20} className="shrink-0" />
                 <span className="truncate">{t("sidebar.support")}</span>
               </a>
               {user && (
@@ -191,10 +196,10 @@ export function Sidebar() {
                     setMobileMenuOpen(false);
                     signOut();
                   }}
-                  className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition-colors"
+                  className="flex items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-[13px] font-medium transition-colors"
                   style={{ color: "var(--text-secondary)" }}
                 >
-                  <IconLogout size={18} className="shrink-0" />
+                  <IconLogout size={20} className="shrink-0" />
                   <span className="truncate">{t("sidebar.signout")}</span>
                 </button>
               )}
@@ -205,14 +210,15 @@ export function Sidebar() {
 
       {/* Mobile bottom tabs */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-2 pb-[env(safe-area-inset-bottom)]"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-1 pb-[env(safe-area-inset-bottom)]"
         style={{
-          backgroundColor: "rgba(13,13,17,0.82)",
-          backdropFilter: "blur(14px)",
+          backgroundColor: "rgba(13,13,17,0.88)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
           borderTop: "1px solid var(--border-primary)",
         }}
       >
-        <div className="flex items-center justify-around h-16">
+        <div className="flex items-center justify-around h-[60px]">
           {mobileMainItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -221,13 +227,13 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors"
+                className="relative flex flex-col items-center justify-center gap-0.5 rounded-xl min-w-[56px] py-2 transition-colors"
                 style={{
                   color: isActive ? "var(--accent)" : "var(--text-tertiary)",
                 }}
               >
                 <div className="relative">
-                  <Icon size={18} />
+                  <Icon size={20} />
                   {showStreakBadge && (
                     <span
                       className="absolute -top-1 -right-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-mono font-bold leading-none"
@@ -240,22 +246,34 @@ export function Sidebar() {
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-medium">{item.shortLabel}</span>
+                <span className="text-[10px] font-medium leading-tight">{item.shortLabel}</span>
+                {isActive && (
+                  <span
+                    className="absolute -bottom-0.5 h-[3px] w-5 rounded-full"
+                    style={{ backgroundColor: "var(--accent)" }}
+                  />
+                )}
               </Link>
             );
           })}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className="relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors"
+            className="relative flex flex-col items-center justify-center gap-0.5 rounded-xl min-w-[56px] py-2 transition-colors"
             style={{
               color: isMoreActive || mobileMenuOpen ? "var(--accent)" : "var(--text-tertiary)",
             }}
             aria-expanded={mobileMenuOpen}
             aria-label="Open more navigation"
           >
-            <IconSettings size={18} />
-            <span className="text-[10px] font-medium">{t("sidebar.more")}</span>
+            <IconSettings size={20} />
+            <span className="text-[10px] font-medium leading-tight">{t("sidebar.more")}</span>
+            {(isMoreActive || mobileMenuOpen) && (
+              <span
+                className="absolute -bottom-0.5 h-[3px] w-5 rounded-full"
+                style={{ backgroundColor: "var(--accent)" }}
+              />
+            )}
           </button>
         </div>
       </nav>

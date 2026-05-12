@@ -104,7 +104,7 @@ function SortableMissionItem({
         border: "1px solid var(--border-primary)",
         opacity: mission.status === "done" ? 0.5 : 1,
       }}
-      className={`group flex items-center gap-3.5 rounded-xl px-4 py-3.5 transition-colors cursor-pointer ${
+      className={`group flex items-center gap-2.5 sm:gap-3.5 rounded-xl px-3 sm:px-4 py-3 sm:py-3.5 transition-colors cursor-pointer ${
         isDragging ? "shadow-2xl scale-[1.01]" : ""
       }`}
       onClick={(e) => {
@@ -121,7 +121,7 @@ function SortableMissionItem({
       {/* Drag handle (subtle, on hover) */}
       <button
         data-no-toggle
-        className="flex shrink-0 cursor-grab flex-col items-center justify-center gap-[3px] opacity-0 transition-opacity group-hover:opacity-30 active:cursor-grabbing"
+        className="hidden sm:flex shrink-0 cursor-grab flex-col items-center justify-center gap-[3px] opacity-0 transition-opacity group-hover:opacity-30 active:cursor-grabbing"
         style={{ color: "var(--text-tertiary)" }}
         {...attributes}
         {...listeners}
@@ -164,7 +164,7 @@ function SortableMissionItem({
       </span>
 
       {/* Meta */}
-      <div className="flex shrink-0 items-center gap-2" data-no-toggle>
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2" data-no-toggle>
         {isFocusable && mission.estimated_time && mission.status !== "done" ? (
           <Link
             href={`/missions/focus/${mission.id}`}
@@ -178,7 +178,7 @@ function SortableMissionItem({
         ) : null}
         {mission.estimated_time && (
           <span
-            className="flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-mono"
+            className="hidden sm:flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-mono"
             style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
           >
             <IconTimer size={10} style={{ color: "var(--soft-warm)" }} />
@@ -186,7 +186,7 @@ function SortableMissionItem({
           </span>
         )}
         <span
-          className="rounded-md px-2.5 py-1 text-[9px] font-mono font-bold uppercase tracking-wider"
+          className="rounded-md px-2 sm:px-2.5 py-1 text-[9px] font-mono font-bold uppercase tracking-wider"
           style={{ color: pri.color, backgroundColor: pri.bg }}
         >
           {priLabel[mission.priority]}
@@ -363,12 +363,13 @@ export default function MissionsPage() {
 
       {/* Add */}
       <div
-        className="mb-4 rounded-[13px] p-3 transition-colors"
+        className="mb-4 rounded-[13px] p-3 sm:p-4 transition-colors"
         style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-primary)" }}
       >
+        {/* Input row — full width on mobile */}
         <div className="flex items-center gap-3">
           <div
-            className="h-5 w-5 shrink-0 rounded-md border-2"
+            className="hidden sm:block h-5 w-5 shrink-0 rounded-md border-2"
             style={{ borderColor: "var(--border-secondary)" }}
           />
           <input
@@ -378,12 +379,15 @@ export default function MissionsPage() {
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm sm:text-sm font-medium outline-none py-2"
             style={{ color: "var(--text-primary)" }}
           />
+        </div>
+        {/* Controls row — wraps on mobile */}
+        <div className="mt-2 flex flex-wrap items-center gap-2 sm:pl-8">
           <button
             onClick={() => setShowAdvanced((s) => !s)}
-            className="rounded-md px-2.5 py-1.5 text-[10px] font-mono transition-colors"
+            className="rounded-md px-2.5 py-2 sm:py-1.5 text-[11px] sm:text-[10px] font-mono transition-colors"
             style={{
               backgroundColor: showAdvanced ? "var(--bg-tertiary)" : "transparent",
               color: showAdvanced ? "var(--text-primary)" : "var(--text-tertiary)",
@@ -394,7 +398,7 @@ export default function MissionsPage() {
           <select
             value={newPriority}
             onChange={(e) => setNewPriority(e.target.value as Priority)}
-            className="rounded-md px-2 py-1.5 text-[11px] font-mono outline-none"
+            className="rounded-md px-2.5 py-2 sm:py-1.5 text-[11px] font-mono outline-none"
             style={{
               backgroundColor: "var(--bg-tertiary)",
               border: "1px solid var(--border-primary)",
@@ -408,7 +412,7 @@ export default function MissionsPage() {
           <button
             onClick={handleAdd}
             disabled={!newTitle.trim() || isFreeAtMissionLimit}
-            className="rounded-[7px] px-3.5 py-1.5 text-[11px] font-extrabold transition-opacity disabled:opacity-40"
+            className="ml-auto rounded-[7px] px-4 py-2 sm:py-1.5 text-[11px] font-extrabold transition-opacity disabled:opacity-40"
             style={{
               backgroundColor: "var(--accent)",
               color: "var(--accent-text)",
@@ -419,13 +423,13 @@ export default function MissionsPage() {
         </div>
 
         {showAdvanced && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 pl-8">
+          <div className="mt-3 flex flex-wrap items-center gap-2 sm:pl-8">
             <input
               type="number"
               placeholder={copy.minutes}
               value={newTime}
               onChange={(e) => setNewTime(e.target.value)}
-              className="w-40 rounded-md px-3 py-2 text-xs outline-none"
+              className="w-full sm:w-40 rounded-md px-3 py-2.5 sm:py-2 text-xs outline-none"
               style={{
                 backgroundColor: "var(--bg-tertiary)",
                 border: "1px solid var(--border-primary)",
@@ -438,7 +442,7 @@ export default function MissionsPage() {
             <select
               value={newEnergy}
               onChange={(e) => setNewEnergy(e.target.value as "high" | "med" | "low")}
-              className="rounded-md px-3 py-2 text-xs font-mono outline-none"
+              className="rounded-md px-3 py-2.5 sm:py-2 text-xs font-mono outline-none"
               style={{
                 backgroundColor: "var(--bg-tertiary)",
                 border: "1px solid var(--border-primary)",
@@ -452,7 +456,7 @@ export default function MissionsPage() {
             <select
               value={newObjectiveId}
               onChange={(e) => setNewObjectiveId(e.target.value)}
-              className="min-w-[170px] rounded-md px-3 py-2 text-xs font-mono outline-none"
+              className="w-full sm:w-auto sm:min-w-[170px] rounded-md px-3 py-2.5 sm:py-2 text-xs font-mono outline-none"
               style={{
                 backgroundColor: "var(--bg-tertiary)",
                 border: "1px solid var(--border-primary)",

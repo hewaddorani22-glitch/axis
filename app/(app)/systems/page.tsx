@@ -134,7 +134,7 @@ function HabitCard({
       <div className="mb-4 flex items-center gap-3.5">
         {/* Drag handle (subtle) */}
         <button
-          className="flex shrink-0 cursor-grab flex-col items-center justify-center gap-[3px] opacity-0 transition-opacity hover:opacity-50 active:cursor-grabbing"
+          className="hidden sm:flex shrink-0 cursor-grab flex-col items-center justify-center gap-[3px] opacity-0 transition-opacity hover:opacity-50 active:cursor-grabbing"
           style={{ color: "var(--text-tertiary)" }}
           {...attributes}
           {...listeners}
@@ -478,53 +478,57 @@ export default function SystemsPage() {
         className="mt-5 rounded-[13px] p-3"
         style={{ backgroundColor: "var(--bg-secondary)", border: "1px dashed var(--border-secondary)" }}
       >
-        <div className="flex items-center gap-2.5">
-          <input
-            type="text"
-            placeholder={copy.icon}
-            value={newIcon}
-            onChange={(e) => setNewIcon(e.target.value)}
-            className="h-10 w-10 shrink-0 rounded-[10px] text-center text-lg outline-none"
-            style={{ backgroundColor: "var(--bg-tertiary)" }}
-            maxLength={2}
-          />
-          <input
-            ref={habitInputRef}
-            type="text"
-            placeholder={copy.addHabit}
-            value={newHabit}
-            onChange={(e) => setNewHabit(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none"
-            style={{ color: "var(--text-primary)" }}
-          />
-          <button
-            onClick={() => setShowQuantified((s) => !s)}
-            className="rounded-md px-2.5 py-1.5 text-[10px] font-mono transition-colors"
-            style={{
-              backgroundColor: showQuantified ? "var(--bg-tertiary)" : "transparent",
-              color: showQuantified ? "var(--text-primary)" : "var(--text-tertiary)",
-            }}
-          >
-            {showQuantified ? copy.quantified : copy.target}
-          </button>
-          <button
-            onClick={handleAdd}
-            disabled={!newHabit.trim() || isFreeAtHabitLimit}
-            className="rounded-[7px] px-3.5 py-1.5 text-[11px] font-extrabold transition-opacity disabled:opacity-40"
-            style={{ backgroundColor: "var(--accent)", color: "var(--accent-text)" }}
-          >
-            {copy.add}
-          </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <input
+              type="text"
+              placeholder={copy.icon}
+              value={newIcon}
+              onChange={(e) => setNewIcon(e.target.value)}
+              className="h-10 w-10 shrink-0 rounded-[10px] text-center text-lg outline-none"
+              style={{ backgroundColor: "var(--bg-tertiary)" }}
+              maxLength={2}
+            />
+            <input
+              ref={habitInputRef}
+              type="text"
+              placeholder={copy.addHabit}
+              value={newHabit}
+              onChange={(e) => setNewHabit(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              className="min-w-0 flex-1 bg-transparent text-sm font-medium outline-none py-2"
+              style={{ color: "var(--text-primary)" }}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowQuantified((s) => !s)}
+              className="rounded-md px-2.5 py-2 sm:py-1.5 text-[11px] sm:text-[10px] font-mono transition-colors"
+              style={{
+                backgroundColor: showQuantified ? "var(--bg-tertiary)" : "transparent",
+                color: showQuantified ? "var(--text-primary)" : "var(--text-tertiary)",
+              }}
+            >
+              {showQuantified ? copy.quantified : copy.target}
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={!newHabit.trim() || isFreeAtHabitLimit}
+              className="ml-auto rounded-[7px] px-4 py-2 sm:py-1.5 text-[11px] font-extrabold transition-opacity disabled:opacity-40"
+              style={{ backgroundColor: "var(--accent)", color: "var(--accent-text)" }}
+            >
+              {copy.add}
+            </button>
+          </div>
         </div>
         {showQuantified && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 pl-12">
+          <div className="mt-3 flex flex-wrap items-center gap-2 sm:pl-12">
             <input
               type="number"
               placeholder={copy.targetPlaceholder}
               value={newTarget}
               onChange={(e) => setNewTarget(e.target.value)}
-              className="w-32 rounded-md px-3 py-2 text-xs outline-none"
+              className="w-full sm:w-32 rounded-md px-3 py-2.5 sm:py-2 text-xs outline-none"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
             />
             <input
@@ -532,13 +536,13 @@ export default function SystemsPage() {
               placeholder={copy.unitPlaceholder}
               value={newUnit}
               onChange={(e) => setNewUnit(e.target.value)}
-              className="w-48 rounded-md px-3 py-2 text-xs outline-none"
+              className="w-full sm:w-48 rounded-md px-3 py-2.5 sm:py-2 text-xs outline-none"
               style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
             />
             <select
               value={newObjectiveId}
               onChange={(e) => setNewObjectiveId(e.target.value)}
-              className="min-w-[170px] rounded-md px-3 py-2 text-xs font-mono outline-none"
+              className="w-full sm:w-auto sm:min-w-[170px] rounded-md px-3 py-2.5 sm:py-2 text-xs font-mono outline-none"
               style={{
                 backgroundColor: "var(--bg-tertiary)",
                 border: "1px solid var(--border-primary)",
