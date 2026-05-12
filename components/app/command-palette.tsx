@@ -54,7 +54,7 @@ function isInteractiveTarget(target: EventTarget | null) {
 export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  useTheme();
   const { user } = useUser();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -140,21 +140,6 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
       icon: IconRevenue,
       tone: "text-emerald-500",
       run: () => navigate("/revenue?quickAdd=entry"),
-    },
-    {
-      id: "toggle-theme",
-      section: "System" as const,
-      label: theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
-      hint: "Toggle the global app appearance.",
-      keywords: ["theme", "dark", "light", "appearance"],
-      icon: IconSettings,
-      tone: "text-axis-accent",
-      run: () => {
-        closePalette();
-        startTransition(() => {
-          toggleTheme();
-        });
-      },
     },
   ] satisfies Command[];
 

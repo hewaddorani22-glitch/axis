@@ -14,12 +14,10 @@ type Particle = {
 };
 
 const COLORS = [
-  "#CDFF4F", // axis-accent
-  "#10B981", // emerald
-  "#F59E0B", // amber
-  "#3B82F6", // blue
-  "#EC4899", // pink
-  "#0B0B0F", // axis-text1
+  "#C9A35E", // forge-gold
+  "#D9B373", // gold lighter
+  "#8A8A82", // forge-ash
+  "#F0EFE8", // forge-bone
 ];
 
 function createBurst(count: number): Particle[] {

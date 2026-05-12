@@ -1,9 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { createContext, useContext, useEffect } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "dark";
 
 interface ThemeContextType {
   theme: Theme;
@@ -11,54 +10,24 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void;
 }
 
+/**
+ * Lomoura — The Forge has a single dark theme.
+ * Light mode is intentionally removed (see LOMOURA-FORGE.md §4).
+ * This provider remains so legacy callers don't break, but it is a no-op.
+ */
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "light",
+  theme: "dark",
   toggleTheme: () => {},
   setTheme: () => {},
 });
 
-const THEMED_APP_PREFIXES = [
-  "/dashboard",
-  "/missions",
-  "/systems",
-  "/revenue",
-  "/goals",
-  "/review",
-  "/network",
-  "/partners",
-  "/prove",
-  "/settings",
-  "/onboarding",
-];
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
-  const pathname = usePathname();
-  const canUseDashboardTheme = THEMED_APP_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-
   useEffect(() => {
-    setMounted(true);
-    const saved = (localStorage.getItem("lomoura-theme") || localStorage.getItem("axis-theme")) as Theme;
-    if (saved === "light" || saved === "dark") {
-      setThemeState(saved);
-    }
+    document.documentElement.setAttribute("data-theme", "dark");
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-    const root = document.documentElement;
-    root.setAttribute("data-theme", canUseDashboardTheme ? theme : "light");
-    localStorage.setItem("lomoura-theme", theme);
-  }, [theme, mounted, canUseDashboardTheme]);
-
-  const toggleTheme = () => setThemeState((prev) => (prev === "light" ? "dark" : "light"));
-  const setTheme = (t: Theme) => setThemeState(t);
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme: "dark", toggleTheme: () => {}, setTheme: () => {} }}>
       {children}
     </ThemeContext.Provider>
   );

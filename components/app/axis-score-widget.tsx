@@ -12,7 +12,7 @@ type AxisScoreWidgetProps = Partial<AxisScoreResult> & {
 };
 
 const GRADE_COLOR: Record<string, string> = {
-  "S": "#CDFF4F",
+  "S": "#C9A35E",
   "A": "#86efac",
   "B": "#93c5fd",
   "C": "#fcd34d",
@@ -74,7 +74,7 @@ export function AxisScoreWidget({
               <defs>
                 <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
                   <stop offset="0%" stopColor="#3B82F6" />
-                  <stop offset="100%" stopColor="#CDFF4F" />
+                  <stop offset="100%" stopColor="#C9A35E" />
                 </linearGradient>
               </defs>
             </svg>

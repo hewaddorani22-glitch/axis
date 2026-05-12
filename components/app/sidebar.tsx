@@ -51,11 +51,19 @@ export function Sidebar() {
         {/* Logo */}
         <Link
           href="/dashboard"
-          className="mb-9 flex h-9 w-9 items-center justify-center rounded-[11px] text-lg font-black leading-none"
-          style={{ backgroundColor: "var(--accent)", color: "var(--accent-text)" }}
-          title="lomoura"
+          className="mb-9 flex h-9 w-9 items-center justify-center rounded-[11px]"
+          style={{
+            backgroundColor: "var(--forge-iron)",
+            border: "1px solid var(--forge-gold)",
+            color: "var(--forge-gold)",
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "20px",
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+          }}
+          title="lomoura · the forge"
         >
-          +
+          L
         </Link>
 
         {/* Nav rail */}
@@ -113,10 +121,12 @@ export function Sidebar() {
           <Link
             href="/settings"
             title={displayName}
-            className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] text-xs font-extrabold"
+            className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] text-[11px] font-bold"
             style={{
-              background: "linear-gradient(135deg, var(--soft-lav), var(--soft-plum))",
-              color: "var(--text-inverted)",
+              backgroundColor: "var(--forge-iron)",
+              border: "1px solid var(--forge-edge)",
+              color: "var(--forge-bone)",
+              letterSpacing: "0.04em",
             }}
           >
             {initials}

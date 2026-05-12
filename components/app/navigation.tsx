@@ -109,6 +109,14 @@ const settingsNavItem: NavigationItem = {
   shortcutKey: ",",
 };
 
+/**
+ * The Forge nav is intentionally narrow: Today · Tasks · Habits · Review.
+ * Themes, Revenue, Partners, Network, Prove are kept in code (routes still
+ * resolve) but hidden from the sidebar/mobile menu per LOMOURA-FORGE.md §6.
+ * Re-enable by adding to FORGE_PRIMARY / FORGE_SECONDARY below.
+ */
+const FORGE_MODE = true;
+
 export function getPrimaryNavItems({
   pathname,
   userType,
@@ -116,6 +124,10 @@ export function getPrimaryNavItems({
   pathname?: string;
   userType?: string | null;
 } = {}): NavigationItem[] {
+  if (FORGE_MODE) {
+    return [dashboardNavItem, tasksNavItem, habitsNavItem, reviewNavItem];
+  }
+
   const showRevenue = userType === "entrepreneur" || userType === "creator" || pathname === "/revenue";
 
   return [
@@ -134,6 +146,10 @@ export function getSecondaryNavItems({
   pathname?: string;
   hasPublicProfile?: boolean;
 } = {}): NavigationItem[] {
+  if (FORGE_MODE) {
+    return [settingsNavItem];
+  }
+
   return [
     themesNavItem,
     partnersNavItem,

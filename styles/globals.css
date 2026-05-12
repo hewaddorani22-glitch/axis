@@ -2,90 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-/* ── Theme CSS Variables ── */
+/* ──────────────────────────────────────────────────────────────────
+   LOMOURA — THE FORGE
+   Single dark theme. Monastic, stoic, premium.
+   See LOMOURA-FORGE.md for the source of truth.
+   ────────────────────────────────────────────────────────────────── */
 :root {
-  /* Light mode (default) */
-  --bg-primary: #FAFAFA;
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary: #F4F4F5;
-  --bg-hover: rgba(0, 0, 0, 0.02);
-  --bg-accent-soft: rgba(118, 163, 0, 0.12);
-  --border-primary: #E4E4E7;
-  --border-secondary: #D4D4D8;
-  --border-hover: #A1A1AA;
-  --text-primary: #0B0B0F;
-  --text-secondary: #52525B;
-  --text-tertiary: #A1A1AA;
-  --text-inverted: #FFFFFF;
-  --accent: #76A300; /* Darker lime/green for excellent readability on white */
-  --accent-text: #0B0B0F;
-  /* Status colors — aliased to soft palette so legacy red/amber/orange utilities pick up the warmer tones. */
-  --status-emerald: #059669;
-  --status-orange: #D97706;
-  --status-amber: #D97706;
-  --status-red: #E2725B;
-  --status-violet: #6D5BD0;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --card-shadow-hover: 0 10px 40px rgba(0, 0, 0, 0.08);
-  --stat-card-bg: #FFFFFF;
-  --skeleton-from: #E4E4E7;
-  --skeleton-to: #F4F4F5;
-  --sidebar-bg: #0B0B0F;
-  --sidebar-text: rgba(255, 255, 255, 0.5);
-  --sidebar-text-active: #FFFFFF;
-  /* Soft semantic palette (warm, low-aggression) */
-  --soft-green: #059669;
-  --soft-green-dim: rgba(5, 150, 105, 0.10);
-  --soft-warm: #D97706;
-  --soft-warm-dim: rgba(217, 119, 6, 0.10);
-  --soft-coral: #E2725B;
-  --soft-coral-dim: rgba(226, 114, 91, 0.10);
-  --soft-lav: #6D5BD0;
-  --soft-lav-dim: rgba(109, 91, 208, 0.10);
-  --soft-plum: #8B6BC8;
+  /* ── Canonical Forge tokens ── */
+  --forge-void:      #0A0A0B;
+  --forge-stone:     #16161A;
+  --forge-iron:      #1F1F24;
+  --forge-edge:      #2A2A30;
+
+  --forge-bone:      #F0EFE8;
+  --forge-ash:       #8A8A82;
+  --forge-shadow:    #54544D;
+
+  --forge-gold:      #C9A35E;
+  --forge-gold-dim:  rgba(201, 163, 94, 0.10);
+  --forge-gold-soft: rgba(201, 163, 94, 0.18);
+
+  --forge-pulse:     #6EE7B7;       /* completion indicator, used sparingly */
+  --forge-pulse-dim: rgba(110, 231, 183, 0.10);
+  --forge-warn:      #F6C872;       /* recovery available */
+  --forge-warn-dim:  rgba(246, 200, 114, 0.10);
+  --forge-fail:      #B47A7A;       /* missed day (muted, never red) */
+  --forge-fail-dim:  rgba(180, 122, 122, 0.10);
+
+  /* ── Legacy semantic aliases (so existing components inherit Forge tones) ── */
+  --bg-primary:       var(--forge-void);
+  --bg-secondary:     var(--forge-stone);
+  --bg-tertiary:      var(--forge-iron);
+  --bg-hover:         rgba(255, 255, 255, 0.025);
+  --bg-accent-soft:   var(--forge-gold-dim);
+  --border-primary:   var(--forge-edge);
+  --border-secondary: #3A3A40;
+  --border-hover:     #4A4A50;
+  --text-primary:     var(--forge-bone);
+  --text-secondary:   var(--forge-ash);
+  --text-tertiary:    var(--forge-shadow);
+  --text-inverted:    var(--forge-void);
+  --accent:           var(--forge-gold);
+  --accent-text:      var(--forge-void);
+
+  /* Status colors mapped to muted Forge equivalents */
+  --status-emerald:   var(--forge-pulse);
+  --status-orange:    var(--forge-warn);
+  --status-amber:     var(--forge-warn);
+  --status-red:       var(--forge-fail);
+  --status-violet:    #8C9CC8;
+
+  --card-shadow:       0 1px 3px rgba(0, 0, 0, 0.4);
+  --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --stat-card-bg:      var(--forge-stone);
+  --skeleton-from:     var(--forge-stone);
+  --skeleton-to:       var(--forge-iron);
+  --sidebar-bg:        var(--forge-stone);
+  --sidebar-text:      var(--forge-ash);
+  --sidebar-text-active: var(--forge-bone);
+
+  /* Soft palette aliases (legacy callers) */
+  --soft-green:      var(--forge-pulse);
+  --soft-green-dim:  var(--forge-pulse-dim);
+  --soft-warm:       var(--forge-warn);
+  --soft-warm-dim:   var(--forge-warn-dim);
+  --soft-coral:      var(--forge-fail);
+  --soft-coral-dim:  var(--forge-fail-dim);
+  --soft-lav:        #8C9CC8;
+  --soft-lav-dim:    rgba(140, 156, 200, 0.10);
+  --soft-plum:       #A78FCB;
+
+  color-scheme: dark;
 }
 
+/* Force the Forge palette regardless of any theme attribute on <html>.
+   Light mode is intentionally removed. */
+[data-theme="light"],
 [data-theme="dark"] {
-  --bg-primary: #09090B;
-  --bg-secondary: #1C1C22;
-  --bg-tertiary: #27272A;
-  --bg-hover: rgba(255, 255, 255, 0.02);
-  --bg-accent-soft: rgba(205, 255, 79, 0.08);
-  --border-primary: rgba(255, 255, 255, 0.06);
-  --border-secondary: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --text-primary: #FFFFFF;
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-tertiary: rgba(255, 255, 255, 0.3);
-  --text-inverted: #0B0B0F;
-  --accent: #CDFF4F; /* Bright neon lime */
-  --accent-text: #0B0B0F;
-  /* Status colors aliased to soft palette in dark mode too. */
-  --status-emerald: #6EE7B7;
-  --status-orange: #F6C872;
-  --status-amber: #F6C872;
-  --status-red: #F0A0A0;
-  --status-violet: #B0B4E8;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --stat-card-bg: #1C1C22;
-  --skeleton-from: #1C1C22;
-  --skeleton-to: #2a2a32;
-  --sidebar-bg: #0B0B0F;
-  --sidebar-text: rgba(255, 255, 255, 0.5);
-  --sidebar-text-active: #FFFFFF;
-  /* Soft semantic palette (warm, low-aggression) */
-  --soft-green: #6EE7B7;
-  --soft-green-dim: rgba(110, 231, 183, 0.10);
-  --soft-warm: #F6C872;
-  --soft-warm-dim: rgba(246, 200, 114, 0.10);
-  --soft-coral: #F0A0A0;
-  --soft-coral-dim: rgba(240, 160, 160, 0.10);
-  --soft-lav: #B0B4E8;
-  --soft-lav-dim: rgba(176, 180, 232, 0.10);
-  --soft-plum: #C8B0E8;
+  /* no overrides — :root tokens are canonical */
 }
 
 @layer base {
@@ -145,15 +141,32 @@
   }
 
   ::selection {
-    background-color: #CDFF4F;
-    color: #0B0B0F;
+    background-color: var(--forge-gold-soft);
+    color: var(--forge-bone);
   }
 }
 
 @layer components {
-  /* Highlighted keyword with lime accent background */
+  /* Forge display heading — for "T H E   F O R G E" style monumentals */
+  .forge-display {
+    font-family: 'Cormorant Garamond', 'Outfit', serif;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .forge-mono-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    font-size: 10px;
+    color: var(--forge-ash);
+  }
+
+  /* Highlighted keyword with gold accent background */
   .axis-highlight {
-    background-color: #CDFF4F;
+    background-color: var(--forge-gold);
+    color: var(--forge-void);
     padding: 0.05em 0.3em;
     border-radius: 4px;
     font-weight: 600;
